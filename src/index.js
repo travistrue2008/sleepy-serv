@@ -1,23 +1,60 @@
+import path from 'path'
 import http from 'http'
+import fs from 'fs'
+import querystring from 'querystring'
 
 import { MethodNotAllowedError } from './errors'
 
-function errorHandler (req, res, err) {
-  const statusCode = err.statusCode || 500
+function getAllFilePathsRec (targetPath, paths = []) {
+  const entries = fs.readdirSync(targetPath)
 
-  const context = {
-    method: req.method,
-    url: req.url,
-  }
+  return entries.reduce((accum, curr) => {
+    const currentPath = path.join(targetPath, '/', curr)
+    const result = fs.statSync(currentPath).isDirectory()
+      ? getAllFilePathsRec(currentPath, paths)
+      : [path.join(process.cwd(), targetPath, '/', curr)]
 
-  console.error(err.stack, context)
-  res.status(statusCode).end()
+    return [...accum, ...result]
+  }, [])
 }
 
-async function buildRoutes (targetPath) {
+function handleError (req, res, err) {
+  console.error(err.stack, {
+    method: req.method,
+    url: req.url,
+    body: req.body,
+  })
+
+  res.status(err.constructor.statusCode || 500).end()
+}
+
+async function buildHandler (route) {
+  const module = await import(route.path)
+
+  const chain = Array.isArray(module.default)
+    ? module.default
+    : [module.default]
+
+    const handler = async (req, res) => {
+    try {
+      for (const fn of chain) {
+        await fn(req, res)
+      }
+    } catch (err) {
+      handleError(req, res, err)
+    }
+  }
+
+  return {
+    method: route.method,
+    patternSegments: route.patternSegments,
+    handler,
+  }
+}
+
+function buildRoutes (targetPath) {
   const rootPath = path.join(process.cwd(), targetPath)
   const paths = getAllFilePathsRec(targetPath)
-  const router = express.Router()
 
   const routes = paths.map(fullPath => {
     const trimmedPath = fullPath.replace(rootPath, '')
@@ -25,60 +62,84 @@ async function buildRoutes (targetPath) {
     const lastIndex = segments.length - 1
 
     return {
-      verb: segments[lastIndex],
+      method: segments[lastIndex],
       path: fullPath,
-      pattern: segments.slice(0, lastIndex).join('/'),
+      patternSegments: segments.slice(1, lastIndex),
     }
   })
 
-  const promises = routes.map(async route => {
-    const module = await import(route.path)
-
-    const handler = async (req, res) => {
-      try {
-        const chain = Array.isArray(module.default)
-          ? module.default
-          : [module.default]
-
-        for (const fn of chain) {
-          await Promise.resolve(fn(req, res))
-        }
-      } catch (err) {
-        handleError(err, req, res)
-      }
-    }
-
-    return {
-      verb: route.verb,
-      route: route.pattern,
-      handler,
-    }
-  })
-
-  return Promise.all(promises)
+  return Promise.all(routes.map(buildHandler))
 }
 
-function buildRouter (path) {
-  const router = buildRoutes(path)
+function buildBody (req) {
+  return new Promise((resolve, reject) => {
+    let body = ''
 
-  return (req, res) => {
+    req.on('error', err => reject(err))
+    req.on('end', () => resolve(body ? JSON.parse(body) : null))
+
+    req.on('data', chunk => {
+      body += chunk.toString()
+    })
+  })
+}
+
+function buildParams (route, requestSegments) {
+  return route.patternSegments.reduce((accum, curr, index) =>
+    curr.startsWith(':') ? {
+      ...accum,
+      [curr.slice(1)]: requestSegments[index],
+    } : accum
+  , {})
+}
+
+function matchRoute (routes, requestSegments, method) {
+  return routes.find(route => {
+    if (requestSegments.length !== route.patternSegments.length) {
+      return false
+    }
+
+    if (method.toUpperCase() !== route.method.toUpperCase()) {
+      return false
+    }
+
+    return route.patternSegments.every((segment, index) =>
+      segment.startsWith(':') ||
+      segment === requestSegments[index]
+    )
+  })
+}
+
+async function processRequest (req, res, routes) {
+  const [route, query] = req.url.split('?')
+  const requestSegments = route.split('/').slice(1)
+  const targetRoute = matchRoute(routes, requestSegments, req.method)
+
+  if (!targetRoute) {
+    throw new MethodNotAllowedError()
+  }
+
+  req.route = route
+  req.query = query ? querystring.parse(query) : null
+  req.params = buildParams(targetRoute, requestSegments)
+  req.body = await buildBody(req)
+
+  await targetRoute.handler(req, res)
+}
+
+function enhanceResponse (res) {
+  res.status = statusCode => {
+    res.statusCode = statusCode
+
+    return res
   }
 }
 
-export function createServer (port, path) {
-  const router = buildRouter(path)
+export async function createServer (port, path) {
+  const routes = await buildRoutes(path)
 
   return http.createServer(async (req, res) => {
-    try {
-      console.log(req)
-
-      await router(req, res)
-
-      if (!req.writableEnded) {
-        throw new MethodNotAllowedError()
-      }
-    } catch (err) {
-      errorHandler(req, res, err)
-    }
+    enhanceResponse(res)
+    await processRequest(req, res, routes)
   }).listen(port)
 }
