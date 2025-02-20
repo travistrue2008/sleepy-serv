@@ -2,7 +2,8 @@
   "name": "sleepy-serv",
   "version": "1.0.0",
   "description": "A more opinionated web server for building REST-ful applications",
-  "main": "index.js",
+  "exports": "./index.js",
+  "type": "module",
   "scripts": {
     "dev": "pm2 start index.js --node-args=\"-r esm\" --watch --no-daemon",
     "test": "echo \"Error: no test specified\" && exit 1"

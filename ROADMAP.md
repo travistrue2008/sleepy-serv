@@ -1,0 +1,17 @@
+- Support app-level options:
+  - Path prefix (default: `/api`)
+  - Middleware
+- Support directory-level middleware
+- Support alternate body parsing
+- Validation
+  - All files contained within the directory can only be named after `meta.js`, or the following, approved lowercase HTTP methods:
+    - `get.js`
+    - `post.js`
+    - `put.js`
+    - `patch.js`
+    - `delete.js`
+  - Folder structure must follow pattern
+    - All root-level directories cannot be dynamic parameters, and must describe a 
+    - All sub-directories must be a dynamic parameter that's named after the parent resource's name
+    - All sub-directories must NOT be a dynamic resource
+    - Example: `resourcePath/:resourceId/subResourcePath/:subResourceId`
