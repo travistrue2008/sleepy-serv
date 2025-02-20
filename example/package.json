@@ -1,0 +1,25 @@
+{
+  "name": "sleepy-serv-example",
+  "description": "An example app",
+  "author": "Travis J True",
+  "version": "1.0.0",
+  "type": "module",
+  "keywords": [
+    "rest",
+    "sleepy",
+    "serv",
+    "www"
+  ],
+  "scripts": {
+    "start": "node ./src/index.js --node-args=\"-r esm\" --watch --no-daemon",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "eslint": "9.20.1"
+  },
+  "dependencies": {
+    "esm": "^3.2.25",
+    "pm2": "^5.4.3",
+    "sleepy-serv": "file:../lib"
+  }
+}
