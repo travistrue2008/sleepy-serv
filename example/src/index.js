@@ -4,7 +4,8 @@ const PORT = 3000
 
 createServer(PORT, import.meta.dirname, {
   mountPath: '/api',
-  onClose: () => {
-    console.log('closing down...')
-  },
+  middleware: [
+    _req => console.info('root-level middleware'),
+  ],
+  onClose: () => console.info('closing down...'),
 })
