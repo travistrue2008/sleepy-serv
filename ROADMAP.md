@@ -1,6 +1,7 @@
 # Roadmap
 
 - [ ] Add tests
+- [ ] Integrate with GitHub Actions for CI
 - [x] Convert over to `bun`
 - [x] Path prefix (default: `/api`)
 - [x] Graceful shutdown (Ctrl+D)
