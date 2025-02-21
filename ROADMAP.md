@@ -1,33 +1,49 @@
-- Convert over to `bun`
-- Path prefix (default: `/api`)
-- Graceful shutdown (Ctrl+D)
-- Public directory support
-- Support Body Parsing
-  - Raw
-  - Binary
-  - JSON
-  - XML
-  - Protobuf
-- Middleware
-  - App-level middleware
-  - Directory-level middleware
-  - Add JSON schema validation
-- Error Handling
-  - Respond with a 404 if the requested path doesn't exist
-  - Respond with a 405 if the requested path exists, but the requested method doesn't for that path
-- Validation
-  - All files contained within the directory can only be named after `meta.js`, or the following, approved lowercase HTTP methods:
+# Roadmap
+
+- [ ] Add tests
+- [x] Convert over to `bun`
+- [x] Path prefix (default: `/api`)
+- [x] Graceful shutdown (Ctrl+D)
+- [ ] Support static directories
+- [ ] Support CORS
+- [ ] Support WebSocket
+- [ ] Support Body Parsing
+  - [ ] Raw
+  - [ ] Binary
+  - [ ] JSON
+  - [ ] XML
+  - [ ] Protobuf
+- [ ] Middleware
+  - [ ] App-level middleware
+  - [ ] Directory-level middleware
+  - [ ] Add JSON schema validation
+- [x] Error Handling
+  - [x] Respond with a 404 if the requested path doesn't exist
+  - [x] Respond with a 405 if the requested path exists, but the requested method doesn't for that path
+- [ ] Validation
+  - [ ] Narrow down router to only look for the following files:
+    - `head.js`
     - `get.js`
     - `post.js`
     - `put.js`
     - `patch.js`
     - `delete.js`
-  - Directories that don't contain sub-directories cannot contain a `meta.js` file
-  - Directories are either required to have sub-directories, or contain a file named after one of 
+  - [ ] Directories that don't contain sub-directories cannot contain a `meta.js` file
+  - [ ] Directories are either required to have sub-directories, or contain a file named after one of supported methods
   the supported HTTP methods
-  - Throw an error if method files don't contain an export
-  - Directory structure must follow pattern
-    - All root-level directories cannot be dynamic parameters, and must describe a 
-    - All sub-directories must be a dynamic parameter that's named after the parent resource's name
-    - All sub-directories must NOT be a dynamic resource
-    - Example: `resourcePath/:resourceId/subResourcePath/:subResourceId`
+  - [ ] Throw an error if method files don't contain an export
+  - [ ] Directory structure must follow pattern
+    - [ ] All root-level directories cannot be dynamic parameters, and must describe a resource name
+    - [ ] All sub-directories must be a dynamic parameter that's named after the parent resource's name
+    - [ ] All sub-sub-directories must NOT be a dynamic resource
+    - Examples
+      - Good: `resourceName`
+      - Good: `resourceName/:resourceId`
+      - Good: `resourceName/:resourceId/subResourceName`
+      - Good: `resourceName/:resourceId/subResourceName/:subResourceId`
+      - Bad: `:resourceId`
+      - Bad: `:resourceId/:subResourceId`
+      - Bad: `:resourceId/subResourceName`
+      - Bad: `resourceName/subResourceName`
+      - Bad: `resourceName/:resourceId/:subResourceId`
+      - Bad: `resourceName/:resourceId/:subResourceId`
