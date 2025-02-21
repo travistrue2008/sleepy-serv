@@ -14,7 +14,7 @@
   - [ ] XML
   - [ ] Protobuf
 - [ ] Middleware
-  - [ ] App-level middleware
+  - [x] App-level middleware
   - [ ] Directory-level middleware
   - [ ] Add JSON schema validation
 - [x] Error Handling
