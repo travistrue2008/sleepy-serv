@@ -15,11 +15,16 @@
   - [ ] Protobuf
 - [ ] Middleware
   - [x] App-level middleware
-  - [ ] Directory-level middleware
+  - [x] Meta-level middleware
+  - [x] Module-level middleware
   - [ ] Add JSON schema validation
 - [x] Error Handling
   - [x] Respond with a 404 if the requested path doesn't exist
   - [x] Respond with a 405 if the requested path exists, but the requested method doesn't for that path
+- [ ] CLI
+  - [ ] Develop a CLI that can create new projects
+  - [ ] CLI command that can create a new project from an OpenAPI spec
+  - [ ] CLI command that can export an OpenAPI spec from an existing project
 - [ ] Validation
   - [ ] Narrow down router to only look for the following files:
     - `head.js`
@@ -47,3 +52,25 @@
       - Bad: `resourceName/subResourceName`
       - Bad: `resourceName/:resourceId/:subResourceId`
       - Bad: `resourceName/:resourceId/:subResourceId`
+
+## Test Cases
+
+- Request on root
+- Request on static resource
+- Request on nested resource
+- Request on dynamic resource
+- Request on module-level middleware
+- Request on meta-level middleware
+- Request on app-level middleware
+- Request on module and meta middleware
+- Request on meta and app middleware
+- Request on app and module middleware
+- Request on resource that doesn't exist
+- Request on resource that exists where method doesn't
+- Request on resource that with `mountPath` applied
+- Request on resource where middleware chain responds early
+- Have a request cause a sub-type of `RequestError`
+- Have a request cause a generic `Error`
+- Define endpoint validation
+- Add an "unsupported" file to the `/api` directory (check that it doesn't appear in the generated "routes" config)
+- Request on a resource where one of its matched `meta.js` files doesn't export `middleware`
