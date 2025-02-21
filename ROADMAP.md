@@ -1,8 +1,19 @@
-- Support app-level options:
-  - Path prefix (default: `/api`)
-  - Middleware
-- Support directory-level middleware
-- Support alternate body parsing
+- Convert over to `bun`
+- Path prefix (default: `/api`)
+- Graceful shutdown (Ctrl+D)
+- Support Body Parsing
+  - Raw
+  - Binary
+  - JSON
+  - XML
+  - Protobuf
+- Middleware
+  - App-level middleware
+  - Directory-level middleware
+  - Add JSON schema validation
+- Error Handling
+  - Respond with a 404 if the requested path doesn't exist
+  - Respond with a 405 if the requested path exists, but the requested method doesn't for that path
 - Validation
   - All files contained within the directory can only be named after `meta.js`, or the following, approved lowercase HTTP methods:
     - `get.js`
@@ -10,7 +21,11 @@
     - `put.js`
     - `patch.js`
     - `delete.js`
-  - Folder structure must follow pattern
+  - Directories that don't contain sub-directories cannot contain a `meta.js` file
+  - Directories are either required to have sub-directories, or contain a file named after one of 
+  the supported HTTP methods
+  - Throw an error if method files don't contain an export
+  - Directory structure must follow pattern
     - All root-level directories cannot be dynamic parameters, and must describe a 
     - All sub-directories must be a dynamic parameter that's named after the parent resource's name
     - All sub-directories must NOT be a dynamic resource

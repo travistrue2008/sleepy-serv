@@ -1,3 +1,3 @@
-export default function (_req, res) {
-  res.status(200).end()
+export default function (_req) {
+  return new Response('Hello', { status: 200 })
 }
