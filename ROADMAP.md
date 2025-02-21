@@ -6,6 +6,7 @@
 - [x] Convert over to `bun`
 - [x] Path prefix (default: `/api`)
 - [x] Graceful shutdown (Ctrl+D)
+- [ ] Support dynamic path validation (`meta.js`)
 - [ ] Support static directories
 - [ ] Support CORS
 - [ ] Support WebSocket
@@ -20,6 +21,13 @@
   - [x] Meta-level middleware
   - [x] Module-level middleware
   - [ ] Add JSON schema validation
+- [x] Narrow down router to only look for the following files:
+    - `head.js`
+    - `get.js`
+    - `post.js`
+    - `put.js`
+    - `patch.js`
+    - `delete.js`
 - [x] Error Handling
   - [x] Respond with a 404 if the requested path doesn't exist
   - [x] Respond with a 405 if the requested path exists, but the requested method doesn't for that path
@@ -28,17 +36,8 @@
   - [ ] CLI command that can create a new project from an OpenAPI spec
   - [ ] CLI command that can export an OpenAPI spec from an existing project
 - [ ] Validation
-  - [ ] Narrow down router to only look for the following files:
-    - `head.js`
-    - `get.js`
-    - `post.js`
-    - `put.js`
-    - `patch.js`
-    - `delete.js`
-  - [ ] Directories that don't contain sub-directories cannot contain a `meta.js` file
-  - [ ] Directories are either required to have sub-directories, or contain a file named after one of supported methods
-  the supported HTTP methods
-  - [ ] Throw an error if method files don't contain an export
+  - [ ] Leaf-most directories must contain at least one method file
+  - [ ] Throw an error if a method file doesn't contain an export
   - [ ] Directory structure must follow pattern
     - [ ] All root-level directories cannot be dynamic parameters, and must describe a resource name
     - [ ] All sub-directories must be a dynamic parameter that's named after the parent resource's name
@@ -61,18 +60,30 @@
 - Request on static resource
 - Request on nested resource
 - Request on dynamic resource
-- Request on module-level middleware
-- Request on meta-level middleware
-- Request on app-level middleware
-- Request on module and meta middleware
-- Request on meta and app middleware
-- Request on app and module middleware
+
+- Request on resource with module-level middleware
+- Request on resource with meta-level middleware
+- Request on resource with app-level middleware
+- Request on resource with module and meta middleware
+- Request on resource with meta and app middleware
+- Request on resource with app and module middleware
+- Request on resource where middleware chain responds early
+- Request on resource with `meta.js` file that doesn't export `middleware`
+
 - Request on resource that doesn't exist
 - Request on resource that exists where method doesn't
-- Request on resource that with `mountPath` applied
-- Request on resource where middleware chain responds early
-- Have a request cause a sub-type of `RequestError`
-- Have a request cause a generic `Error`
-- Define endpoint validation
-- Add an "unsupported" file to the `/api` directory (check that it doesn't appear in the generated "routes" config)
-- Request on a resource where one of its matched `meta.js` files doesn't export `middleware`
+
+- Request on resource that throws a sub-type of `RequestError`
+- Request on resource that throws a generic `Error`
+- Request on resource with middleware that throws an error
+- Request on resource with endpoint validation
+
+- Request on resource with `mountPath` applied
+- Request on resource with NO querystring parameters
+- Request on resource that HAS querystring parameters
+
+- Validate directory with no sub-directories and no method file
+- Validate method file that doesn't have a default export
+- Add an "unsupported" file to the `/api` directory
+
+- Test graceful shutdown of app

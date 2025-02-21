@@ -1,6 +1,6 @@
 # Sleepy Server
 
-A file-based web server designed for REST-ful applications.
+A web server designed for REST-ful applications
 
 ## Important Notes
 
