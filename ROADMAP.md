@@ -1,6 +1,7 @@
 - Convert over to `bun`
 - Path prefix (default: `/api`)
 - Graceful shutdown (Ctrl+D)
+- Public directory support
 - Support Body Parsing
   - Raw
   - Binary
