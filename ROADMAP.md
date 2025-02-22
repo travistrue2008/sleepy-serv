@@ -20,7 +20,7 @@
   - [x] App-level middleware
   - [x] Meta-level middleware
   - [x] Module-level middleware
-  - [ ] Add JSON schema validation
+  - [x] Add JSON schema validation
 - [x] Narrow down router to only look for the following files:
     - `head.js`
     - `get.js`
