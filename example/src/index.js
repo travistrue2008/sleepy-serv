@@ -1,6 +1,15 @@
-import { createServer } from 'sleepy-serv'
+import {
+  middleware,
+  createServer,
+} from 'sleepy-serv'
 
 const PORT = 3000
+
+middleware.setValidationFormats({
+  phone: /^\d{10}$/,
+  postalCode: /^\d{5}$/,
+  state: /^(([A][ELKSZR])|([C][AOT])|([D][EC])|([F][ML])|([G][AU])|([H][I])|([I][DLNA])|([K][SY])|([L][A])|([M][EHDAINSOT])|([N][EVHJMYCD])|([M][P])|([O][HKR])|([P][WAR])|([R][I])|([S][CD])|([T][NX])|([U][T])|([V][TIA])|([W][AVIY]))$/,
+})
 
 createServer(PORT, import.meta.dirname, {
   mountPath: '/api',
