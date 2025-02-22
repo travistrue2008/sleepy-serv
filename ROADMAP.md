@@ -16,7 +16,7 @@
   - [ ] JSON
   - [ ] XML
   - [ ] Protobuf
-- [ ] Middleware
+- [x] Middleware
   - [x] App-level middleware
   - [x] Meta-level middleware
   - [x] Module-level middleware
@@ -41,19 +41,20 @@
   - [ ] Directory structure must follow pattern
     - [ ] Only `meta.js` or method files can exist in the `/api` directory
     - [ ] All root-level directories cannot be dynamic parameters, and must describe a resource name
-    - [ ] All sub-directories must be a dynamic parameter that's named after the parent resource's name
-    - [ ] All sub-sub-directories must NOT be a dynamic resource
-    - Examples
-      - Bad: `:resourceId`
-      - Bad: `:resourceId/:subResourceId`
-      - Bad: `:resourceId/subResourceName`
-      - Bad: `resourceName/subResourceName`
-      - Bad: `resourceName/:resourceId/:subResourceId`
-      - Bad: `resourceName/:resourceId/:subResourceId`
-      - Good: `resourceName`
-      - Good: `resourceName/:resourceId`
-      - Good: `resourceName/:resourceId/subResourceName`
-      - Good: `resourceName/:resourceId/subResourceName/:subResourceId`
+    - [ ] Directory structure
+      - [ ] All top-level directories must be static
+      - [ ] Must alternate between static and dynamic children
+      - Examples
+        - Bad: `:resourceId`
+        - Bad: `:resourceId/:subResourceId`
+        - Bad: `:resourceId/subResourceName`
+        - Bad: `resourceName/subResourceName`
+        - Bad: `resourceName/:resourceId/:subResourceId`
+        - Bad: `resourceName/:resourceId/:subResourceId`
+        - Good: `resourceName`
+        - Good: `resourceName/:resourceId`
+        - Good: `resourceName/:resourceId/subResourceName`
+        - Good: `resourceName/:resourceId/subResourceName/:subResourceId`
 
 ## Test Cases
 
