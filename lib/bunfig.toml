@@ -2,4 +2,5 @@
 coverage = true
 coverageThreshold = 0.9
 coverageDir = "./coverage"
-coverageReporter  = ["text", "lcov"]
+coverageReporter = ["text", "lcov"]
+preload = ["./test-setup.js"]
