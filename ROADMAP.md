@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Add tests
+- [-] Add tests
 - [ ] Integrate with GitHub Actions for CI
 - [x] Separate the library from the example app
 - [x] Convert over to `bun`
@@ -37,7 +37,7 @@
   - [ ] CLI command that can export an OpenAPI spec from an existing project
 - [ ] Validation
   - [ ] Leaf-most directories must contain at least one method file
-  - [ ] Throw an error if a method file doesn't contain an export
+  - [x] Throw an error if a method file doesn't contain an export
   - [ ] Directory structure must follow pattern
     - [ ] All root-level directories cannot be dynamic parameters, and must describe a resource name
     - [ ] All sub-directories must be a dynamic parameter that's named after the parent resource's name
