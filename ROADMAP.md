@@ -63,24 +63,19 @@
 - Request on resource that throws a sub-type of `RequestError`
 - Request on resource that throws a generic `Error`
 - Request on resource with middleware that throws an error
-- Request on resource with endpoint validation
 
 ### Basic Requests
 
 - Request on root
-- Request on static resource
-- Request on nested resource
-- Request on dynamic resource
+- Request on dynamic route
 
 ### Middleware
 
 - Request on resource with module-level middleware
-- Request on resource with meta-level middleware
+- Request on resource with sibling-meta-level middleware
+- Request on resource with parent-meta-level middleware
 - Request on resource with app-level middleware
-- Request on resource with module and meta middleware
-- Request on resource with meta and app middleware
-- Request on resource with app and module middleware
-- Request on resource where middleware chain responds early
+- Request on resource with all middleware levels
 - Request on resource with `meta.js` file that doesn't export `middleware`
 
 ### Existence
