@@ -57,9 +57,9 @@
 
 ### Initialization Errors
 
-- Project contains a method file that doesn't have a default export
-- Project contains a leaf directory that doesn't contain a method file
-- Project contains an "unsupported" file to the `/api` directory
+- Method file that doesn't have a default export
+- Leaf directory with no method file
+- Unsupported file to the `/api` directory
 
 ### Endpoint Errors
 
