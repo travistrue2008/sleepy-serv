@@ -12,7 +12,7 @@ middleware.setValidationFormats({
 })
 
 const app = await createApp(PORT, import.meta.dirname, {
-  // mountPath: '/api',
+  mountPath: '/api',
   middleware: [
     _req => console.info('root-level middleware'),
   ],
