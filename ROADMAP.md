@@ -36,7 +36,7 @@
   - [ ] CLI command that can create a new project from an OpenAPI spec
   - [ ] CLI command that can export an OpenAPI spec from an existing project
 - [ ] Validation
-  - [ ] Leaf-most directories must contain at least one method file
+  - [x] Leaf-most directories must contain at least one method file
   - [x] Throw an error if a method file doesn't contain an export
   - [ ] Directory structure must follow pattern
     - [ ] Only `meta.js` or method files can exist in the `/api` directory
