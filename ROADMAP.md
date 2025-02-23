@@ -87,5 +87,3 @@
 
 - Request on resource with `mountPath` applied
 - Request on resource that HAS querystring parameters
-
-- Graceful shutdown of app
