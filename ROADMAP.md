@@ -1,12 +1,12 @@
 # Roadmap
 
-- [-] Add tests
+- [ ] Add tests
 - [ ] Integrate with GitHub Actions for CI
 - [x] Separate the library from the example app
 - [x] Convert over to `bun`
 - [x] Path prefix (default: `/api`)
 - [x] Graceful shutdown (Ctrl+D)
-- [ ] Support dynamic path validation (`meta.js`)
+- [ ] Support path param validation (`meta.js`)
 - [ ] Support static directories
 - [ ] Support CORS
 - [ ] Support WebSocket
@@ -43,10 +43,7 @@
   - [ ] Must alternate between static and dynamic children
   - Examples
     - Bad: `:resourceId`
-    - Bad: `:resourceId/:subResourceId`
-    - Bad: `:resourceId/subResourceName`
     - Bad: `resourceName/subResourceName`
-    - Bad: `resourceName/:resourceId/:subResourceId`
     - Bad: `resourceName/:resourceId/:subResourceId`
     - Good: `resourceName`
     - Good: `resourceName/:resourceId`
@@ -86,11 +83,15 @@
 - Request on resource where middleware chain responds early
 - Request on resource with `meta.js` file that doesn't export `middleware`
 
+### Existence
+
 - Request on resource that doesn't exist
 - Request on resource that exists where method doesn't
+
+### URL
 
 - Request on resource with `mountPath` applied
 - Request on resource with NO querystring parameters
 - Request on resource that HAS querystring parameters
 
-- Test graceful shutdown of app
+- Graceful shutdown of app
