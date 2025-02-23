@@ -36,25 +36,22 @@
   - [ ] CLI command that can create a new project from an OpenAPI spec
   - [ ] CLI command that can export an OpenAPI spec from an existing project
 - [ ] Validation
-  - [x] Leaf-most directories must contain at least one method file
   - [x] Throw an error if a method file doesn't contain an export
-  - [ ] Directory structure must follow pattern
-    - [ ] Only `meta.js` or method files can exist in the `/api` directory
-    - [ ] All root-level directories cannot be dynamic parameters, and must describe a resource name
-    - [ ] Directory structure
-      - [ ] All top-level directories must be static
-      - [ ] Must alternate between static and dynamic children
-      - Examples
-        - Bad: `:resourceId`
-        - Bad: `:resourceId/:subResourceId`
-        - Bad: `:resourceId/subResourceName`
-        - Bad: `resourceName/subResourceName`
-        - Bad: `resourceName/:resourceId/:subResourceId`
-        - Bad: `resourceName/:resourceId/:subResourceId`
-        - Good: `resourceName`
-        - Good: `resourceName/:resourceId`
-        - Good: `resourceName/:resourceId/subResourceName`
-        - Good: `resourceName/:resourceId/subResourceName/:subResourceId`
+  - [x] Leaf-most directories must contain at least one method file
+  - [x] Only `meta.js` or method files can exist in the `/api` directory
+  - [ ] All top-level directories must be static, resource names
+  - [ ] Must alternate between static and dynamic children
+  - Examples
+    - Bad: `:resourceId`
+    - Bad: `:resourceId/:subResourceId`
+    - Bad: `:resourceId/subResourceName`
+    - Bad: `resourceName/subResourceName`
+    - Bad: `resourceName/:resourceId/:subResourceId`
+    - Bad: `resourceName/:resourceId/:subResourceId`
+    - Good: `resourceName`
+    - Good: `resourceName/:resourceId`
+    - Good: `resourceName/:resourceId/subResourceName`
+    - Good: `resourceName/:resourceId/subResourceName/:subResourceId`
 
 ## Test Cases
 
