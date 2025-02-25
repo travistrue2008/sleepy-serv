@@ -19,4 +19,4 @@ const app = await createApp(PORT, import.meta.dirname, {
   onClose: () => console.info('closing down...'),
 })
 
-console.log('routes:', app.routes)
+console.info('routes:', app.routes)
