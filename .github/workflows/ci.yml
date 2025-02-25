@@ -9,12 +9,9 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.2.3
-      - name: Navigate to /lib Directory
-        run: ls -a
-        working-directory: lib
-      - name: Introspect Directory
-        run: ls -a
       - name: Install dependencies
         run: bun install --frozen-lockfile
+        working-directory: lib
       - name: Test
         run: bun test
+        working-directory: lib
