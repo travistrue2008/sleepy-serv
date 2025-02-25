@@ -10,7 +10,7 @@ jobs:
         with:
           bun-version: 1.2.3
       - name: Navigate to /lib Directory
-        run: cd lib
+        run: ls -a
         working-directory: lib
       - name: Introspect Directory
         run: ls -a
