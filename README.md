@@ -1,6 +1,6 @@
 # Sleepy Server
 
-A web server designed for REST-ful applications
+A directory-driven web server designed for REST-ful applications
 
 ## Important Notes
 
