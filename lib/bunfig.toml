@@ -1,5 +1,2 @@
 [test]
-coverage = true
-coverageDir = "./coverage"
-coverageReporter = ["text", "lcov"]
 preload = ["./test-setup.js"]
