@@ -11,7 +11,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.2.3
+          bun-version: ${{ secrets.BUN_VERSION }}
       - name: Checkout Code
         uses: actions/checkout@v4
       - name: Cache Dependencies
