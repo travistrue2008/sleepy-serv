@@ -9,8 +9,6 @@ jobs:
     env:
       NPM_CONFIG_TOKEN: ${{ secrets.NPM_CONFIG_TOKEN }}
     steps:
-      - name: Test Vars
-        run: echo "${{ github.event.release.tag_name }}"
       - name: Checkout Code
         uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
