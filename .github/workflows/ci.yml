@@ -6,9 +6,13 @@ on:
       - main
 jobs:
   build:
-    environment: test
     runs-on: ubuntu-24.04
+    environment: test
+    env:
+      TEST_VAR: asdf
     steps:
+      - name: Show TEST_VAR
+        run: echo "${{ env.TEST_VAR }}"
       - name: Show Bun Version env var
         run: echo "${{ env.BUN_VERSION }}"
       - name: Setup Bun
