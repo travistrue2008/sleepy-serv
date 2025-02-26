@@ -14,11 +14,11 @@ jobs:
       - name: Show TEST_VAR
         run: echo "${{ env.TEST_VAR }}"
       - name: Show Bun Version env var
-        run: echo "${{ env.BUN_VERSION }}"
+        run: echo "${{ vars.BUN_VERSION }}"
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version: ${{ vars.BUN_VERSION }}
       - name: Checkout Code
         uses: actions/checkout@v4
       - name: Cache Dependencies
