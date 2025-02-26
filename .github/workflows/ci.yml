@@ -6,12 +6,15 @@ on:
       - main
 jobs:
   build:
+    environment: test
     runs-on: ubuntu-24.04
     steps:
+      - name: Show Bun Version env var
+        run: echo ${{ env.BUN_VERSION }}
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ secrets.BUN_VERSION }}
+          bun-version: ${{ env.BUN_VERSION }}
       - name: Checkout Code
         uses: actions/checkout@v4
       - name: Cache Dependencies
