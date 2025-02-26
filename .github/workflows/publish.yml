@@ -32,7 +32,7 @@ jobs:
           git config --global user.email '${{ secrets.GIT_EMAIL }}'
           git add package.json
           git commit -m "Updated package.json version to ${{ github.event.release.tag_name }}"
-          git push
+          git push origin HEAD:main
         working-directory: lib
       - name: Publish
         run: bun publish --access public
