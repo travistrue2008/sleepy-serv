@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Show Bun Version env var
-        run: echo ${{ env.BUN_VERSION }}
+        run: echo "${{ env.BUN_VERSION }}"
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
