@@ -7,13 +7,26 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    environment: test
+    env:
+      TEST_VAR: asdf
     steps:
+      - name: Show TEST_VAR
+        run: echo "${{ env.TEST_VAR }}"
+      - name: Show Bun Version env var
+        run: echo "${{ vars.BUN_VERSION }}"
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ vars.BUN_VERSION }}
       - name: Checkout Code
         uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - name: Cache Dependencies
+        uses: actions/cache@v3
         with:
-          bun-version: 1.2.3
-      - name: Install dependencies
+          path: lib/node_modules
+          key: node-modules-${{ hashFiles('lib/bun.lock') }}
+      - name: Install Dependencies
         run: bun install --frozen-lockfile
         working-directory: lib
       - name: Test
