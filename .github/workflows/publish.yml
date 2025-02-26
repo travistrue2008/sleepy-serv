@@ -11,27 +11,30 @@ jobs:
     steps:
       - name: Test Vars
         run: echo "${{ github.event.release.tag_name }}"
-      # - name: Checkout Code
-      #   uses: actions/checkout@v4
-      # - uses: oven-sh/setup-bun@v2
-      #   with:
-      #     bun-version: ${{ vars.BUN_VERSION }}
-      # - name: Copy README.md
-      #   run: cp README.md lib/README.md
-      # - name: Cache Dependencies
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: lib/node_modules
-      #     key: node-modules-${{ hashFiles('lib/bun.lock') }}
-      # - name: Install dependencies
-      #   run: bun install --frozen-lockfile
-      #   working-directory: lib
-      # - name: Update package.json version
-      #   run: bun version ${{ github.event.release.tag_name }}
-      # - name: Commit package.json
-      #   run: git commit -m "Updated package.json version to ${{ github.event.release.tag_name }}"
-      # - name: Push Change
-      #   run: git push
-      # - name: Publish
-      #   run: bun publish --access public
-      #   working-directory: lib
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ vars.BUN_VERSION }}
+      - name: Copy README.md
+        run: cp README.md lib/README.md
+      - name: Cache Dependencies
+        uses: actions/cache@v3
+        with:
+          path: lib/node_modules
+          key: node-modules-${{ hashFiles('lib/bun.lock') }}
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        working-directory: lib
+      - name: Update package.json version
+        run: bun version ${{ github.event.release.tag_name }}
+      - name: Commit package.json
+        run: |
+          git config --global user.name 'Travis J True'
+          git config --global user.email '${{ secrets.GIT_EMAIL }}'
+          git commit -m "Updated package.json version to ${{ github.event.release.tag_name }}"
+          git push
+        working-directory: lib
+      - name: Publish
+        run: bun publish --access public
+        working-directory: lib
