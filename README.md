@@ -74,7 +74,7 @@ Here's an example of a simple handler function:
 
 ```js
 export default function (req) {
-  return Response('Hello world')
+  return new Response('Hello world')
 }
 ```
 
@@ -131,7 +131,7 @@ export default async function (req) {
   const users = await sql`
 SELECT * FROM Users
 WHERE userId=${req.params.userId}
-  `.trim()
+  `
 
   const foundUser = users[0]
 
@@ -192,7 +192,7 @@ For example:
         put.js
 ```
 
-The middleware defined in `/api/meta.js` will be applied the following routes:
+The middleware defined in `/api/meta.js` will be applied by the following routes:
 
 - `GET /`
 - `GET /users`
