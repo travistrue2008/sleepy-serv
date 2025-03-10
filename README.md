@@ -269,3 +269,8 @@ const app = await createApp(PORT, import.meta.dirname, {
     - `$ cd ../example`
     - `$ npm link sleepy-serv`
 1. Finally, run the app: `$ bun --watch run start`
+
+## Running Tests
+
+- Use `bun`'s built-in test runner
+- Run tests from the `./lib` directory
