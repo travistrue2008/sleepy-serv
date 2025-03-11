@@ -31,7 +31,7 @@ jobs:
         working-directory: lib
 
       - name: Update package.json version
-        run: bun version ${{ github.event.release.tag_name }}
+        run: bun version 0.0.0
 
       - name: Authenticate with GitHub App
         id: app-auth
