@@ -6,9 +6,9 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-24.04
+
     environment: publish
-    env:
-      NPM_CONFIG_TOKEN: ${{ secrets.NPM_CONFIG_TOKEN }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -17,21 +17,8 @@ jobs:
         with:
           bun-version: ${{ vars.BUN_VERSION }}
 
-      - name: Copy README.md
-        run: cp README.md lib/README.md
-
-      - name: Cache Dependencies
-        uses: actions/cache@v3
-        with:
-          path: lib/node_modules
-          key: node-modules-${{ hashFiles('lib/bun.lock') }}
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-        working-directory: lib
-
       - name: Update package.json version
-        run: bun version ${{ github.event.release.tag_name }}
+        run: bun version 0.0.0
 
       - name: Authenticate with GitHub App
         id: app-auth
@@ -48,8 +35,4 @@ jobs:
           git commit -m "Updated package.json version to ${{ github.event.release.tag_name }}"
           git push origin HEAD:main
           git push https://x-access-token:${{ steps.app-auth.outputs.token }}@github.com/travistrue2008/sleepy-serv.git main
-        working-directory: lib
-
-      - name: Publish
-        run: bun publish --access public
         working-directory: lib
