@@ -73,10 +73,18 @@ The route's logic is implemented in the route definition files. These must `expo
 Here's an example of a simple handler function:
 
 ```js
-export default function (req) {
+export default function (req, res) {
+  console.log('res:', res)
+
   return new Response('Hello world')
 }
 ```
+
+These functions take two parameters:
+- `req`: a `BunRequest` object
+- `res`: a results object
+
+The `res` parameter might seem familiar if coming from ExpressJS, but this parameter has a different purpose. The `res` parameter is meant to act as a dedicated, persistent object that middleware can write their results to. This way, the `req` object stays as a lean `BunRequest`.
 
 These handlers can also be `async` functions and `sleepy-serv` will wait for them to finish before moving on.
 
@@ -86,13 +94,13 @@ As mentioned earlier, method definition files can also export an array of functi
 
 ```js
 export default [
-  async req => {
-    req.parsedBody = await req.json()
+  async (req, res) => {
+    res.body = await req.json()
   },
-  req => {
-    console.log('JSON body:', req.parsedBody)
+  (req, res) => {
+    console.log('JSON body:', res.body)
 
-    return new Response('Hello world', )
+    return new Response('Hello world')
   },
 ]
 ```
@@ -218,6 +226,72 @@ The middleware defined in `/api/users/:userId/meta.js` will be applied the follo
 ### Future Use-Cases
 
 At the time of this writing, `meta.js` only exports middleware functions.
+
+## Build-In Middleware
+
+`sleepy-serv` also comes built-in with a few useful middleware functions that are commonly used.
+
+### parseJson(req, _res)
+
+This middleware parses the request's `body` property as a JSON string, and then stores the results in `res.body`. Additional body parsers can be written in the future a accommodate other body encoding schemes.
+
+### validateSchema(schemas)
+
+This function takes a `schemas` object. Each property is optional:
+- `headers`: takes a string formatter schema to evaulate `req.headers`
+- `params`: takes a string formatter schema to evaulate `req.params`
+- `query`: takes a string foramtter schema to evaulate `req.query`
+- `body`: takes a JSON validation schema to evaulate `res.body`
+
+Here's an example of the schema in action:
+
+```
+PUT /contacts/123/addresses
+
+{
+  street1: '123 Main St.',
+  street2: '#100',
+  city: 'Las Vegas',
+  state: 'NV',
+  postalCode: '12345',
+}
+```
+
+***
+TODO: add JSON schema example.
+
+Please take a look at the `lib/src/middleware.test.js` test file for a far a comprehensive set of examples on how to use this middleware.
+***
+
+The `headers`, `params`, and `query` (querystrings) can only be strings, so they're evaulated using a simplified _string format schema_ instead of a full JSON schema.
+
+The string formatter schema looks like this:
+
+```javascript
+{
+  type: 'format',
+  value: 'email',
+}
+```
+
+**`type`**
+
+Can either set to `'format'` or `'pattern'`. The value of `type` determines how the `value` property is used.
+
+**`value`**
+
+This determines how to evaulate the string based on the `type` parameter. If `type` is set to `'format'`, then `value` can be set to one of the pre-defined formats that's provided by the JSON schema specification. If `type` is set to `'pattern'`, then `value` can be set to a regex pattern instead.
+
+Custom formats can also be provided by using the `setValidationFormats()` during app initialization. Here's an example:
+
+```javascript
+middleware.setValidationFormats({
+  phone: /^\d{10}$/, /* 10-digit, numeric string */
+  postalCode: /^\d{5}$/, /* 5-digit, numeric string */
+})
+```
+
+Calling `setValidationFormats()` extends the possible values that can be passed to the `value` property when evaulating strings in either the string formatter schema, or the `res.body`'s JSON schema.
 
 ## `createApp()` Options
 
