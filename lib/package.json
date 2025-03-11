@@ -2,7 +2,7 @@
   "name": "sleepy-serv",
   "description": "A more opinionated web server for building REST-ful applications",
   "author": "Travis J True",
-  "version": "0.2.0",
+  "version": "0.0.0",
   "exports": "./src/index.js",
   "type": "module",
   "keywords": [
