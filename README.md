@@ -221,6 +221,16 @@ At the time of this writing, `meta.js` only exports middleware functions.
 
 ## `createApp()` Options
 
+### `hostname`
+
+The hostname can be customized like so:
+
+```js
+createApp(import.meta.dirname, {
+  hostname: 'test.sleepy-serv.com',
+})
+```
+
 ### `mountPath`
 
 This adds a prefix to all routes. For example:
