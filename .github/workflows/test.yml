@@ -34,7 +34,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Print Token
-        run: echo "${{ steps.app-token.outputs.user-id }}"
+        run: echo "${{ steps.app-token.outputs.token }}"
 
       - name: Print User ID
         run: echo "${{ steps.user-id.outputs.user-id }}"
