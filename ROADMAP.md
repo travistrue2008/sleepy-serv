@@ -6,6 +6,7 @@
 - [x] Convert over to `bun`
 - [x] Path prefix (default: `/api`)
 - [x] Graceful shutdown (Ctrl+D)
+- [ ] Add the `ctx` object
 - [ ] Support path param validation (`meta.js`)
 - [ ] Support static directories
 - [ ] Support CORS
