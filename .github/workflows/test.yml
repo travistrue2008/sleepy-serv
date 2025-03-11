@@ -28,15 +28,21 @@ jobs:
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
 
       - name: Get GitHub App User ID
-        id: get-user-id
+        id: user-id
         run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
+      - name: Print Token
+        run: echo "${{ steps.app-token.outputs.user-id }}"
+
+      - name: Print User ID
+        run: echo "${{ steps.user-id.outputs.user-id }}"
+
       - name: Commit package.json
         run: |
           git config --global user.name '${{ steps.app-token.outputs.app-slug }}[bot]'
-          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+          git config --global user.email '${{ steps.user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
           git add lib/package.json
           git commit -m "Updated package.json version to 0.0.0"
           git push
