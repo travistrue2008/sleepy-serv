@@ -47,6 +47,8 @@ jobs:
         run: bun version ${{ github.event.release.tag_name }}
 
       - name: Commit package.json
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           git config user.name 'Automated Publisher'
           git config user.email 'automated-publisher[bot]@users.noreply.github.com'
