@@ -1,7 +1,7 @@
 # Roadmap
 
-- [ ] Add tests
-- [ ] Integrate with GitHub Actions for CI
+- [X] Add tests
+- [X] Integrate with GitHub Actions for CI
 - [x] Separate the library from the example app
 - [x] Convert over to `bun`
 - [x] Path prefix (default: `/api`)
@@ -14,7 +14,7 @@
 - [ ] Support Body Parsing
   - [ ] Raw
   - [ ] Binary
-  - [ ] JSON
+  - [X] JSON
   - [ ] XML
   - [ ] Protobuf
 - [x] Middleware
