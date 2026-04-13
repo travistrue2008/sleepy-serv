@@ -1,0 +1,11 @@
+[test]
+coverage = true
+coverageDir = "./coverage"
+coverageReporter = ["text", "lcov"]
+
+coveragePathIgnorePatterns = [
+  ".cursor/**",
+  ".github/**",
+  "lib/tests/**",
+  "examples/**",
+]
