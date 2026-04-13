@@ -30,6 +30,10 @@ jobs:
         with:
           bun-version: ${{ vars.BUN_VERSION }}
 
+      - name: Verify npm auth
+        run: bun pm whoami
+        working-directory: lib
+
       - name: Copy README.md
         run: cp README.md lib/README.md
 
