@@ -57,6 +57,10 @@ jobs:
           git push origin HEAD:main
         working-directory: lib
 
+      - name: Verify NPM authentication
+        run: bunx npm whoami
+        working-directory: lib
+
       - name: Publish
-        run: bun publish --access public
+        run: bun publish
         working-directory: lib
