@@ -58,5 +58,5 @@ jobs:
         working-directory: lib
 
       - name: Publish
-        run: bun publish --access public
+        run: bun publish
         working-directory: lib
