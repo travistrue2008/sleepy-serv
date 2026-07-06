@@ -8,6 +8,9 @@ This project runs on **Bun** (v1.2.3+), **not Node.js**. Use Bun for everything 
 
 - Use `bun <file>` instead of `node`, `bunx` instead of `npx`, `bun install` instead of npm/yarn/pnpm.
 - Prefer Bun APIs over Node/third-party equivalents: `Bun.serve()` (not express), built-in `WebSocket` (not `ws`), `bun:sqlite`, `Bun.file`. Bun auto-loads `.env`.
+- [`codegraph`](https://github.com/colbymchenry/codegraph) is required and must be installed globally via Bun:
+  - `bun add -g @colbymchenry/codegraph`
+  - `bun install`
 
 ## Repository Layout
 
@@ -69,3 +72,14 @@ CI (`.github/workflows/ci.yml`) runs `bun install --frozen-lockfile` then `bun t
 Two styles, both under `lib/` and run with `bun test`:
 - **Unit tests** colocated in `lib/src/`: `errors.test.js`, `meta.test.js`, `middleware.test.js`.
 - **Integration tests** in `lib/tests/<category>/<case>/integration.test.js`, each with a real `api/` fixture that the test boots via `createApp` and hits with `axios`. Get a unique port from `getPortCounter()` in `lib/tests/_helpers.js` (increments from 3000) so parallel tests don't collide.
+
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
+
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+<!-- CODEGRAPH_END -->
