@@ -6,6 +6,7 @@ A directory-driven web server designed for REST-ful applications
 
 - This package requires [`bun.sh`](https://bun.sh) instead of NodeJS to run.
 - This project requires bun v1.2.3 or higher
+- [`codegraph`](https://github.com/colbymchenry/codegraph) must be installed globally via bun: `bun add -g @colbymchenry/codegraph`
 
 ## Getting Started
 

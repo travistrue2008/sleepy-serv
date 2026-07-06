@@ -1,8 +1,6 @@
----
-alwaysApply: false
-globs: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
-description: Use Bun instead of Node.js, npm, pnpm, or vite.
----
+# Use Bun
+
+Use Bun instead of Node.js, npm, pnpm, or vite.
 
 Default to using Bun instead of Node.js.
 

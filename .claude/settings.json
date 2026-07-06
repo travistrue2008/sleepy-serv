@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun --version)",
+      "Bash(bun test *)",
+      "Bash(bunx tsc *)"
+    ]
+  }
+}

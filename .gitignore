@@ -1,5 +1,6 @@
-coverage
-node_modules
+.codegraph/
+coverage/
+node_modules/
 
 .DS_Store
 *.log*
