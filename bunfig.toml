@@ -4,7 +4,7 @@ coverageDir = "./coverage"
 coverageReporter = ["text", "lcov"]
 
 coveragePathIgnorePatterns = [
-  ".cursor/**",
+  ".claude/**",
   ".github/**",
   "lib/tests/**",
   "examples/**",
