@@ -12,6 +12,6 @@ test('when method file has no default export', async () => {
 
   await expect(fn).toThrow(new Error(`
 No default export defined in:
-${process.cwd()}/lib/tests/initialization-errors/method-file-has-no-default-export/api/get.js
+${process.cwd()}/server/tests/initialization-errors/method-file-has-no-default-export/api/get.js
   `.trim()))
 })

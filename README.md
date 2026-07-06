@@ -364,7 +364,7 @@ PUT /contacts/123/addresses
 ***
 TODO: add JSON schema example.
 
-Please take a look at the `lib/src/middleware.test.js` test file for a far a comprehensive set of examples on how to use this middleware.
+Please take a look at the `server/src/middleware.test.js` test file for a far a comprehensive set of examples on how to use this middleware.
 ***
 
 The `headers`, `params`, and `query` (querystrings) can only be strings, so they're evaulated using a simplified _string format schema_ instead of a full JSON schema.
@@ -471,7 +471,7 @@ const app = await createApp(PORT, import.meta.dirname, {
 
 1. Install [`bun.sh`](https://bun.sh)
 1. Link the library package:
-    - `$ cd lib`
+    - `$ cd server`
     - `$ bun link`
 1. Link the library to the project
     - `$ cd ../example`
@@ -481,4 +481,4 @@ const app = await createApp(PORT, import.meta.dirname, {
 ## Running Tests
 
 - Use `bun`'s built-in test runner
-- Run tests from the `./lib` directory
+- Run tests from the `./server` directory

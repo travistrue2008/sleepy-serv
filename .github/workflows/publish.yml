@@ -32,23 +32,23 @@ jobs:
 
       - name: Verify npm auth
         run: bun pm whoami
-        working-directory: lib
+        working-directory: server
 
       - name: Copy README.md
-        run: cp README.md lib/README.md
+        run: cp README.md server/README.md
 
       - name: Cache Dependencies
         uses: actions/cache@v3
         with:
-          path: lib/node_modules
-          key: node-modules-${{ hashFiles('lib/bun.lock') }}
+          path: server/node_modules
+          key: node-modules-${{ hashFiles('server/bun.lock') }}
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
-        working-directory: lib
+        working-directory: server
 
       - name: Update package.json version
-        run: bun version ${{ github.event.release.tag_name }}
+        run: bun pm version ${{ github.event.release.tag_name }}
 
       - name: Commit package.json
         env:
@@ -59,8 +59,8 @@ jobs:
           git add package.json
           git commit -m "Updated package.json version to ${{ github.event.release.tag_name }}"
           git push origin HEAD:main
-        working-directory: lib
+        working-directory: server
 
       - name: Publish
         run: bun publish
-        working-directory: lib
+        working-directory: server
