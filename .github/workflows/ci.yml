@@ -18,10 +18,9 @@ jobs:
       - name: Cache Dependencies
         uses: actions/cache@v3
         with:
-          path: server/node_modules
-          key: node-modules-${{ hashFiles('server/bun.lock') }}
+          path: node_modules
+          key: node-modules-${{ hashFiles('bun.lock') }}
       - name: Install Dependencies
         run: bun install --frozen-lockfile
-        working-directory: server
       - name: Test
         run: bun test

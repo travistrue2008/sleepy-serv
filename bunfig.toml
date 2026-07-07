@@ -6,6 +6,6 @@ coverageReporter = ["text", "lcov"]
 coveragePathIgnorePatterns = [
   ".claude/**",
   ".github/**",
+  "client/tests/**",
   "server/tests/**",
-  "examples/**",
 ]

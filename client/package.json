@@ -1,0 +1,16 @@
+{
+  "name": "sleepy-socket",
+  "description": "A blank BunJS project, sibling to sleepy-serv",
+  "author": "Travis J True",
+  "version": "0.4.0",
+  "type": "module",
+  "keywords": [
+    "client",
+    "rest",
+    "serv",
+    "sleepy-serv",
+    "websocket",
+    "www"
+  ],
+  "scripts": {}
+}

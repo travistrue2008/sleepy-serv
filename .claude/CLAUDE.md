@@ -14,24 +14,23 @@ This project runs on **Bun** (v1.2.3+), **not Node.js**. Use Bun for everything 
 
 ## Repository Layout
 
-There is **no root `package.json`**. The repo has three areas:
+The repo root is a **Bun workspace** (see root `package.json`) — dependencies for all members install into a single root `bun.lock`/`node_modules`, not per-package. Areas:
 - `server/` — the published npm package `sleepy-serv` (nearly all work happens here). ESM, `"exports": "./src/index.js"`, no build step.
+- `client/` — `sleepy-socket`, a currently-blank sibling workspace package. Versioned in lockstep with `server` on release, but not yet published to npm.
 - `example/` — a runnable demo app that consumes the library and serves as living documentation of the routing convention.
-- `client/src/` — empty placeholder.
 
 ## Commands
 
-All library commands run from the `server/` directory:
+Install and run tests from the **repo root** (workspace-wide):
 
 ```bash
-cd server
-bun install                         # CI uses --frozen-lockfile
+bun install                         # CI uses --frozen-lockfile; installs for all workspace members
 bun test                            # run all tests (Bun's built-in runner)
-bun test src/middleware.test.js     # run a single test file
+bun test server/src/middleware.test.js  # run a single test file
 bun test -t "substring"             # run tests matching a name
 ```
 
-- **Coverage** config lives in the root `bunfig.toml` (text + lcov into `./coverage`), so `bun test --coverage` only picks it up when run from the **repo root**, not from `server/`.
+- **Coverage** config lives in the root `bunfig.toml` (text + lcov into `./coverage`), so `bun test --coverage` only picks it up when run from the **repo root**.
 - **No build, no TypeScript compiler, no working lint.** `eslint@9` is a devDependency but there is no ESLint config file. "TypeScript support" means only that `.ts` method/meta filenames are accepted by the router (`ALLOWED_FILES_*` in `server/src/index.js`) — there is no `tsconfig.json` and no shipped type declarations.
 
 Run the example app:
@@ -41,7 +40,7 @@ cd ../example && npm link sleepy-serv
 bun --watch run start   # from example/
 ```
 
-CI (`.github/workflows/ci.yml`) runs `bun install --frozen-lockfile` then `bun test` inside `server/` on PRs and pushes to `main`. `publish.yml` publishes to npm on GitHub release; it bumps the version via `bun pm version`.
+CI (`.github/workflows/ci.yml`) runs `bun install --frozen-lockfile` then `bun test` from the workspace root on PRs and pushes to `main`. `publish.yml` publishes `server` to npm on GitHub release; it bumps both `server/package.json` and `client/package.json` versions via `bun pm version` so the pair stays in lockstep.
 
 ## Architecture
 

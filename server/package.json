@@ -12,9 +12,7 @@
     "web server",
     "www"
   ],
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "devDependencies": {
     "axios": "^1.18.1",
     "eslint": "9.20.1"
