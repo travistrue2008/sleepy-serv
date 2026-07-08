@@ -1,13 +1,14 @@
-import { v4 as uuidv4 } from 'uuid'
+import * as uuid from 'uuid'
 
 export const TYPES = {
   REQUEST: 'request',
+  RESPONSE: 'response',
 }
 
 export function createBaseMessage() {
   return {
     type: '',
-    id: uuidv4(),
+    id: uuid.v4(),
     timestamp: new Date().toISOString(),
     headers: {},
     body: null,

@@ -1,7 +1,4 @@
-import {
-  test,
-  expect,
-} from 'bun:test'
+import { test, expect } from 'bun:test'
 
 import {
   TYPES,
