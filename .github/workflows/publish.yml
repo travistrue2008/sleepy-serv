@@ -41,8 +41,8 @@ jobs:
 
       - name: Update package.json version
         run: |
-          bun pm version ${{ github.event.release.tag_name }} --cwd ./client
-          bun pm version ${{ github.event.release.tag_name }} --cwd ./server
+          bun pm version ${{ github.event.release.tag_name }} --cwd ./packages/client
+          bun pm version ${{ github.event.release.tag_name }} --cwd ./packages/server
 
       - name: Commit package.json
         env:
@@ -50,11 +50,11 @@ jobs:
         run: |
           git config user.name 'Automated Publisher'
           git config user.email 'automated-publisher[bot]@users.noreply.github.com'
-          git add client/package.json server/package.json
+          git add packages/client/package.json packages/server/package.json
           git commit -m "Updated package.json version to ${{ github.event.release.tag_name }}"
           git push origin HEAD:main
 
       - name: Publish
         run: |
-          bun publish --cwd ./client
-          bun publish --cwd ./server
+          bun publish --cwd ./packages/client
+          bun publish --cwd ./packages/server

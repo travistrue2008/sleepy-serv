@@ -6,7 +6,7 @@ test('when the "/ws" route is defined', async () => {
 
   await expect(fn).toThrow(new Error(`
 Illegal directory:
-${process.cwd()}/server/tests/initialization-errors/user-defined-ws-route/api/ws
+${process.cwd()}/packages/server/tests/initialization-errors/user-defined-ws-route/api/ws
 
 This is a reserved directory.
   `.trim()))

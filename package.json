@@ -2,7 +2,7 @@
   "private": true,
   "name": "sleepy-serv-monorepo",
   "workspaces": [
-    "server",
-    "client"
+    "packages/server",
+    "packages/client"
   ]
 }

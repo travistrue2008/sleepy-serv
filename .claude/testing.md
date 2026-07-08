@@ -2,7 +2,7 @@
 
 Guidelines for tests in this repo, on top of what's already in `CLAUDE.md`'s "Tests" section.
 Applies to both unit tests (colocated `*.test.js`) and integration tests
-(`server/tests/<category>/<case>/integration.test.js`).
+(`packages/server/tests/<category>/<case>/integration.test.js`).
 
 ## Structure
 
@@ -36,7 +36,7 @@ Applies to both unit tests (colocated `*.test.js`) and integration tests
 ## Mocking over real infra, when reasonable
 
 Prefer a hand-built mock over standing up real infrastructure when the real thing would add
-flakiness or complexity without proving anything extra — e.g. `client/src/index.test.js` mocks the
+flakiness or complexity without proving anything extra — e.g. `packages/client/src/index.test.js` mocks the
 `WebSocket` global (`MockWebSocket`) rather than booting a real `Bun.serve()` WS server, since the
 client's own logic (registry, queueing, timeouts) doesn't depend on real network behavior. Real
 servers/sockets are still the right call for true end-to-end tests that specifically verify

@@ -5,14 +5,14 @@
     "": {
       "name": "sleepy-serv-monorepo",
     },
-    "client": {
+    "packages/client": {
       "name": "sleepy-socket",
       "version": "0.4.0",
       "dependencies": {
         "uuid": "^11.1.0",
       },
     },
-    "server": {
+    "packages/server": {
       "name": "sleepy-serv",
       "version": "0.4.0",
       "dependencies": {
@@ -186,9 +186,9 @@
 
     "shebang-regex": ["shebang-regex@3.0.0", "", {}, "sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A=="],
 
-    "sleepy-serv": ["sleepy-serv@workspace:server"],
+    "sleepy-serv": ["sleepy-serv@workspace:packages/server"],
 
-    "sleepy-socket": ["sleepy-socket@workspace:client"],
+    "sleepy-socket": ["sleepy-socket@workspace:packages/client"],
 
     "strip-json-comments": ["strip-json-comments@3.1.1", "", {}, "sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig=="],
 
