@@ -3,13 +3,10 @@
  * skipping tests.
  */
 
-import {
-  describe,
-  test,
-  expect,
-} from 'bun:test'
+import { describe, test, expect } from 'bun:test'
 
 import {
+  RequestError,
   BadRequestError,
   UnauthorizedError,
   PaymentRequiredError,
@@ -52,324 +49,363 @@ import {
   NetworkAuthenticationRequiredError,
 } from './errors'
 
+// Base Error
+
+describe('RequestError', () => {
+  test('when "status" is invoked', () => {
+    const fn = () => RequestError.status
+
+    expect(fn).toThrow(new Error('Unimplemented'))
+  })
+
+  test('when "output" is invoked', () => {
+    const err = new RequestError('Bad')
+
+    expect(err.output).toStrictEqual({
+      message: 'Bad',
+    })
+  })
+
+  test('when thrown', () => {
+    const fn = () => {
+      throw new RequestError('Bad')
+    }
+
+    expect(fn).toThrow(new RequestError('Bad'))
+  })
+})
+
 // 4xx - Client Errors
 
 describe('BadRequestError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new BadRequestError('bad')
+      throw new BadRequestError('Bad')
     }
 
-    expect(fn).toThrow(new BadRequestError('bad'))
-    expect(BadRequestError.statusCode).toBe(400)
+    expect(BadRequestError.status).toBe(400)
+    expect(fn).toThrow(new BadRequestError('Bad'))
   })
 })
 
 describe('UnauthorizedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new UnauthorizedError('bad')
+      throw new UnauthorizedError('Bad')
     }
 
-    expect(fn).toThrow(new UnauthorizedError('bad'))
-    expect(UnauthorizedError.statusCode).toBe(401)
+    expect(UnauthorizedError.status).toBe(401)
+    expect(fn).toThrow(new UnauthorizedError('Bad'))
   })
 })
 
 describe('PaymentRequiredError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new PaymentRequiredError('bad')
+      throw new PaymentRequiredError('Bad')
     }
 
-    expect(fn).toThrow(new PaymentRequiredError('bad'))
-    expect(PaymentRequiredError.statusCode).toBe(402)
+    expect(PaymentRequiredError.status).toBe(402)
+    expect(fn).toThrow(new PaymentRequiredError('Bad'))
   })
 })
 
 describe('ForbiddenError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new ForbiddenError('bad')
+      throw new ForbiddenError('Bad')
     }
 
-    expect(fn).toThrow(new ForbiddenError('bad'))
-    expect(ForbiddenError.statusCode).toBe(403)
+    expect(ForbiddenError.status).toBe(403)
+    expect(fn).toThrow(new ForbiddenError('Bad'))
   })
 })
 
 describe('NotFoundError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new NotFoundError('bad')
+      throw new NotFoundError('Bad')
     }
 
-    expect(fn).toThrow(new NotFoundError('bad'))
-    expect(NotFoundError.statusCode).toBe(404)
+    expect(NotFoundError.status).toBe(404)
+    expect(fn).toThrow(new NotFoundError('Bad'))
   })
 })
 
 describe('MethodNotAllowedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new MethodNotAllowedError('bad')
+      throw new MethodNotAllowedError('Bad')
     }
 
-    expect(fn).toThrow(new MethodNotAllowedError('bad'))
-    expect(MethodNotAllowedError.statusCode).toBe(405)
+    expect(MethodNotAllowedError.status).toBe(405)
+    expect(fn).toThrow(new MethodNotAllowedError('Bad'))
   })
 })
 
 describe('NotAcceptableError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new NotAcceptableError('bad')
+      throw new NotAcceptableError('Bad')
     }
 
-    expect(fn).toThrow(new NotAcceptableError('bad'))
-    expect(NotAcceptableError.statusCode).toBe(406)
+    expect(NotAcceptableError.status).toBe(406)
+    expect(fn).toThrow(new NotAcceptableError('Bad'))
   })
 })
 
 describe('ProxyAuthenticationRequiredError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new ProxyAuthenticationRequiredError('bad')
+      throw new ProxyAuthenticationRequiredError('Bad')
     }
 
-    expect(fn).toThrow(new ProxyAuthenticationRequiredError('bad'))
-    expect(ProxyAuthenticationRequiredError.statusCode).toBe(407)
+    expect(ProxyAuthenticationRequiredError.status).toBe(407)
+    expect(fn).toThrow(new ProxyAuthenticationRequiredError('Bad'))
   })
 })
 
 describe('RequestTimeoutError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new UnauthorizedError('bad')
+      throw new UnauthorizedError('Bad')
     }
 
-    expect(fn).toThrow(new RequestTimeoutError('bad'))
-    expect(RequestTimeoutError.statusCode).toBe(408)
+    expect(RequestTimeoutError.status).toBe(408)
+    expect(fn).toThrow(new RequestTimeoutError('Bad'))
   })
 })
 
 describe('ConflictError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new ConflictError('bad')
+      throw new ConflictError('Bad')
     }
 
-    expect(fn).toThrow(new ConflictError('bad'))
-    expect(ConflictError.statusCode).toBe(409)
+    expect(ConflictError.status).toBe(409)
+    expect(fn).toThrow(new ConflictError('Bad'))
   })
 })
 
 describe('GoneError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new GoneError('bad')
+      throw new GoneError('Bad')
     }
 
-    expect(fn).toThrow(new GoneError('bad'))
-    expect(GoneError.statusCode).toBe(410)
+    expect(GoneError.status).toBe(410)
+    expect(fn).toThrow(new GoneError('Bad'))
   })
 })
 
 describe('LengthRequiredError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new LengthRequiredError('bad')
+      throw new LengthRequiredError('Bad')
     }
 
-    expect(fn).toThrow(new LengthRequiredError('bad'))
-    expect(LengthRequiredError.statusCode).toBe(411)
+    expect(LengthRequiredError.status).toBe(411)
+    expect(fn).toThrow(new LengthRequiredError('Bad'))
   })
 })
 
 describe('PreconditionFailedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new PreconditionFailedError('bad')
+      throw new PreconditionFailedError('Bad')
     }
 
-    expect(fn).toThrow(new PreconditionFailedError('bad'))
-    expect(PreconditionFailedError.statusCode).toBe(412)
+    expect(PreconditionFailedError.status).toBe(412)
+    expect(fn).toThrow(new PreconditionFailedError('Bad'))
   })
 })
 
 describe('PayloadTooLargeError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new PayloadTooLargeError('bad')
+      throw new PayloadTooLargeError('Bad')
     }
 
-    expect(fn).toThrow(new PayloadTooLargeError('bad'))
-    expect(PayloadTooLargeError.statusCode).toBe(413)
+    expect(PayloadTooLargeError.status).toBe(413)
+    expect(fn).toThrow(new PayloadTooLargeError('Bad'))
   })
 })
 
 describe('UriTooLongError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new UriTooLongError('bad')
+      throw new UriTooLongError('Bad')
     }
 
-    expect(fn).toThrow(new UriTooLongError('bad'))
-    expect(UriTooLongError.statusCode).toBe(414)
+    expect(UriTooLongError.status).toBe(414)
+    expect(fn).toThrow(new UriTooLongError('Bad'))
   })
 })
 
 describe('UnsupportedMediaTypeError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new UnsupportedMediaTypeError('bad')
+      throw new UnsupportedMediaTypeError('Bad')
     }
 
-    expect(fn).toThrow(new UnsupportedMediaTypeError('bad'))
-    expect(UnsupportedMediaTypeError.statusCode).toBe(415)
+    expect(UnsupportedMediaTypeError.status).toBe(415)
+    expect(fn).toThrow(new UnsupportedMediaTypeError('Bad'))
   })
 })
 
 describe('RangeNotSatisfiableError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new RangeNotSatisfiableError('bad')
+      throw new RangeNotSatisfiableError('Bad')
     }
 
-    expect(fn).toThrow(new RangeNotSatisfiableError('bad'))
-    expect(RangeNotSatisfiableError.statusCode).toBe(416)
+    expect(RangeNotSatisfiableError.status).toBe(416)
+    expect(fn).toThrow(new RangeNotSatisfiableError('Bad'))
   })
 })
 
 describe('ExpectationFailedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new ExpectationFailedError('bad')
+      throw new ExpectationFailedError('Bad')
     }
 
-    expect(fn).toThrow(new ExpectationFailedError('bad'))
-    expect(ExpectationFailedError.statusCode).toBe(417)
+    expect(ExpectationFailedError.status).toBe(417)
+    expect(fn).toThrow(new ExpectationFailedError('Bad'))
   })
 })
 
 describe('ImATeapotError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new ImATeapotError('bad')
+      throw new ImATeapotError('Bad')
     }
 
-    expect(fn).toThrow(new ImATeapotError('bad'))
-    expect(ImATeapotError.statusCode).toBe(418)
+    expect(fn).toThrow(new ImATeapotError('Bad'))
+    expect(ImATeapotError.status).toBe(418)
   })
 })
 
 describe('MisdirectedRequestError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new MisdirectedRequestError('bad')
+      throw new MisdirectedRequestError('Bad')
     }
 
-    expect(fn).toThrow(new MisdirectedRequestError('bad'))
-    expect(MisdirectedRequestError.statusCode).toBe(421)
+    expect(MisdirectedRequestError.status).toBe(421)
+    expect(fn).toThrow(new MisdirectedRequestError('Bad'))
   })
 })
 
 describe('UnprocessableContentError', () => {
+  const ERRORS = [
+    {
+      path: 'id',
+      message: 'Invalid',
+    },
+  ]
+
+  test('when "output" is invoked', () => {
+    const err = new UnprocessableContentError(ERRORS)
+
+    expect(err.output).toStrictEqual(ERRORS)
+  })
+
   test('when thrown', () => {
     const fn = () => {
-      throw new UnprocessableContentError('bad')
+      throw new UnprocessableContentError(ERRORS)
     }
 
-    expect(fn).toThrow(new UnprocessableContentError('bad'))
-    expect(UnprocessableContentError.statusCode).toBe(422)
+    expect(UnprocessableContentError.status).toBe(422)
+    expect(fn).toThrow(new UnprocessableContentError(ERRORS))
   })
 })
 
 describe('LockedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new LockedError('bad')
+      throw new LockedError('Bad')
     }
 
-    expect(fn).toThrow(new LockedError('bad'))
-    expect(LockedError.statusCode).toBe(423)
+    expect(LockedError.status).toBe(423)
+    expect(fn).toThrow(new LockedError('Bad'))
   })
 })
 
 describe('FailedDependencyError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new FailedDependencyError('bad')
+      throw new FailedDependencyError('Bad')
     }
 
-    expect(fn).toThrow(new FailedDependencyError('bad'))
-    expect(FailedDependencyError.statusCode).toBe(424)
+    expect(FailedDependencyError.status).toBe(424)
+    expect(fn).toThrow(new FailedDependencyError('Bad'))
   })
 })
 
 describe('TooEarlyError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new TooEarlyError('bad')
+      throw new TooEarlyError('Bad')
     }
 
-    expect(fn).toThrow(new TooEarlyError('bad'))
-    expect(TooEarlyError.statusCode).toBe(425)
+    expect(TooEarlyError.status).toBe(425)
+    expect(fn).toThrow(new TooEarlyError('Bad'))
   })
 })
 
 describe('UpgradeRequiredError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new UpgradeRequiredError('bad')
+      throw new UpgradeRequiredError('Bad')
     }
 
-    expect(fn).toThrow(new UpgradeRequiredError('bad'))
-    expect(UpgradeRequiredError.statusCode).toBe(426)
+    expect(UpgradeRequiredError.status).toBe(426)
+    expect(fn).toThrow(new UpgradeRequiredError('Bad'))
   })
 })
 
 describe('PreconditionRequiredError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new PreconditionRequiredError('bad')
+      throw new PreconditionRequiredError('Bad')
     }
 
-    expect(fn).toThrow(new PreconditionRequiredError('bad'))
-    expect(PreconditionRequiredError.statusCode).toBe(428)
+    expect(PreconditionRequiredError.status).toBe(428)
+    expect(fn).toThrow(new PreconditionRequiredError('Bad'))
   })
 })
 
 describe('TooManyRequestsError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new TooManyRequestsError('bad')
+      throw new TooManyRequestsError('Bad')
     }
 
-    expect(fn).toThrow(new TooManyRequestsError('bad'))
-    expect(TooManyRequestsError.statusCode).toBe(429)
+    expect(TooManyRequestsError.status).toBe(429)
+    expect(fn).toThrow(new TooManyRequestsError('Bad'))
   })
 })
 
 describe('RequestHeaderFieldsTooLargeError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new RequestHeaderFieldsTooLargeError('bad')
+      throw new RequestHeaderFieldsTooLargeError('Bad')
     }
 
-    expect(fn).toThrow(new RequestHeaderFieldsTooLargeError('bad'))
-    expect(RequestHeaderFieldsTooLargeError.statusCode).toBe(431)
+    expect(RequestHeaderFieldsTooLargeError.status).toBe(431)
+    expect(fn).toThrow(new RequestHeaderFieldsTooLargeError('Bad'))
   })
 })
 
 describe('UnavailableForLegalReasonsError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new UnavailableForLegalReasonsError('bad')
+      throw new UnavailableForLegalReasonsError('Bad')
     }
 
-    expect(fn).toThrow(new UnavailableForLegalReasonsError('bad'))
-    expect(UnavailableForLegalReasonsError.statusCode).toBe(451)
+    expect(UnavailableForLegalReasonsError.status).toBe(451)
+    expect(fn).toThrow(new UnavailableForLegalReasonsError('Bad'))
   })
 })
 
@@ -378,120 +414,120 @@ describe('UnavailableForLegalReasonsError', () => {
 describe('InternalServerError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new InternalServerError('bad')
+      throw new InternalServerError('Bad')
     }
 
-    expect(fn).toThrow(new InternalServerError('bad'))
-    expect(InternalServerError.statusCode).toBe(500)
+    expect(InternalServerError.status).toBe(500)
+    expect(fn).toThrow(new InternalServerError('Bad'))
   })
 })
 
 describe('NotImplementedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new NotImplementedError('bad')
+      throw new NotImplementedError('Bad')
     }
 
-    expect(fn).toThrow(new NotImplementedError('bad'))
-    expect(NotImplementedError.statusCode).toBe(501)
+    expect(NotImplementedError.status).toBe(501)
+    expect(fn).toThrow(new NotImplementedError('Bad'))
   })
 })
 
 describe('BadGatewayError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new BadGatewayError('bad')
+      throw new BadGatewayError('Bad')
     }
 
-    expect(fn).toThrow(new BadGatewayError('bad'))
-    expect(BadGatewayError.statusCode).toBe(502)
+    expect(BadGatewayError.status).toBe(502)
+    expect(fn).toThrow(new BadGatewayError('Bad'))
   })
 })
 
 describe('ServiceUnavailableError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new ServiceUnavailableError('bad')
+      throw new ServiceUnavailableError('Bad')
     }
 
-    expect(fn).toThrow(new ServiceUnavailableError('bad'))
-    expect(ServiceUnavailableError.statusCode).toBe(503)
+    expect(ServiceUnavailableError.status).toBe(503)
+    expect(fn).toThrow(new ServiceUnavailableError('Bad'))
   })
 })
 
 describe('GatewayTimeoutError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new GatewayTimeoutError('bad')
+      throw new GatewayTimeoutError('Bad')
     }
 
-    expect(fn).toThrow(new GatewayTimeoutError('bad'))
-    expect(GatewayTimeoutError.statusCode).toBe(504)
+    expect(GatewayTimeoutError.status).toBe(504)
+    expect(fn).toThrow(new GatewayTimeoutError('Bad'))
   })
 })
 
 describe('HTTPVersionNotSupportedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new HTTPVersionNotSupportedError('bad')
+      throw new HTTPVersionNotSupportedError('Bad')
     }
 
-    expect(fn).toThrow(new HTTPVersionNotSupportedError('bad'))
-    expect(HTTPVersionNotSupportedError.statusCode).toBe(505)
+    expect(HTTPVersionNotSupportedError.status).toBe(505)
+    expect(fn).toThrow(new HTTPVersionNotSupportedError('Bad'))
   })
 })
 
 describe('VariantAlsoNegotiatesError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new VariantAlsoNegotiatesError('bad')
+      throw new VariantAlsoNegotiatesError('Bad')
     }
 
-    expect(fn).toThrow(new VariantAlsoNegotiatesError('bad'))
-    expect(VariantAlsoNegotiatesError.statusCode).toBe(506)
+    expect(VariantAlsoNegotiatesError.status).toBe(506)
+    expect(fn).toThrow(new VariantAlsoNegotiatesError('Bad'))
   })
 })
 
 describe('InsufficientStorageError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new InsufficientStorageError('bad')
+      throw new InsufficientStorageError('Bad')
     }
 
-    expect(fn).toThrow(new InsufficientStorageError('bad'))
-    expect(InsufficientStorageError.statusCode).toBe(507)
+    expect(InsufficientStorageError.status).toBe(507)
+    expect(fn).toThrow(new InsufficientStorageError('Bad'))
   })
 })
 
 describe('LoopDetectedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new LoopDetectedError('bad')
+      throw new LoopDetectedError('Bad')
     }
 
-    expect(fn).toThrow(new LoopDetectedError('bad'))
-    expect(LoopDetectedError.statusCode).toBe(508)
+    expect(LoopDetectedError.status).toBe(508)
+    expect(fn).toThrow(new LoopDetectedError('Bad'))
   })
 })
 
 describe('NotExtendedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new NotExtendedError('bad')
+      throw new NotExtendedError('Bad')
     }
 
-    expect(fn).toThrow(new NotExtendedError('bad'))
-    expect(NotExtendedError.statusCode).toBe(510)
+    expect(NotExtendedError.status).toBe(510)
+    expect(fn).toThrow(new NotExtendedError('Bad'))
   })
 })
 
 describe('NetworkAuthenticationRequiredError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new NetworkAuthenticationRequiredError('bad')
+      throw new NetworkAuthenticationRequiredError('Bad')
     }
 
-    expect(fn).toThrow(new NetworkAuthenticationRequiredError('bad'))
-    expect(NetworkAuthenticationRequiredError.statusCode).toBe(511)
+    expect(NetworkAuthenticationRequiredError.status).toBe(511)
+    expect(fn).toThrow(new NetworkAuthenticationRequiredError('Bad'))
   })
 })

@@ -1,25 +1,32 @@
-import axios from 'axios'
-import { getPortCounter } from '../../_helpers'
-import { createApp } from '../../../src'
-
-import {
-  test,
-  expect,
-} from 'bun:test'
+import { test, expect } from 'bun:test'
+import { FMT, Context } from '../../_helpers'
 
 test('when sending a querystring', async () => {
-  const port = getPortCounter()
-  const app = await createApp(port, import.meta.dirname)
+  const ctx = await Context.create(import.meta.dirname)
 
-  const res = await axios.get(`http://localhost:${port}`, {
-    validateStatus: () => true,
-    params: {
+  const res = await ctx.makeRequest('/', FMT.TEXT, {
+    query: {
       userId: 123,
     },
   })
 
-  await app.server.stop()
+  await ctx.shutdown()
 
   expect(res.status).toBe(200)
-  expect(res.data).toBe('Hello world')
+  expect(res.body).toBe('Hello world')
+})
+
+test('when sending a socket request with a query', async () => {
+  const ctx = await Context.create(import.meta.dirname)
+
+  const res = await ctx.sendMessage('GET', '/', {
+    query: {
+      userId: 123,
+    },
+  })
+
+  await ctx.shutdown()
+
+  expect(res.status).toBe(200)
+  expect(res.body).toBe('Hello world')
 })

@@ -1,9 +1,4 @@
-import {
-  describe,
-  test,
-  expect,
-  mock,
-} from 'bun:test'
+import { describe, test, expect, mock } from 'bun:test'
 
 import {
   parseJson,
@@ -204,10 +199,12 @@ describe('validateSchema()', () => {
       body: {},
     }, next)
 
-    expect(fn).toThrow(new UnprocessableContentError([{
-      path: 'headers.userId',
-      message: 'must match format "uuid"',
-    }]))
+    expect(fn).toThrow(new UnprocessableContentError([
+      {
+        path: 'headers.userId',
+        message: 'must match format "uuid"',
+      },
+    ]))
 
     expect(next).not.toHaveBeenCalled()
   })
@@ -250,10 +247,12 @@ describe('validateSchema()', () => {
       body: {},
     }, next)
 
-    expect(fn).toThrow(new UnprocessableContentError([{
-      path: 'headers.userId',
-      message: `must match pattern "${PATTERN_UUID}"`,
-    }]))
+    expect(fn).toThrow(new UnprocessableContentError([
+      {
+        path: 'headers.userId',
+        message: `must match pattern "${PATTERN_UUID}"`,
+      },
+    ]))
 
     expect(next).not.toHaveBeenCalled()
   })
@@ -296,10 +295,12 @@ describe('validateSchema()', () => {
       body: {},
     }, next)
 
-    expect(fn).toThrow(new UnprocessableContentError([{
-      path: 'params.userId',
-      message: 'must match format "uuid"',
-    }]))
+    expect(fn).toThrow(new UnprocessableContentError([
+      {
+        path: 'params.userId',
+        message: 'must match format "uuid"',
+      },
+    ]))
 
     expect(next).not.toHaveBeenCalled()
   })
@@ -342,10 +343,12 @@ describe('validateSchema()', () => {
       body: {},
     }, next)
 
-    expect(fn).toThrow(new UnprocessableContentError([{
-      path: 'params.userId',
-      message: `must match pattern "${PATTERN_UUID}"`,
-    }]))
+    expect(fn).toThrow(new UnprocessableContentError([
+      {
+        path: 'params.userId',
+        message: `must match pattern "${PATTERN_UUID}"`,
+      },
+    ]))
 
     expect(next).not.toHaveBeenCalled()
   })
@@ -388,10 +391,12 @@ describe('validateSchema()', () => {
       body: {},
     }, next)
 
-    expect(fn).toThrow(new UnprocessableContentError([{
-      path: 'query.userId',
-      message: 'must match format "uuid"',
-    }]))
+    expect(fn).toThrow(new UnprocessableContentError([
+      {
+        path: 'query.userId',
+        message: 'must match format "uuid"',
+      },
+    ]))
 
     expect(next).not.toHaveBeenCalled()
   })
@@ -434,10 +439,12 @@ describe('validateSchema()', () => {
       body: {},
     }, next)
 
-    expect(fn).toThrow(new UnprocessableContentError([{
-      path: 'query.userId',
-      message: `must match pattern "${PATTERN_UUID}"`,
-    }]))
+    expect(fn).toThrow(new UnprocessableContentError([
+      {
+        path: 'query.userId',
+        message: `must match pattern "${PATTERN_UUID}"`,
+      },
+    ]))
 
     expect(next).not.toHaveBeenCalled()
   })

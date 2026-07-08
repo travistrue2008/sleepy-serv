@@ -1,15 +1,9 @@
-import { getPortCounter } from '../../_helpers'
-import { createApp } from '../../../src'
-
-import {
-  test,
-  expect,
-} from 'bun:test'
+import { test, expect } from 'bun:test'
+import { Context } from '../../_helpers'
 
 /* TODO: unskip after adding whitelist support */
 test.skip('when an unsupported file is found in the /api directory', async () => {
-  const port = getPortCounter()
-  const fn = () => createApp(port, import.meta.dirname)
+  const fn = () => Context.create(import.meta.dirname)
 
   await expect(fn).toThrow(new Error(`
 Directory contains illegal files:

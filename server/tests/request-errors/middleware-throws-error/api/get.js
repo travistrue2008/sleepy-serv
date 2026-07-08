@@ -2,7 +2,7 @@
 
 export default [
   _req => {
-    throw new Error('bad')
+    throw new Error('Bad')
   },
   /* Unreachable. This is here to make the previous function middleware */
   /* istanbul ignore next */

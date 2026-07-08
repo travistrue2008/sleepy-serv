@@ -8,4 +8,7 @@ coveragePathIgnorePatterns = [
   ".github/**",
   "client/tests/**",
   "server/tests/**",
+  'test-setup.js',
 ]
+
+preload = ["./test-setup.js"]

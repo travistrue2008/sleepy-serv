@@ -1,6 +1,8 @@
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 
+import { formatError } from './utils'
+
 import {
   BadRequestError,
   UnsupportedMediaTypeError,
@@ -14,17 +16,7 @@ const SCHEMA_EMPTY = {
 
 let _customFormats = {}
 
-function formatError (prefix, input) {
-  const fixedPath = input.instancePath || '/'
-  const suffixPath = fixedPath.replace(/\//g, '.').replace('.', '')
-
-  return {
-    path: [prefix, suffixPath].filter(item => item).join('.'),
-    message: input.message,
-  }
-}
-
-function buildFormatterSchema (schema) {
+function buildFormatterSchema(schema) {
   if (!schema) {
     return SCHEMA_EMPTY
   }
@@ -32,9 +24,9 @@ function buildFormatterSchema (schema) {
   const properties = Object
     .entries(schema)
     .map(([key, config]) => [key, {
-        type: 'string',
-        [config.type]: config.value,
-      },
+      type: 'string',
+      [config.type]: config.value,
+    },
     ])
     .reduce((accum, [key, value]) => ({
       ...accum,
@@ -47,7 +39,7 @@ function buildFormatterSchema (schema) {
   }
 }
 
-export async function parseJson (req, res, next) {
+export async function parseJson(req, res, next) {
   const contentType = req.headers.get('content-type')
 
   if (!contentType) {
@@ -69,11 +61,11 @@ export async function parseJson (req, res, next) {
   return next()
 }
 
-export function setValidationFormats (formats) {
+export function setValidationFormats(formats) {
   _customFormats = formats
 }
 
-export function validateSchema (schemas) {
+export function validateSchema(schemas) {
   return function (req, res, next) {
     const formattedSchemas = {
       headers: buildFormatterSchema(schemas.headers),

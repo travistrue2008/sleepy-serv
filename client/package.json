@@ -12,5 +12,8 @@
     "websocket",
     "www"
   ],
-  "scripts": {}
+  "scripts": {},
+  "dependencies": {
+    "uuid": "^11.1.0"
+  }
 }

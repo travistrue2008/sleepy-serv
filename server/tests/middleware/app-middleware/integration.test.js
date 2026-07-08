@@ -1,16 +1,8 @@
-import axios from 'axios'
-import { getPortCounter } from '../../_helpers'
-import { createApp } from '../../../src'
-
-import {
-  test,
-  expect,
-} from 'bun:test'
+import { test, expect } from 'bun:test'
+import { FMT, Context } from '../../_helpers'
 
 test('when app-level middleware is defined', async () => {
-  const port = getPortCounter()
-
-  const app = await createApp(port, import.meta.dirname, {
+  const ctx = await Context.create(import.meta.dirname, {
     middleware: [
       (_req, res, next) => {
         res.output = 'root'
@@ -20,12 +12,29 @@ test('when app-level middleware is defined', async () => {
     ],
   })
 
-  const res = await axios.get(`http://localhost:${port}/users`, {
-    validateStatus: () => true,
-  })
+  const res = await ctx.makeRequest('/users', FMT.TEXT)
 
-  await app.server.stop()
+  await ctx.shutdown()
 
   expect(res.status).toBe(200)
-  expect(res.data).toBe('root')
+  expect(res.body).toBe('root')
+})
+
+test('when app-level socket middleware is defined', async () => {
+  const ctx = await Context.create(import.meta.dirname, {
+    middleware: [
+      (_req, res, next) => {
+        res.output = 'root'
+
+        return next()
+      },
+    ],
+  })
+
+  const res = await ctx.sendMessage('GET', '/users')
+
+  await ctx.shutdown()
+
+  expect(res.status).toBe(200)
+  expect(res.body).toBe('root')
 })

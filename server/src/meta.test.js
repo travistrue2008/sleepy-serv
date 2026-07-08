@@ -1,9 +1,4 @@
-import {
-  describe,
-  test,
-  expect,
-  mock,
-} from 'bun:test'
+import { describe, test, expect, mock } from 'bun:test'
 
 import {
   range,
@@ -39,7 +34,7 @@ describe('traverse()', () => {
   }
 
   test('when traversing', () => {
-    const onKeyMock = mock(() => {})
+    const onKeyMock = mock(() => { })
 
     traverse(SCHEMA, onKeyMock)
 
@@ -53,7 +48,7 @@ describe('traverse()', () => {
   })
 
   test('when traversing with root enabled', () => {
-    const onKeyMock = mock(() => {})
+    const onKeyMock = mock(() => { })
 
     traverse(SCHEMA, onKeyMock, true)
 
@@ -142,7 +137,7 @@ describe('deepCopy()', () => {
 })
 
 describe('setValueByPath()', () => {
-  function gen () {
+  function gen() {
     return {
       a: 12,
       b: '123',

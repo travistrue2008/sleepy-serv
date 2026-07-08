@@ -2,14 +2,22 @@ import fs from 'fs'
 import path from 'path'
 import querystring from 'querystring'
 import readline from 'node:readline'
-import { stdin, stdout } from 'node:process'
 
+import * as uuid from 'uuid'
 import * as _middleware from './middleware'
+
+import { stdin, stdout } from 'node:process'
+import { executeMiddlewareChain } from './utils'
 
 import {
   NotFoundError,
   MethodNotAllowedError,
 } from './errors'
+
+import {
+  buildSocketRoutes,
+  createSocketHandler,
+} from './socket'
 
 export * from './errors'
 
@@ -50,25 +58,25 @@ const rl = readline.createInterface({
   output: stdout,
 })
 
-function methodNotAllowedHandler (_req) {
+function methodNotAllowedHandler(_req) {
   throw new MethodNotAllowedError()
 }
 
 /* TODO: add whitelist support */
-function validateDirectoryIllegalFiles (targetPath, filenames) {
-//   const hasInvalidFiles = filenames.some(filename =>
-//     !ALLOWED_FILES_ALL.includes(filename)
-//   )
+function validateDirectoryIllegalFiles(targetPath, filenames) {
+  //   const hasInvalidFiles = filenames.some(filename =>
+  //     !ALLOWED_FILES_ALL.includes(filename)
+  //   )
 
-//   if (hasInvalidFiles) {
-//     throw new TypeError(`
-// Directory contains illegal files:
-// ${targetPath}
-//     `.trim())
-//   }
+  //   if (hasInvalidFiles) {
+  //     throw new TypeError(`
+  // Directory contains illegal files:
+  // ${targetPath}
+  //     `.trim())
+  //   }
 }
 
-function validateLeafDirectory (targetPath, filenames, entries) {
+function validateLeafDirectory(targetPath, filenames, entries) {
   const hasDirectories = entries.some(entry => entry.stat.isDirectory())
 
   if (!hasDirectories) {
@@ -85,7 +93,7 @@ ${targetPath}
   }
 }
 
-function validateDirectory (targetPath, entries) {
+function validateDirectory(targetPath, entries) {
   const filenames = entries
     .filter(entry => entry.stat.isFile())
     .map(entry => path.basename(entry.path))
@@ -94,7 +102,7 @@ function validateDirectory (targetPath, entries) {
   validateLeafDirectory(targetPath, filenames, entries)
 }
 
-function getAllFilePathsRec (targetPath, paths) {
+function getAllFilePathsRec(targetPath, paths) {
   const entries = fs.readdirSync(targetPath)
 
   const children = entries.map(item => {
@@ -109,15 +117,15 @@ function getAllFilePathsRec (targetPath, paths) {
   validateDirectory(targetPath, children)
 
   return children.reduce((accum, curr) => {
-      const result = curr.stat.isDirectory()
-        ? getAllFilePathsRec(curr.path, paths)
-        : [curr.path]
+    const result = curr.stat.isDirectory()
+      ? getAllFilePathsRec(curr.path, paths)
+      : [curr.path]
 
-      return [...accum, ...result]
-    }, [])
+    return [...accum, ...result]
+  }, [])
 }
 
-function getFilteredFilePaths (targetPath, allowedFiles) {
+function getFilteredFilePaths(targetPath, allowedFiles) {
   const allPaths = getAllFilePathsRec(targetPath, [])
 
   return allPaths.filter(item =>
@@ -125,15 +133,15 @@ function getFilteredFilePaths (targetPath, allowedFiles) {
   )
 }
 
-function getMethodFilePaths (targetPath) {
+function getMethodFilePaths(targetPath) {
   return getFilteredFilePaths(targetPath, ALLOWED_FILES_METHODS)
 }
 
-function getMetaFilePaths (targetPath) {
+function getMetaFilePaths(targetPath) {
   return getFilteredFilePaths(targetPath, ALLOWED_FILES_META)
 }
 
-function buildRoutesPaths (rootPath, mountPath) {
+function buildRoutesPaths(rootPath, mountPath) {
   const metadata = getMetaFilePaths(rootPath)
   const paths = getMethodFilePaths(rootPath)
 
@@ -164,7 +172,7 @@ function buildRoutesPaths (rootPath, mountPath) {
   })
 }
 
-async function buildHandlers (route, rootMiddleware) {
+async function buildHandlers(route, rootMiddleware) {
   const module = await import(route.modulePath)
 
   const middlewareModules = await Promise.all(
@@ -195,46 +203,38 @@ ${route.modulePath}
     ...baseChain,
   ]
 
-  const handler = async req => {
-    const query = req.url.split('?')[1]
-    const res = {}
+  const handler = async bunReq => {
+    const query = bunReq.url.split('?')[1]
 
-    req.query = query ? querystring.parse(query) : {}
-
-    const executeMiddleware = async (index) => {
-      const currentMiddleware = middlewareChain[index]
-      const isLastMiddleware = index === middlewareChain.length - 1
-
-      const next = !isLastMiddleware ?
-        () => executeMiddleware(index + 1)
-        : null
-
-      const result = await currentMiddleware(req, res, next)
-
-      if (result instanceof Response) {
-        return result
-      } else {
-        throw new TypeError('Handler does not return a Response object')
-      }
+    const req = {
+      method: bunReq.method,
+      url: bunReq.url,
+      route: new URL(bunReq.url).pathname,
+      headers: bunReq.headers,
+      query: query ? querystring.parse(query) : {},
+      params: bunReq.params ?? {},
+      body: null,
+      json: () => bunReq.json(),
     }
 
-    return executeMiddleware(0)
+    return executeMiddlewareChain(req, {}, middlewareChain)
   }
 
   return {
     method: route.method,
     path: route.path,
     handler,
+    middlewareChain,
   }
 }
 
-function buildModuleRoutes (routePaths, rootMiddleware) {
+function buildModuleRoutes(routePaths, rootMiddleware) {
   return Promise.all(
     routePaths.map(route => buildHandlers(route, rootMiddleware))
   )
 }
 
-function buildServerRoutes (moduleRoutes) {
+function buildServerRoutes(moduleRoutes) {
   return moduleRoutes.reduce((accum, curr) => {
     if (!accum[curr.path]) {
       accum[curr.path] = {
@@ -253,7 +253,7 @@ function buildServerRoutes (moduleRoutes) {
   }, {})
 }
 
-function buildOutputRoutes (moduleRoutes) {
+function buildOutputRoutes(moduleRoutes) {
   return moduleRoutes.reduce((accum, curr) => {
     accum[curr.path] = accum[curr.path] || []
     accum[curr.path].push(curr.method)
@@ -262,7 +262,7 @@ function buildOutputRoutes (moduleRoutes) {
   }, {})
 }
 
-async function buildRoutes (rootPath, opts) {
+async function buildRoutes(rootPath, opts) {
   const basePath = `${rootPath}/api`
   const mountPath = opts.mountPath || ''
   const rootMiddleware = opts.middleware || []
@@ -270,35 +270,48 @@ async function buildRoutes (rootPath, opts) {
   const moduleRoutes = await buildModuleRoutes(routePaths, rootMiddleware)
   const serverRoutes = buildServerRoutes(moduleRoutes)
   const outputRoutes = buildOutputRoutes(moduleRoutes)
+  const socketRoutes = buildSocketRoutes(moduleRoutes)
 
   return {
     server: serverRoutes,
     output: outputRoutes,
+    socket: socketRoutes,
   }
 }
 
-function buildServer (port, routes, opts) {
+function buildServer(port, routes, opts) {
   const hostname = opts.hostname || '0.0.0.0'
 
   return Bun.serve({
     port,
     hostname,
     routes: routes.server,
-    fetch (_req) {
-      throw new NotFoundError()
+    websocket: createSocketHandler(routes.socket),
+    fetch(req, server) {
+      const useSocket = server.upgrade(req, {
+        data: {
+          clientId: uuid.v4(),
+        },
+      })
+
+      if (!useSocket) {
+        throw new NotFoundError()
+      }
     },
-    error (err) {
+    error(err) {
       console.error(err)
 
-      return new Response(err.message, {
-        status: err.constructor.statusCode || 500,
-      })
+      const status = err.constructor.status ?? 500
+
+      return err.output !== undefined
+        ? Response.json(err.output, { status })
+        : new Response(err.message, { status })
     },
   })
 }
 
-function processIO (port, server, opts) {
-  const onClose = opts.onClose || (() => {})
+function processIO(port, server, opts) {
+  const onClose = opts.onClose || (() => { })
 
   console.info(`Running on port: ${port}`)
   console.info('')
@@ -313,7 +326,7 @@ function processIO (port, server, opts) {
   })
 }
 
-export async function createApp (port, rootPath, opts = {}) {
+export async function createApp(port, rootPath, opts = {}) {
   const routes = await buildRoutes(rootPath, opts)
   const server = buildServer(port, routes, opts)
 

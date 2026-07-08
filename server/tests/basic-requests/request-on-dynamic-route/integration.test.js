@@ -1,18 +1,22 @@
-import axios from 'axios'
-import { getPortCounter } from '../../_helpers'
-import { createApp } from '../../../src'
-
-import {
-  test,
-  expect,
-} from 'bun:test'
+import { test, expect } from 'bun:test'
+import { FMT, Context } from '../../_helpers'
 
 test('when making a request on a dynamic route', async () => {
-  const port = getPortCounter()
-  const app = await createApp(port, import.meta.dirname)
-  const res = await axios.get(`http://localhost:${port}/users/123`)
+  const ctx = await Context.create(import.meta.dirname)
+  const res = await ctx.makeRequest('/users/123', FMT.TEXT)
 
-  await app.server.stop()
+  await ctx.shutdown()
 
-  expect(res.data).toBe('Fetching user: 123')
+  expect(res.status).toBe(200)
+  expect(res.body).toBe('Fetching user: 123')
+})
+
+test('when making a socket request on a dynamic route', async () => {
+  const ctx = await Context.create(import.meta.dirname)
+  const res = await ctx.sendMessage('GET', '/users/123')
+
+  await ctx.shutdown()
+
+  expect(res.status).toBe(200)
+  expect(res.body).toBe('Fetching user: 123')
 })

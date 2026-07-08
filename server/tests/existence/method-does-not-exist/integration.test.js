@@ -1,21 +1,23 @@
-import axios from 'axios'
-import { getPortCounter } from '../../_helpers'
-import { createApp } from '../../../src'
-
-import {
-  test,
-  expect,
-} from 'bun:test'
+import { test, expect } from 'bun:test'
+import { MethodNotAllowedError } from '../../../src/errors'
+import { FMT, Context } from '../../_helpers'
 
 test('when invoking a method on a resource that does not exist', async () => {
-  const port = getPortCounter()
-  const app = await createApp(port, import.meta.dirname)
+  const ctx = await Context.create(import.meta.dirname)
+  const res = await ctx.makeRequest('/users', FMT.JSON)
 
-  const res = await axios.get(`http://localhost:${port}/users`, {
-    validateStatus: () => true,
-  })
+  await ctx.shutdown()
 
-  await app.server.stop()
+  expect(res.status).toBe(MethodNotAllowedError.status)
+  expect(res.body).toBe(null)
+})
 
-  expect(res.status).toBe(405)
+test('when invoking a socket method on a resource that does not exist', async () => {
+  const ctx = await Context.create(import.meta.dirname)
+  const res = await ctx.sendMessage('GET', '/users')
+
+  await ctx.shutdown()
+
+  expect(res.status).toBe(MethodNotAllowedError.status)
+  expect(res.body).toBe(null)
 })

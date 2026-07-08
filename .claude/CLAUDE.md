@@ -57,7 +57,7 @@ CI (`.github/workflows/ci.yml`) runs `bun install --frozen-lockfile` then `bun t
 **Key mental models** (these differ from Express and aren't obvious from a single file):
 - **`res` is an accumulator, not a response.** Handlers receive `(req, res, next)`; `res` is a plain `{}` that middleware write to in order to pass data down the chain. The actual HTTP response is the `Response` object a handler **returns** — returning a non-`Response` throws `TypeError`.
 - **Middleware order:** app-level (from `createApp` opts) → directory-level (`meta.js` `export const middleware`, root→leaf) → route-level (the handler array). Directory middleware applies by **path-prefix matching**: a `meta.js` applies to a module only if its directory is a string prefix of the module path, sorted shortest-first (`buildRoutesPaths`).
-- **Errors map to HTTP status via a `static statusCode`** on the error class, read off `err.constructor` in the `Bun.serve` `error` hook. `server/src/errors.js` defines a `RequestError` base plus one subclass per 4xx/5xx code. Throwing e.g. `NotFoundError` auto-responds 404; any non-`RequestError` becomes 500.
+- **Errors map to HTTP status via a `static status`** on the error class, read off `err.constructor` in the `Bun.serve` `error` hook. `server/src/errors.js` defines a `RequestError` base plus one subclass per 4xx/5xx code. Throwing e.g. `NotFoundError` auto-responds 404; any non-`RequestError` becomes 500.
 - **404 vs 405 live in two places:** every known path is pre-seeded with all six verbs pointing at a 405 handler (`buildServerRoutes`), while the server-level `fetch` fallback throws `NotFoundError` for unknown paths (`buildServer`).
 - **Built-in middleware** (`server/src/middleware.js`): `parseJson`; `validateSchema(schemas)` (AJV — validates `headers`/`params`/`query` via a simplified string-format schema and `body` via full JSON Schema); `setValidationFormats(formats)` to register custom named regex formats.
 
@@ -70,4 +70,4 @@ CI (`.github/workflows/ci.yml`) runs `bun install --frozen-lockfile` then `bun t
 
 Two styles, both under `server/` and run with `bun test`:
 - **Unit tests** colocated in `server/src/`: `errors.test.js`, `meta.test.js`, `middleware.test.js`.
-- **Integration tests** in `server/tests/<category>/<case>/integration.test.js`, each with a real `api/` fixture that the test boots via `createApp` and hits with `axios`. Get a unique port from `getPortCounter()` in `server/tests/_helpers.js` (increments from 3000) so parallel tests don't collide.
+- **Integration tests** in `server/tests/<category>/<case>/integration.test.js`, each with a real `api/` fixture that the test boots via `createApp` and hits with `fetch`. Get a unique port from `getPortCounter()` in `server/tests/_helpers.js` (increments from 3000) so parallel tests don't collide.

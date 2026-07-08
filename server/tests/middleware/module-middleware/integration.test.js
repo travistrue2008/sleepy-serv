@@ -1,22 +1,22 @@
-import axios from 'axios'
-import { getPortCounter } from '../../_helpers'
-import { createApp } from '../../../src'
-
-import {
-  test,
-  expect,
-} from 'bun:test'
+import { test, expect } from 'bun:test'
+import { FMT, Context } from '../../_helpers'
 
 test('when only module-level middleware is defined', async () => {
-  const port = getPortCounter()
-  const app = await createApp(port, import.meta.dirname)
+  const ctx = await Context.create(import.meta.dirname)
+  const res = await ctx.makeRequest('/users', FMT.TEXT)
 
-  const res = await axios.get(`http://localhost:${port}/users`, {
-    validateStatus: () => true,
-  })
-
-  await app.server.stop()
+  await ctx.shutdown()
 
   expect(res.status).toBe(200)
-  expect(res.data).toBe('module')
+  expect(res.body).toBe('module')
+})
+
+test('when only module-level socket middleware is defined', async () => {
+  const ctx = await Context.create(import.meta.dirname)
+  const res = await ctx.sendMessage('GET', '/users')
+
+  await ctx.shutdown()
+
+  expect(res.status).toBe(200)
+  expect(res.body).toBe('module')
 })

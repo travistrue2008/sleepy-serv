@@ -1,15 +1,8 @@
-import axios from 'axios'
-import { getPortCounter } from '../../_helpers'
-import { createApp } from '../../../src'
-
-import {
-  test,
-  expect,
-} from 'bun:test'
+import { test, expect, mock } from 'bun:test'
+import { FMT, Context } from '../../_helpers'
 
 test('when all levels of middleware are defined', async () => {
-  const port = getPortCounter()
-  const app = await createApp(port, import.meta.dirname, {
+  const ctx = await Context.create(import.meta.dirname, {
     middleware: [
       (_req, res, next) => {
         res.list = ['root']
@@ -19,12 +12,29 @@ test('when all levels of middleware are defined', async () => {
     ],
   })
 
-  const res = await axios.get(`http://localhost:${port}/users`, {
-    validateStatus: () => true,
-  })
+  const res = await ctx.makeRequest('/users', FMT.TEXT)
 
-  await app.server.stop()
+  await ctx.shutdown()
 
   expect(res.status).toBe(200)
-  expect(res.data).toBe('root|parent-meta|sibling-meta|module')
+  expect(res.body).toBe('root|parent-meta|sibling-meta|module')
+})
+
+test('when all levels of socket middleware are defined', async () => {
+  const ctx = await Context.create(import.meta.dirname, {
+    middleware: [
+      (_req, res, next) => {
+        res.list = ['root']
+
+        return next()
+      },
+    ],
+  })
+
+  const res = await ctx.sendMessage('GET', '/users')
+
+  await ctx.shutdown()
+
+  expect(res.status).toBe(200)
+  expect(res.body).toBe('root|parent-meta|sibling-meta|module')
 })

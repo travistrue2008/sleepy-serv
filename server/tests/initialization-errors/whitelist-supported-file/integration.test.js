@@ -1,14 +1,8 @@
-import { getPortCounter } from '../../_helpers'
-import { createApp } from '../../../src'
-
-import {
-  test,
-  expect,
-} from 'bun:test'
+import { test, expect } from 'bun:test'
+import { Context } from '../../_helpers'
 
 test('when an unsupported file is found in the /api directory', async () => {
-  const port = getPortCounter()
-  const fn = () => createApp(port, import.meta.dirname, {
+  const fn = () => Context.create(import.meta.dirname, {
     whitelist: ['**/*.util.js'],
   })
 
