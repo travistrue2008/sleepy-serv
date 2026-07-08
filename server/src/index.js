@@ -41,10 +41,10 @@ const ALLOWED_FILES_METHODS = [
   'delete.ts',
 ]
 
-const ALLOWED_FILES_ALL = [
-  ...ALLOWED_FILES_META,
-  ...ALLOWED_FILES_METHODS,
-]
+// const ALLOWED_FILES_ALL = [
+//   ...ALLOWED_FILES_META,
+//   ...ALLOWED_FILES_METHODS,
+// ]
 
 /* istanbul ignore if */
 if (process.stdin.isTTY) {
