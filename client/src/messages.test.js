@@ -1,73 +1,82 @@
-import { test, expect } from 'bun:test'
+import * as uuid from 'uuid'
+import { describe, test, expect } from 'bun:test'
+import { TYPES, createMessage } from './messages'
 
-import {
-  TYPES,
-  createBaseMessage,
-  createRequestMessage,
-} from './messages'
+const ID = uuid.v4()
+const STATUS = 200
+const METHOD = 'GET'
+const TIMESTAMP = '2000-01-01T00:00:00.000Z'
+const HEADERS = new Headers({ a: 1 })
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+describe('createMessage()', () => {
+  test('when NO "opts" are provided', () => {
+    const res = createMessage(TYPES.RESPONSE)
 
-test('when creating a base message', () => {
-  const message = createBaseMessage()
-
-  expect(message.id).toMatch(UUID_REGEX)
-  expect(new Date(message.timestamp).toISOString()).toBe(message.timestamp)
-  expect(message.headers).toEqual({})
-  expect(message.body).toBeNull()
-})
-
-test('when creating base messages, each gets a unique id', () => {
-  const a = createBaseMessage()
-  const b = createBaseMessage()
-
-  expect(a.id).not.toBe(b.id)
-})
-
-test('when creating a request message', () => {
-  const message = createRequestMessage({
-    method: 'POST',
-    route: '/game',
-    query: { round: '3' },
-    headers: { authorization: 'token' },
-    body: { name: 'trivia' },
+    expect(res).toStrictEqual({
+      id: res.id,
+      type: TYPES.RESPONSE,
+      timestamp: TIMESTAMP,
+      headers: new Headers(),
+      body: null,
+    })
   })
 
-  expect(message.type).toBe(TYPES.REQUEST)
-  expect(message.type).toBe('request')
-  expect(message.id).toMatch(UUID_REGEX)
-  expect(new Date(message.timestamp).toISOString()).toBe(message.timestamp)
-  expect(message.method).toBe('POST')
-  expect(message.route).toBe('/game')
-  expect(message.query).toEqual({ round: '3' })
-  expect(message.headers).toEqual({ authorization: 'token' })
-  expect(message.body).toEqual({ name: 'trivia' })
-})
+  test('when "opts.id" is provided', () => {
+    const res = createMessage(TYPES.RESPONSE, { id: ID })
 
-test('when creating a request message without a query, it defaults to a non-null object', () => {
-  const message = createRequestMessage({
-    method: 'GET',
-    route: '/users',
+    expect(res).toStrictEqual({
+      id: ID,
+      type: TYPES.RESPONSE,
+      timestamp: TIMESTAMP,
+      headers: new Headers(),
+      body: null,
+    })
   })
 
-  expect(message.query).toEqual({})
-  expect(message.query).not.toBeNull()
-})
+  test('when "opts.headers" is provided', () => {
+    const res = createMessage(TYPES.RESPONSE, {
+      headers: HEADERS,
+    })
 
-test('when creating a request message without a body, it defaults to null', () => {
-  const message = createRequestMessage({
-    method: 'GET',
-    route: '/users',
+    expect(res).toStrictEqual({
+      id: res.id,
+      type: TYPES.RESPONSE,
+      timestamp: TIMESTAMP,
+      headers: HEADERS,
+      body: null,
+    })
   })
 
-  expect(message.body).toBeNull()
-})
+  test('when "opts.body" is provided', () => {
+    const BODY = { a: 1 }
 
-test('when creating a request message without headers, it defaults to an empty object', () => {
-  const message = createRequestMessage({
-    method: 'GET',
-    route: '/users',
+    const res = createMessage(TYPES.RESPONSE, {
+      body: BODY,
+    })
+
+    expect(res).toStrictEqual({
+      id: res.id,
+      type: TYPES.RESPONSE,
+      timestamp: TIMESTAMP,
+      headers: new Headers(),
+      body: BODY,
+    })
   })
 
-  expect(message.headers).toEqual({})
+  test('when extra "opts" are provided', () => {
+    const res = createMessage(TYPES.RESPONSE, {
+      method: METHOD,
+      status: STATUS,
+    })
+
+    expect(res).toStrictEqual({
+      id: res.id,
+      type: TYPES.RESPONSE,
+      timestamp: TIMESTAMP,
+      method: METHOD,
+      status: STATUS,
+      headers: new Headers(),
+      body: null,
+    })
+  })
 })

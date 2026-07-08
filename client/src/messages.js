@@ -5,24 +5,13 @@ export const TYPES = {
   RESPONSE: 'response',
 }
 
-export function createBaseMessage() {
+export function createMessage(type, opts = {}) {
   return {
-    type: '',
-    id: uuid.v4(),
+    ...opts,
+    type,
+    id: opts.id ?? uuid.v4(),
     timestamp: new Date().toISOString(),
-    headers: {},
-    body: null,
-  }
-}
-
-export function createRequestMessage({ method, route, query, headers, body } = {}) {
-  return {
-    ...createBaseMessage(),
-    type: TYPES.REQUEST,
-    method,
-    route,
-    query: query ?? {},
-    headers: headers ?? {},
-    body: body ?? null,
+    headers: opts.headers ?? new Headers(),
+    body: opts.body ?? null,
   }
 }

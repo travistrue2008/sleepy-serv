@@ -371,7 +371,7 @@ describe('createSocketHandler()', () => {
       })
     })
 
-    test('when succeeds', async () => {
+    test('when successful', async () => {
       const routes = [
         {
           method: METHOD,
