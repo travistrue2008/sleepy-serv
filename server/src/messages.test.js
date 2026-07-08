@@ -91,6 +91,7 @@ describe('validateRequest()', () => {
     route: ROUTE,
     timestamp: TIMESTAMP,
     headers: new Headers(),
+    query: {},
     body: null,
   }
 
@@ -271,6 +272,34 @@ describe('validateRequest()', () => {
     expect(fn).toThrow(new UnprocessableContentError([
       {
         path: 'headers',
+        message: 'must be object',
+      },
+    ]))
+  })
+
+  test('when the "query" field is missing', () => {
+    const fn = () => validateRequest({
+      ...MESSAGE_VALID,
+      query: undefined,
+    })
+
+    expect(fn).toThrow(new UnprocessableContentError([
+      {
+        path: '',
+        message: `must have required property 'query'`,
+      },
+    ]))
+  })
+
+  test('when the "query" field is invalid (null)', () => {
+    const fn = () => validateRequest({
+      ...MESSAGE_VALID,
+      query: null,
+    })
+
+    expect(fn).toThrow(new UnprocessableContentError([
+      {
+        path: 'query',
         message: 'must be object',
       },
     ]))

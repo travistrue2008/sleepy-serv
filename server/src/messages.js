@@ -42,6 +42,9 @@ const SCHEMA_REQUEST = {
     headers: {
       type: 'object',
     },
+    query: {
+      type: 'object',
+    },
     body: {
       type: ['null', 'object', 'array'],
     },
@@ -53,6 +56,7 @@ const SCHEMA_REQUEST = {
     'route',
     'timestamp',
     'headers',
+    'query',
     'body',
   ],
 }

@@ -16,6 +16,7 @@ const MESSAGE_VALID = {
   route: ROUTE,
   timestamp: TIMESTAMP,
   headers: {},
+  query: {},
   body: null,
 }
 
@@ -339,6 +340,31 @@ test('when received message "headers" field is invalid (array)', async () => {
       {
         path: 'headers',
         message: 'must be object',
+      },
+    ],
+  })
+})
+
+test('when received message "query" field is missing', async () => {
+  const ctx = await Context.create(import.meta.dirname)
+
+  const res = await ctx.sendMessageRaw({
+    ...MESSAGE_VALID,
+    query: undefined,
+  })
+
+  await ctx.shutdown()
+
+  expect(res).toStrictEqual({
+    id: res.id,
+    type: TYPES.RESPONSE,
+    status: UnprocessableContentError.status,
+    timestamp: TIMESTAMP,
+    headers: {},
+    body: [
+      {
+        path: '',
+        message: `must have required property 'query'`,
       },
     ],
   })

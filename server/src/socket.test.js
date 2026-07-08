@@ -186,6 +186,7 @@ describe('createSocketHandler()', () => {
         route: '/',
         timestamp: TIMESTAMP,
         headers: {},
+        query: {},
         body: null,
       })
 
@@ -227,6 +228,7 @@ describe('createSocketHandler()', () => {
         route: '/users',
         timestamp: TIMESTAMP,
         headers: HEADERS,
+        query: {},
         body: null,
       })
 
@@ -263,6 +265,7 @@ describe('createSocketHandler()', () => {
         route: '/users',
         timestamp: TIMESTAMP,
         headers: HEADERS,
+        query: {},
         body: null,
       })
 
@@ -303,6 +306,7 @@ describe('createSocketHandler()', () => {
         route: '/',
         timestamp: TIMESTAMP,
         headers: HEADERS,
+        query: {},
         body: null,
       })
 
@@ -343,6 +347,7 @@ describe('createSocketHandler()', () => {
         route: '/',
         timestamp: TIMESTAMP,
         headers: HEADERS,
+        query: {},
         body: null,
       })
 
@@ -384,6 +389,7 @@ describe('createSocketHandler()', () => {
         route: '/users',
         timestamp: TIMESTAMP,
         headers: HEADERS,
+        query: {},
         body: null,
       })
 
@@ -422,6 +428,7 @@ describe('createSocketHandler()', () => {
         route: '/users/123',
         timestamp: TIMESTAMP,
         headers: HEADERS,
+        query: {},
         body: null,
       })
 
