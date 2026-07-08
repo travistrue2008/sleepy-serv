@@ -68,6 +68,9 @@ CI (`.github/workflows/ci.yml`) runs `bun install --frozen-lockfile` then `bun t
 
 ## Tests
 
+See `.claude/testing.md` for test-writing conventions (naming, structure, assertions, time
+mocking).
+
 Two styles, both under `server/` and run with `bun test`:
 - **Unit tests** colocated in `server/src/`: `errors.test.js`, `meta.test.js`, `middleware.test.js`.
 - **Integration tests** in `server/tests/<category>/<case>/integration.test.js`, each with a real `api/` fixture that the test boots via `createApp` and hits with `fetch`. Get a unique port from `getPortCounter()` in `server/tests/_helpers.js` (increments from 3000) so parallel tests don't collide.
