@@ -8,7 +8,7 @@ test('when a RequestError sub-type is thrown', async () => {
 
   await ctx.shutdown()
 
-  expect(res.status).toBe(422)
+  expect(res.status).toBe(UnprocessableContentError.status)
 
   expect(res.body).toStrictEqual({
     firstName: 'Required',

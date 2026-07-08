@@ -22,7 +22,7 @@ export class Context {
     ctx.#app = await createApp(ctx.#port, dirname, opts)
 
     if (!opts.hostname) {
-      ctx.#socket = new WebSocket(`ws://localhost:${ctx.#port}/socket`)
+      ctx.#socket = new WebSocket(`ws://localhost:${ctx.#port}/ws`)
 
       await new Promise((resolve, reject) => {
         ctx.#socket.addEventListener('error', event => {

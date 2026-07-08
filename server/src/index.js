@@ -41,6 +41,8 @@ const ALLOWED_FILES_METHODS = [
   'delete.ts',
 ]
 
+const RESERVED_ROUTES = ['/ws']
+
 // const ALLOWED_FILES_ALL = [
 //   ...ALLOWED_FILES_META,
 //   ...ALLOWED_FILES_METHODS,
@@ -93,6 +95,23 @@ ${targetPath}
   }
 }
 
+function validateReservedRoutes(rootPath) {
+  const reservedPaths = RESERVED_ROUTES.map(route =>
+    path.join(rootPath, 'api', route),
+  )
+
+  const foundItems = reservedPaths.filter(item => fs.existsSync(item))
+
+  if (foundItems.length) {
+    throw new TypeError(`
+Illegal directory:
+${foundItems.join('\n')}
+
+This is a reserved directory.
+    `.trim())
+  }
+}
+
 function validateDirectory(targetPath, entries) {
   const filenames = entries
     .filter(entry => entry.stat.isFile())
@@ -100,6 +119,26 @@ function validateDirectory(targetPath, entries) {
 
   validateDirectoryIllegalFiles(targetPath, filenames)
   validateLeafDirectory(targetPath, filenames, entries)
+}
+
+function checkForSocket(req, server, opts) {
+  const url = new URL(req.url)
+
+  if (url.pathname === '/ws') {
+    const useSocket = server.upgrade(req, {
+      data: {
+        clientId: uuid.v4(),
+      },
+    })
+
+    if (!useSocket) {
+      throw new NotFoundError()
+    }
+
+    return true
+  }
+
+  return false
 }
 
 function getAllFilePathsRec(targetPath, paths) {
@@ -263,6 +302,8 @@ function buildOutputRoutes(moduleRoutes) {
 }
 
 async function buildRoutes(rootPath, opts) {
+  validateReservedRoutes(rootPath)
+
   const basePath = `${rootPath}/api`
   const mountPath = opts.mountPath || ''
   const rootMiddleware = opts.middleware || []
@@ -288,13 +329,9 @@ function buildServer(port, routes, opts) {
     routes: routes.server,
     websocket: createSocketHandler(routes.socket),
     fetch(req, server) {
-      const useSocket = server.upgrade(req, {
-        data: {
-          clientId: uuid.v4(),
-        },
-      })
+      const upgraded = checkForSocket(req, server, opts)
 
-      if (!useSocket) {
+      if (!upgraded) {
         throw new NotFoundError()
       }
     },
