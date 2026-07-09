@@ -3,7 +3,7 @@ import { UnprocessableContentError } from 'sleepy-serv'
 import { TYPES } from 'sleepy-socket'
 import { boot } from '../../helpers'
 
-test('when app-level validateSchema middleware rejects the request', async () => {
+test('when app-level validateSchema middleware rejects a request', async () => {
   const { client, shutdown } = await boot(import.meta.dirname)
 
   const res = await client.send({

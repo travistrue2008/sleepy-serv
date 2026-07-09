@@ -15,7 +15,7 @@ export class Context {
   #app = null
   #socket = null
 
-  static async create(dirname, opts = {}) {
+  static async create (dirname, opts = {}) {
     const ctx = new this()
 
     ctx.#port = this.#getOpenPort()
@@ -37,25 +37,25 @@ export class Context {
     return ctx
   }
 
-  static #getOpenPort() {
+  static #getOpenPort () {
     this.#currentOpenPort += 1
 
     return this.#currentOpenPort
   }
 
-  get port() {
+  get port () {
     return this.#port
   }
 
-  get app() {
+  get app () {
     return this.#app
   }
 
-  get socket() {
+  get socket () {
     return this.#socket
   }
 
-  async #parseBody(response, fmt) {
+  async #parseBody (response, fmt) {
     switch (fmt) {
       case FMT.NONE:
         return null
@@ -71,7 +71,7 @@ export class Context {
     }
   }
 
-  async shutdown() {
+  async shutdown () {
     if (this.#socket) {
       await this.#socket.close()
     }
@@ -79,9 +79,9 @@ export class Context {
     await this.#app.server.stop(true)
   }
 
-  async makeRequest(route, fmt, opts = {}) {
+  async makeRequest (route, fmt, opts = {}) {
     const baseUrl = `http://localhost:${this.#port}`
-    const url = new URL(route, baseUrl);
+    const url = new URL(route, baseUrl)
     const search = new URLSearchParams(opts.query ?? {})
 
     url.search = search
@@ -95,7 +95,7 @@ export class Context {
     }
   }
 
-  async sendMessage(method, route, payload = {}) {
+  async sendMessage (method, route, payload = {}) {
     return new Promise(resolve => {
       const message = JSON.stringify({
         id: uuid.v4(),
@@ -119,7 +119,7 @@ export class Context {
     })
   }
 
-  async sendMessageRaw(payload) {
+  async sendMessageRaw (payload) {
     return new Promise(resolve => {
       const handler = event => {
         const data = JSON.parse(event.data)

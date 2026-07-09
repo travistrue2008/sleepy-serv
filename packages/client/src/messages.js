@@ -5,7 +5,7 @@ export const TYPES = {
   RESPONSE: 'response',
 }
 
-export function createMessage(type, opts = {}) {
+export function createMessage (type, opts = {}) {
   return {
     ...opts,
     type,

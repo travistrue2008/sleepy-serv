@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "sleepy-serv-monorepo",
+      "devDependencies": {
+        "eslint": "9.20.1",
+      },
     },
     "packages/client": {
       "name": "sleepy-socket",
@@ -19,9 +22,6 @@
         "ajv": "^8.20.0",
         "ajv-formats": "^3.0.1",
         "uuid": "^11.1.0",
-      },
-      "devDependencies": {
-        "eslint": "9.20.1",
       },
     },
   },

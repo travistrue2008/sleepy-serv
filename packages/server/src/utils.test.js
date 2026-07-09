@@ -291,7 +291,7 @@ describe('executeMiddlewareChain()', () => {
       }),
       mock().mockImplementationOnce((_req, _res, _next) => {
         return new Response('OK')
-      })
+      }),
     ]
 
     const fn = () => executeMiddlewareChain({}, {}, chain)

@@ -1,4 +1,4 @@
-export function formatError(prefix, input) {
+export function formatError (prefix, input) {
   const fixedPath = input.instancePath || '/'
   const suffixPath = fixedPath.replace(/\//g, '.').replace('.', '')
 
@@ -8,7 +8,7 @@ export function formatError(prefix, input) {
   }
 }
 
-export async function executeMiddlewareChain(req, res, middlewareChain) {
+export async function executeMiddlewareChain (req, res, middlewareChain) {
   if (!middlewareChain.length) {
     throw new RangeError('Middleware chain is empty')
   }

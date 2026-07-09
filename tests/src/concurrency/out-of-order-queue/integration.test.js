@@ -11,7 +11,7 @@ import { boot } from '../../helpers'
   Send order is always slow(1), fast(2), mid(3); replies arrive fast, mid, slow.
  */
 
-function issue(client) {
+function issue (client) {
   const order = []
 
   const track = label => () => {
@@ -19,12 +19,24 @@ function issue(client) {
   }
 
   const done = Promise.all([
-    client.send({ method: 'GET', route: '/slow' }).then(track(1)),
-    client.send({ method: 'GET', route: '/fast' }).then(track(2)),
-    client.send({ method: 'GET', route: '/mid' }).then(track(3)),
+    client.send({
+      method: 'GET',
+      route: '/slow',
+    }).then(track(1)),
+    client.send({
+      method: 'GET',
+      route: '/fast',
+    }).then(track(2)),
+    client.send({
+      method: 'GET',
+      route: '/mid',
+    }).then(track(3)),
   ])
 
-  return { order, done }
+  return {
+    order,
+    done,
+  }
 }
 
 test('when multiple calls respond out-of-order (queue = NONE)', async () => {

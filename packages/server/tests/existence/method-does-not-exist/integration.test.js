@@ -12,7 +12,7 @@ test('when invoking a method on a resource that does not exist', async () => {
   expect(res.body).toBe(null)
 })
 
-test('when invoking a socket method on a resource that does not exist', async () => {
+test('when invoking a socket method on a missing resource', async () => {
   const ctx = await Context.create(import.meta.dirname)
   const res = await ctx.sendMessage('GET', '/users')
 

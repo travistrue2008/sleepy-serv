@@ -10,7 +10,7 @@ import { createApp } from 'sleepy-serv'
   timeout); all other opts pass through to createApp.
  */
 
-export async function boot(dirname, opts = {}) {
+export async function boot (dirname, opts = {}) {
   const { client: clientOpts, ...appOpts } = opts
   const app = await createApp(0, dirname, appOpts)
 
@@ -24,7 +24,7 @@ export async function boot(dirname, opts = {}) {
     port: app.server.port,
     client,
     app,
-    async shutdown() {
+    async shutdown () {
       await client.close()
       await app.server.stop(true)
     },

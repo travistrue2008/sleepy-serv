@@ -15,23 +15,23 @@ export default class SleepySocketClient {
   #socket = null
   #dispatchedMessages = []
 
-  get isConnected() {
+  get isConnected () {
     return !!this.#socket
   }
 
-  get queueType() {
+  get queueType () {
     return this.#queueType
   }
 
-  get secure() {
+  get secure () {
     return this.#secure
   }
 
-  get timeout() {
+  get timeout () {
     return this.#timeout
   }
 
-  static async connect(host, port, opts = {}) {
+  static async connect (host, port, opts = {}) {
     if (opts.queue && !Object.values(QUEUE).includes(opts.queue)) {
       throw new RangeError(`Invalid queue type: ${opts.queue}`)
     }
@@ -63,7 +63,10 @@ export default class SleepySocketClient {
         clearTimeout(timer)
         socket.removeEventListener('error', onError)
 
-        socket.addEventListener('message', event => client.#handleMessage(event))
+        socket.addEventListener('message', event => (
+          client.#handleMessage(event)
+        ))
+
         socket.addEventListener('close', event => client.#handleClose(event))
 
         resolve(client)
@@ -73,7 +76,7 @@ export default class SleepySocketClient {
     })
   }
 
-  #handleClose(event) {
+  #handleClose (event) {
     for (const entry of this.#dispatchedMessages) {
       clearTimeout(entry.timer)
       entry.reject(new Error('socket closed'))
@@ -86,7 +89,7 @@ export default class SleepySocketClient {
     }
   }
 
-  #handleMessage(event) {
+  #handleMessage (event) {
     const reply = JSON.parse(event.data)
     const entry = this.#dispatchedMessages.find(item => item.id === reply.id)
 
@@ -102,7 +105,7 @@ export default class SleepySocketClient {
     this.#drain()
   }
 
-  #processNone() {
+  #processNone () {
     this.#dispatchedMessages = this.#dispatchedMessages.filter(entry => {
       if (entry.ready) {
         entry.resolve(entry.response)
@@ -112,7 +115,7 @@ export default class SleepySocketClient {
     })
   }
 
-  #processFifo() {
+  #processFifo () {
     while (this.#dispatchedMessages[0]?.ready) {
       const [entry] = this.#dispatchedMessages.splice(0, 1)
 
@@ -120,7 +123,7 @@ export default class SleepySocketClient {
     }
   }
 
-  #processLifo() {
+  #processLifo () {
     while (this.#dispatchedMessages.at(-1)?.ready) {
       const entry = this.#dispatchedMessages.pop()
 
@@ -128,7 +131,7 @@ export default class SleepySocketClient {
     }
   }
 
-  #drain() {
+  #drain () {
     switch (this.#queueType) {
       case QUEUE.NONE:
         return this.#processNone()
@@ -141,13 +144,13 @@ export default class SleepySocketClient {
     }
   }
 
-  async close() {
+  async close () {
     await this.#socket.close()
 
     this.#socket = null
   }
 
-  async send(data) {
+  async send (data) {
     if (!this.#socket) {
       throw new Error('socket is closed')
     }

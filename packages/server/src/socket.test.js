@@ -12,16 +12,16 @@ import {
 } from './errors'
 
 class TestError extends RequestError {
-  static get status() { return 999 }
+  static get status () { return 999 }
 
-  get output() {
+  get output () {
     return {
       custom: 1,
       message: this.message,
     }
   }
 
-  constructor() {
+  constructor () {
     super('This is a test')
 
     this.name = 'TestError'

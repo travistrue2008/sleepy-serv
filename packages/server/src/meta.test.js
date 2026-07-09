@@ -104,12 +104,19 @@ describe('map()', () => {
   test('when invoked', () => {
     const OBJ_NUMERIC = {
       a: 1,
-      b: { c: 2, d: 3 },
+      b: {
+        c: 2,
+        d: 3,
+      },
       e: [5, 8, 13],
     }
+
     const OBJ_STRING = {
       a: '1',
-      b: { c: '2', d: '3' },
+      b: {
+        c: '2',
+        d: '3',
+      },
       e: ['5', '8', '13'],
     }
 
@@ -137,7 +144,7 @@ describe('deepCopy()', () => {
 })
 
 describe('setValueByPath()', () => {
-  function gen() {
+  function gen () {
     return {
       a: 12,
       b: '123',
@@ -241,7 +248,9 @@ describe('setValueByPath()', () => {
     const schema = gen()
     const fn = () => setValueByPath(schema, ['f', 'g'], 42)
 
-    expect(fn).toThrow(new Error(`undefined is not an object (evaluating 'subObj[key] = value')`))
+    expect(fn).toThrow(new Error(
+      `undefined is not an object (evaluating 'subObj[key] = value')`,
+    ))
   })
 })
 

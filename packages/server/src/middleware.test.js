@@ -91,7 +91,7 @@ describe('parseJson()', () => {
     expect(req.json).toBeCalledWith()
 
     expect(res).toStrictEqual({
-      body: BODY
+      body: BODY,
     })
 
     expect(next).toHaveBeenCalledWith()
@@ -132,7 +132,9 @@ describe('setValidationFormats()', () => {
 
 describe('validateSchema()', () => {
   const UUID = '3e4666bf-d5e5-4aa7-b8ce-cefe41c7568a'
-  const PATTERN_UUID = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$'
+
+  const PATTERN_UUID =
+    '^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$'
 
   const SCHEMA_FORMAT = {
     userId: {
@@ -618,7 +620,7 @@ describe('validateSchema()', () => {
 
     const res = {
       body: {
-        dob: null
+        dob: null,
       },
     }
 

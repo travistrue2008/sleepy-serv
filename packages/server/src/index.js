@@ -21,10 +21,7 @@ import {
 
 export * from './errors'
 
-const ALLOWED_FILES_META = [
-  'meta.js',
-  'meta.ts',
-]
+const ALLOWED_FILES_META = ['meta.js', 'meta.ts']
 
 const ALLOWED_FILES_METHODS = [
   'head.js',
@@ -60,12 +57,12 @@ const rl = readline.createInterface({
   output: stdout,
 })
 
-function methodNotAllowedHandler(_req) {
+function methodNotAllowedHandler (_req) {
   throw new MethodNotAllowedError()
 }
 
 /* TODO: add whitelist support */
-function validateDirectoryIllegalFiles(targetPath, filenames) {
+function validateDirectoryIllegalFiles (targetPath, filenames) {
   //   const hasInvalidFiles = filenames.some(filename =>
   //     !ALLOWED_FILES_ALL.includes(filename)
   //   )
@@ -78,12 +75,12 @@ function validateDirectoryIllegalFiles(targetPath, filenames) {
   //   }
 }
 
-function validateLeafDirectory(targetPath, filenames, entries) {
+function validateLeafDirectory (targetPath, filenames, entries) {
   const hasDirectories = entries.some(entry => entry.stat.isDirectory())
 
   if (!hasDirectories) {
     const hasMethodEntry = filenames.some(filename =>
-      ALLOWED_FILES_METHODS.includes(filename)
+      ALLOWED_FILES_METHODS.includes(filename),
     )
 
     if (!hasMethodEntry) {
@@ -95,7 +92,7 @@ ${targetPath}
   }
 }
 
-function validateReservedRoutes(rootPath) {
+function validateReservedRoutes (rootPath) {
   const reservedPaths = RESERVED_ROUTES.map(route =>
     path.join(rootPath, 'api', route),
   )
@@ -112,7 +109,7 @@ This is a reserved directory.
   }
 }
 
-function validateDirectory(targetPath, entries) {
+function validateDirectory (targetPath, entries) {
   const filenames = entries
     .filter(entry => entry.stat.isFile())
     .map(entry => path.basename(entry.path))
@@ -121,7 +118,7 @@ function validateDirectory(targetPath, entries) {
   validateLeafDirectory(targetPath, filenames, entries)
 }
 
-function checkForSocket(req, server, opts) {
+function checkForSocket (req, server, opts) {
   const url = new URL(req.url)
 
   if (url.pathname === '/ws') {
@@ -141,7 +138,7 @@ function checkForSocket(req, server, opts) {
   return false
 }
 
-function getAllFilePathsRec(targetPath, paths) {
+function getAllFilePathsRec (targetPath, paths) {
   const entries = fs.readdirSync(targetPath)
 
   const children = entries.map(item => {
@@ -164,23 +161,23 @@ function getAllFilePathsRec(targetPath, paths) {
   }, [])
 }
 
-function getFilteredFilePaths(targetPath, allowedFiles) {
+function getFilteredFilePaths (targetPath, allowedFiles) {
   const allPaths = getAllFilePathsRec(targetPath, [])
 
   return allPaths.filter(item =>
-    allowedFiles.includes(path.basename(item))
+    allowedFiles.includes(path.basename(item)),
   )
 }
 
-function getMethodFilePaths(targetPath) {
+function getMethodFilePaths (targetPath) {
   return getFilteredFilePaths(targetPath, ALLOWED_FILES_METHODS)
 }
 
-function getMetaFilePaths(targetPath) {
+function getMetaFilePaths (targetPath) {
   return getFilteredFilePaths(targetPath, ALLOWED_FILES_META)
 }
 
-function buildRoutesPaths(rootPath, mountPath) {
+function buildRoutesPaths (rootPath, mountPath) {
   const metadata = getMetaFilePaths(rootPath)
   const paths = getMethodFilePaths(rootPath)
 
@@ -211,11 +208,11 @@ function buildRoutesPaths(rootPath, mountPath) {
   })
 }
 
-async function buildHandlers(route, rootMiddleware) {
+async function buildHandlers (route, rootMiddleware) {
   const module = await import(route.modulePath)
 
   const middlewareModules = await Promise.all(
-    route.metaMiddlewarePath.map(item => import(item))
+    route.metaMiddlewarePath.map(item => import(item)),
   )
 
   const metaMiddleware = middlewareModules
@@ -267,13 +264,13 @@ ${route.modulePath}
   }
 }
 
-function buildModuleRoutes(routePaths, rootMiddleware) {
+function buildModuleRoutes (routePaths, rootMiddleware) {
   return Promise.all(
-    routePaths.map(route => buildHandlers(route, rootMiddleware))
+    routePaths.map(route => buildHandlers(route, rootMiddleware)),
   )
 }
 
-function buildServerRoutes(moduleRoutes) {
+function buildServerRoutes (moduleRoutes) {
   return moduleRoutes.reduce((accum, curr) => {
     if (!accum[curr.path]) {
       accum[curr.path] = {
@@ -292,7 +289,7 @@ function buildServerRoutes(moduleRoutes) {
   }, {})
 }
 
-function buildOutputRoutes(moduleRoutes) {
+function buildOutputRoutes (moduleRoutes) {
   return moduleRoutes.reduce((accum, curr) => {
     accum[curr.path] = accum[curr.path] || []
     accum[curr.path].push(curr.method)
@@ -301,7 +298,7 @@ function buildOutputRoutes(moduleRoutes) {
   }, {})
 }
 
-async function buildRoutes(rootPath, opts) {
+async function buildRoutes (rootPath, opts) {
   validateReservedRoutes(rootPath)
 
   const basePath = `${rootPath}/api`
@@ -320,7 +317,7 @@ async function buildRoutes(rootPath, opts) {
   }
 }
 
-function buildServer(port, routes, opts) {
+function buildServer (port, routes, opts) {
   const hostname = opts.hostname || '0.0.0.0'
 
   return Bun.serve({
@@ -328,14 +325,14 @@ function buildServer(port, routes, opts) {
     hostname,
     routes: routes.server,
     websocket: createSocketHandler(routes.socket),
-    fetch(req, server) {
+    fetch (req, server) {
       const upgraded = checkForSocket(req, server, opts)
 
       if (!upgraded) {
         throw new NotFoundError()
       }
     },
-    error(err) {
+    error (err) {
       console.error(err)
 
       const status = err.constructor.status ?? 500
@@ -347,7 +344,7 @@ function buildServer(port, routes, opts) {
   })
 }
 
-function processIO(port, server, opts) {
+function processIO (port, server, opts) {
   const onClose = opts.onClose || (() => { })
 
   console.info(`Running on port: ${port}`)
@@ -363,7 +360,7 @@ function processIO(port, server, opts) {
   })
 }
 
-export async function createApp(port, rootPath, opts = {}) {
+export async function createApp (port, rootPath, opts = {}) {
   const routes = await buildRoutes(rootPath, opts)
   const server = buildServer(port, routes, opts)
 

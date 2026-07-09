@@ -5,9 +5,21 @@ test('when several concurrent requests hit the same route', async () => {
   const { client, shutdown } = await boot(import.meta.dirname)
 
   const [a, b, c] = await Promise.all([
-    client.send({ method: 'GET', route: '/echo', query: { n: '1' } }),
-    client.send({ method: 'GET', route: '/echo', query: { n: '2' } }),
-    client.send({ method: 'GET', route: '/echo', query: { n: '3' } }),
+    client.send({
+      method: 'GET',
+      route: '/echo',
+      query: { n: '1' },
+    }),
+    client.send({
+      method: 'GET',
+      route: '/echo',
+      query: { n: '2' },
+    }),
+    client.send({
+      method: 'GET',
+      route: '/echo',
+      query: { n: '3' },
+    }),
   ])
 
   await shutdown()

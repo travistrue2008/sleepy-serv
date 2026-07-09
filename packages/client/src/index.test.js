@@ -25,19 +25,19 @@ class MockWebSocket {
     message: [],
   }
 
-  constructor(url) {
+  constructor (url) {
     this.url = url
 
     MockWebSocket.last = this
   }
 
-  #emit(type, event) {
+  #emit (type, event) {
     for (const listener of [...this.#listeners[type]]) {
       listener(event)
     }
   }
 
-  addEventListener(type, callback, options = {}) {
+  addEventListener (type, callback, options = {}) {
     const listener = options.once
       ? event => {
         this.removeEventListener(type, listener)
@@ -48,47 +48,57 @@ class MockWebSocket {
     this.#listeners[type].push(listener)
   }
 
-  removeEventListener(type, callback) {
-    this.#listeners[type] = this.#listeners[type].filter(item => item !== callback)
+  removeEventListener (type, callback) {
+    this.#listeners[type] = this.#listeners[type].filter(item => (
+      item !== callback
+    ))
   }
 
-  send(data) {
+  send (data) {
     this.sent.push(data)
   }
 
-  close() {
+  close () {
     this.readyState = 3
-    this.#emit('close', { wasClean: true, code: 1000 })
+
+    this.#emit('close', {
+      wasClean: true,
+      code: 1000,
+    })
   }
 
   /* test controls */
 
-  open() {
+  open () {
     this.readyState = 1
     this.#emit('open', {})
   }
 
-  receive(payload) {
+  receive (payload) {
     this.#emit('message', {
       data: JSON.stringify(payload),
     })
   }
 
-  error(event = {}) {
+  error (event = {}) {
     this.#emit('error', event)
   }
 
   /* simulate an abnormal closure (e.g. network drop, server crash) */
 
-  drop(code = 1006) {
+  drop (code = 1006) {
     this.readyState = 3
-    this.#emit('close', { wasClean: false, code })
+
+    this.#emit('close', {
+      wasClean: false,
+      code,
+    })
   }
 }
 
 /* connect the client and immediately drive the socket open */
 
-async function connectAndOpen(opts) {
+async function connectAndOpen (opts) {
   const promise = SleepySocketClient.connect('localhost', 3000, opts)
 
   MockWebSocket.last.open()
@@ -108,7 +118,7 @@ const flush = () => Promise.resolve()
 
 /* build a response frame that correlates to a sent request id */
 
-function response(id, body = null) {
+function response (id, body = null) {
   return {
     id,
     type: TYPES.RESPONSE,
@@ -203,7 +213,11 @@ describe('SleepySocketClient', () => {
 
     test('when successful', async () => {
       const { client } = await connectAndOpen()
-      const fn = () => client.send({ method: 'GET', route: '/' })
+
+      const fn = () => client.send({
+        method: 'GET',
+        route: '/',
+      })
 
       expect(client.isConnected).toBe(true)
 
@@ -318,13 +332,25 @@ describe('SleepySocketClient', () => {
       })
     })
 
-    test('when multiple calls respond out-of-order (queue = NONE)', async () => {
+    test('when calls respond out-of-order (queue = NONE)', async () => {
       const { client, socket } = await connectAndOpen({ queue: QUEUE.NONE })
 
       const order = []
-      const p1 = client.send({ method: 'GET', route: '/a' }).then(() => order.push(1))
-      const p2 = client.send({ method: 'GET', route: '/b' }).then(() => order.push(2))
-      const p3 = client.send({ method: 'GET', route: '/c' }).then(() => order.push(3))
+
+      const p1 = client.send({
+        method: 'GET',
+        route: '/a',
+      }).then(() => order.push(1))
+
+      const p2 = client.send({
+        method: 'GET',
+        route: '/b',
+      }).then(() => order.push(2))
+
+      const p3 = client.send({
+        method: 'GET',
+        route: '/c',
+      }).then(() => order.push(3))
 
       const [id1, id2, id3] = socket.sent.map(raw => JSON.parse(raw).id)
 
@@ -339,13 +365,25 @@ describe('SleepySocketClient', () => {
       expect(order).toEqual([2, 1, 3])
     })
 
-    test('when multiple calls respond out-of-order (queue = FIFO)', async () => {
+    test('when calls respond out-of-order (queue = FIFO)', async () => {
       const { client, socket } = await connectAndOpen({ queue: QUEUE.FIFO })
 
       const order = []
-      const p1 = client.send({ method: 'GET', route: '/a' }).then(() => order.push(1))
-      const p2 = client.send({ method: 'GET', route: '/b' }).then(() => order.push(2))
-      const p3 = client.send({ method: 'GET', route: '/c' }).then(() => order.push(3))
+
+      const p1 = client.send({
+        method: 'GET',
+        route: '/a',
+      }).then(() => order.push(1))
+
+      const p2 = client.send({
+        method: 'GET',
+        route: '/b',
+      }).then(() => order.push(2))
+
+      const p3 = client.send({
+        method: 'GET',
+        route: '/c',
+      }).then(() => order.push(3))
 
       const [id1, id2, id3] = socket.sent.map(raw => JSON.parse(raw).id)
 
@@ -360,13 +398,25 @@ describe('SleepySocketClient', () => {
       expect(order).toEqual([1, 2, 3])
     })
 
-    test('when multiple calls respond out-of-order (queue = LIFO)', async () => {
+    test('when calls respond out-of-order (queue = LIFO)', async () => {
       const { client, socket } = await connectAndOpen({ queue: QUEUE.LIFO })
 
       const order = []
-      const p1 = client.send({ method: 'GET', route: '/a' }).then(() => order.push(1))
-      const p2 = client.send({ method: 'GET', route: '/b' }).then(() => order.push(2))
-      const p3 = client.send({ method: 'GET', route: '/c' }).then(() => order.push(3))
+
+      const p1 = client.send({
+        method: 'GET',
+        route: '/a',
+      }).then(() => order.push(1))
+
+      const p2 = client.send({
+        method: 'GET',
+        route: '/b',
+      }).then(() => order.push(2))
+
+      const p3 = client.send({
+        method: 'GET',
+        route: '/c',
+      }).then(() => order.push(3))
 
       const [id1, id2, id3] = socket.sent.map(raw => JSON.parse(raw).id)
 

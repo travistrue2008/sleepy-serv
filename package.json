@@ -4,5 +4,11 @@
   "workspaces": [
     "packages/server",
     "packages/client"
-  ]
+  ],
+  "scripts": {
+    "lint:fix": "eslint . --fix"
+  },
+  "devDependencies": {
+    "eslint": "9.20.1"
+  }
 }

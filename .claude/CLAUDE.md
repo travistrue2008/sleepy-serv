@@ -31,7 +31,8 @@ bun test -t "substring"             # run tests matching a name
 ```
 
 - **Coverage** config lives in the root `bunfig.toml` (text + lcov into `./coverage`), so `bun test --coverage` only picks it up when run from the **repo root**.
-- **No build, no TypeScript compiler, no working lint.** `eslint@9` is a devDependency but there is no ESLint config file. "TypeScript support" means only that `.ts` method/meta filenames are accepted by the router (`ALLOWED_FILES_*` in `packages/server/src/index.js`) — there is no `tsconfig.json` and no shipped type declarations.
+- **No build, no TypeScript compiler.** "TypeScript support" means only that `.ts` method/meta filenames are accepted by the router (`ALLOWED_FILES_*` in `packages/server/src/index.js`) — there is no `tsconfig.json` and no shipped type declarations.
+- **Lint**: `bunx eslint .` from the repo root. See `.claude/linting.md` for the rule set and rationale.
 
 Run the example app:
 ```bash

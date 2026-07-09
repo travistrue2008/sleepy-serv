@@ -61,7 +61,7 @@ const SCHEMA_REQUEST = {
   ],
 }
 
-export function createMessage(type, opts = {}) {
+export function createMessage (type, opts = {}) {
   return {
     ...opts,
     type,
@@ -72,7 +72,7 @@ export function createMessage(type, opts = {}) {
   }
 }
 
-export function validateRequest(message) {
+export function validateRequest (message) {
   const ajv = new Ajv({
     allErrors: true,
     removeAdditional: 'all',

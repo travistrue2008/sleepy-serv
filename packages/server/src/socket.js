@@ -7,7 +7,7 @@ import {
   InternalServerError,
 } from './errors'
 
-function parseMessage(raw) {
+function parseMessage (raw) {
   try {
     return JSON.parse(raw)
   } catch (err) {
@@ -17,7 +17,7 @@ function parseMessage(raw) {
   }
 }
 
-function toSegments(pathString) {
+function toSegments (pathString) {
   const [pathname] = String(pathString).split('?')
   const segments = pathname.split('/').slice(1)
 
@@ -28,31 +28,31 @@ function toSegments(pathString) {
   return segments
 }
 
-function matchesSegments(patternSegments, requestSegments) {
+function matchesSegments (patternSegments, requestSegments) {
   if (patternSegments.length !== requestSegments.length) {
     return false
   }
 
   return patternSegments.every((segment, index) =>
     segment.startsWith(':') ||
-    segment === requestSegments[index]
+    segment === requestSegments[index],
   )
 }
 
-function buildParams(patternSegments, requestSegments) {
+function buildParams (patternSegments, requestSegments) {
   return patternSegments.reduce((accum, segment, index) =>
     segment.startsWith(':') ? {
       ...accum,
       [segment.slice(1)]: requestSegments[index],
     } : accum
-    , {})
+  , {})
 }
 
-function matchRoute(routes, message) {
+function matchRoute (routes, message) {
   const requestSegments = toSegments(message.route)
 
   const matchingPaths = routes.filter(route =>
-    matchesSegments(route.patternSegments, requestSegments)
+    matchesSegments(route.patternSegments, requestSegments),
   )
 
   if (!matchingPaths.length) {
@@ -71,7 +71,7 @@ function matchRoute(routes, message) {
   }
 }
 
-function buildRequest(message, params) {
+function buildRequest (message, params) {
   return {
     id: message.id,
     method: message.method,
@@ -85,7 +85,7 @@ function buildRequest(message, params) {
   }
 }
 
-async function buildOutgoingMessage(id, response) {
+async function buildOutgoingMessage (id, response) {
   const text = await response.text()
   const contentType = response.headers.get('content-type') ?? ''
   const usingJson = contentType.includes('application/json')
@@ -99,7 +99,7 @@ async function buildOutgoingMessage(id, response) {
   })
 }
 
-export function buildSocketRoutes(moduleRoutes) {
+export function buildSocketRoutes (moduleRoutes) {
   return moduleRoutes.map(route => ({
     method: route.method,
     patternSegments: toSegments(route.path),
@@ -107,19 +107,19 @@ export function buildSocketRoutes(moduleRoutes) {
   }))
 }
 
-export function createSocketHandler(routes) {
+export function createSocketHandler (routes) {
   const sockets = {}
 
   return {
-    open(ws) {
+    open (ws) {
       sockets[ws.data.clientId] = ws
     },
 
-    close(ws) {
+    close (ws) {
       delete sockets[ws.data.clientId]
     },
 
-    async message(ws, raw) {
+    async message (ws, raw) {
       const incomingMessage = parseMessage(raw)
 
       if (incomingMessage === undefined) {
@@ -142,7 +142,12 @@ export function createSocketHandler(routes) {
         const { id } = incomingMessage
         const status = err.constructor.status ?? InternalServerError.status
         const body = err.output !== undefined ? err.output : err.message
-        const res = createMessage(TYPES.RESPONSE, { id, status, body })
+
+        const res = createMessage(TYPES.RESPONSE, {
+          id,
+          status,
+          body,
+        })
 
         ws.send(JSON.stringify(res))
       }
