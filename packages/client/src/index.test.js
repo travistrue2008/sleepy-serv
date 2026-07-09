@@ -79,6 +79,7 @@ class MockWebSocket {
   }
 
   /* simulate an abnormal closure (e.g. network drop, server crash) */
+
   drop(code = 1006) {
     this.readyState = 3
     this.#emit('close', { wasClean: false, code })
