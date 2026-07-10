@@ -2,6 +2,7 @@
 name: kbase
 description: Reviews the current chat session context and automatically updates or documents new knowledge in `.claude/kbase/`.
 ---
+
 # Knowledge Base Indexer
 
 ## System Role
