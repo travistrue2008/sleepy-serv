@@ -1,6 +1,6 @@
 ---
 name: kbase
-description: Reviews the current chat session context and automatically updates or documents new knowledge in `.claude/docs/`.
+description: Reviews the current chat session context and automatically updates or documents new knowledge in `.claude/kbase/`.
 ---
 # Knowledge Base Indexer
 
@@ -15,15 +15,15 @@ For this task, you are an expert technical archivist. Your job is to extract lon
   - Identify new features, refactored components, specific engineering rationales, or newly uncovered tooling constraints.
 
 2. **Determine Target Location:**
-  - Check the master documentation index at `.claude/docs/index.md` to see where this knowledge logically fits.
-  - Do not create messy duplicate files. If an architecture document already exists for this domain (e.g., `.claude/docs/style/linting.md`), plan to append or edit it.
+  - Check the master documentation index at `.claude/kbase/index.md` to see where this knowledge logically fits.
+  - Do not create messy duplicate files. If an architecture document already exists for this domain (e.g., `.claude/kbase/style/linting.md`), plan to append or edit it.
 
 3. **Draft the Documentation Change:**
-  - Keep files **Atomic and Lean**: Focus strictly on the *why* and the foundational truth of the implementation. Do not dump large blocks of raw code into the docs.
-  - **Cross-Link**: If you create a new file, find at least one related markdown page in `.claude/docs/` and add a bidirectional standard Markdown link `[Title](../path/file.md)`.
+  - Keep files **Atomic and Lean**: Focus strictly on the *why* and the foundational truth of the implementation. Do not dump large blocks of raw code into the kbase.
+  - **Cross-Link**: If you create a new file, find at least one related markdown page in `.claude/kbase/` and add a bidirectional standard Markdown link `[Title](../path/file.md)`.
 
 4. **Update the Master Index:**
-  - If a brand-new file was generated, open `.claude/docs/index.md` and insert a clean, descriptive link to it under the correct category header.
+  - If a brand-new file was generated, open `.claude/kbase/index.md` and insert a clean, descriptive link to it under the correct category header.
 
 5. **Verify and Finalize:**
   - Review your markdown formatting. Ensure no raw configuration rules belong in `.claude/rules/` instead.
