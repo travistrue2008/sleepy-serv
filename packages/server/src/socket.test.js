@@ -149,6 +149,14 @@ describe('buildSocketRoutes()', () => {
 })
 
 describe('createSocketHandler()', () => {
+  const buildSocket = () => ({
+    data: {
+      clientId: CLIENT_ID,
+    },
+    send: mock(),
+    close: mock(),
+  })
+
   describe('message()', () => {
     const HEADERS = new Headers({
       'Content-Type': 'application/json',
@@ -163,7 +171,7 @@ describe('createSocketHandler()', () => {
         },
       ]
 
-      const ws = { send: mock() }
+      const ws = buildSocket()
       const { message } = createSocketHandler(routes)
 
       await message(ws, 'invalid json')
@@ -173,7 +181,7 @@ describe('createSocketHandler()', () => {
 
     describe(`"type" = "${TYPES.HEARTBEAT}"`, () => {
       test('when a heartbeat message is received', async () => {
-        const ws = { send: mock() }
+        const ws = buildSocket()
         const { message } = createSocketHandler([])
 
         await message(ws, JSON.stringify({
@@ -206,7 +214,7 @@ describe('createSocketHandler()', () => {
           body: null,
         })
 
-        const ws = { send: mock() }
+        const ws = buildSocket()
         const { message } = createSocketHandler(routes)
 
         await message(ws, incomingMessage)
@@ -250,7 +258,7 @@ describe('createSocketHandler()', () => {
           body: null,
         })
 
-        const ws = { send: mock() }
+        const ws = buildSocket()
         const { message } = createSocketHandler(routes)
 
         await message(ws, incomingMessage)
@@ -289,7 +297,7 @@ describe('createSocketHandler()', () => {
           body: null,
         })
 
-        const ws = { send: mock() }
+        const ws = buildSocket()
         const { message } = createSocketHandler(routes)
 
         await message(ws, incomingMessage)
@@ -332,7 +340,7 @@ describe('createSocketHandler()', () => {
           body: null,
         })
 
-        const ws = { send: mock() }
+        const ws = buildSocket()
         const { message } = createSocketHandler(routes)
 
         await message(ws, incomingMessage)
@@ -375,7 +383,7 @@ describe('createSocketHandler()', () => {
           body: null,
         })
 
-        const ws = { send: mock() }
+        const ws = buildSocket()
         const { message } = createSocketHandler(routes)
 
         await message(ws, incomingMessage)
@@ -419,7 +427,7 @@ describe('createSocketHandler()', () => {
           body: null,
         })
 
-        const ws = { send: mock() }
+        const ws = buildSocket()
         const { message } = createSocketHandler(routes)
 
         await message(ws, incomingMessage)
@@ -460,7 +468,7 @@ describe('createSocketHandler()', () => {
           body: null,
         })
 
-        const ws = { send: mock() }
+        const ws = buildSocket()
         const { message } = createSocketHandler(routes)
 
         await message(ws, incomingMessage)
@@ -519,14 +527,6 @@ describe('createSocketHandler()', () => {
   })
 
   describe('reaper', () => {
-    const buildSocket = () => ({
-      data: {
-        clientId: CLIENT_ID,
-      },
-      send: mock(),
-      close: mock(),
-    })
-
     test('when the disconnect heartbeat threshold elapses', () => {
       const ws = buildSocket()
 

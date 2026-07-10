@@ -111,28 +111,17 @@ export function createSocketHandler (routes, opts = {}) {
   const heartbeatInterval = opts.ws?.heartbeatInterval ?? 30_000
   const disconnectThreshold = opts.ws?.disconnectThreshold ?? 120_000
 
-  function setReaper (ws) {
-    return setTimeout(() => ws.close(), disconnectThreshold)
-  }
+  function armReaper (ws) {
+    clearTimeout(ws.data.reaperHandle)
 
-  function resetReaper (ws) {
-    const entry = sockets[ws.data?.clientId]
-
-    if (!entry) {
-      return
-    }
-
-    clearTimeout(entry.reaperHandle)
-
-    entry.reaperHandle = setReaper(ws)
+    ws.data.reaperHandle = setTimeout(() => ws.close(), disconnectThreshold)
   }
 
   return {
     open (ws) {
-      sockets[ws.data.clientId] = {
-        ws,
-        reaperHandle: setReaper(ws),
-      }
+      sockets[ws.data.clientId] = ws
+
+      armReaper(ws)
 
       const welcomeMessage = createMessage(ws.data.clientId, TYPES.WELCOME, {
         headers: {},
@@ -146,11 +135,7 @@ export function createSocketHandler (routes, opts = {}) {
     },
 
     close (ws) {
-      const entry = sockets[ws.data.clientId]
-
-      if (entry) {
-        clearTimeout(entry.reaperHandle)
-      }
+      clearTimeout(ws.data.reaperHandle)
 
       delete sockets[ws.data.clientId]
     },
@@ -162,7 +147,7 @@ export function createSocketHandler (routes, opts = {}) {
         return
       }
 
-      resetReaper(ws)
+      armReaper(ws)
 
       try {
         validateMessage(incomingMessage)
