@@ -1,16 +1,18 @@
 import * as uuid from 'uuid'
 import { test, expect } from 'bun:test'
 import { UnprocessableContentError } from '../../../src/errors'
-import { TYPES } from '../../../src/messages'
+import { TYPES, TYPES_RECEIVED } from '../../../src/messages'
 import { Context } from '../../_helpers'
 
 const ID = uuid.v4()
+const CLIENT_ID = uuid.v4()
 const METHOD = 'GET'
 const ROUTE = '/'
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
 
 const MESSAGE_VALID = {
   id: ID,
+  clientId: CLIENT_ID,
   type: TYPES.REQUEST,
   method: METHOD,
   route: ROUTE,
@@ -32,6 +34,7 @@ test('when received message "id" field is missing', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -57,6 +60,7 @@ test('when received message "id" field is invalid', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -64,6 +68,57 @@ test('when received message "id" field is invalid', async () => {
     body: [
       {
         path: 'id',
+        message: `must match format "uuid"`,
+      },
+    ],
+  })
+})
+
+test('when received message "clientId" field is missing', async () => {
+  const ctx = await Context.create(import.meta.dirname)
+
+  const res = await ctx.sendMessageRaw({
+    ...MESSAGE_VALID,
+    clientId: undefined,
+  })
+
+  await ctx.shutdown()
+
+  expect(res).toStrictEqual({
+    id: res.id,
+    type: TYPES.RESPONSE,
+    status: UnprocessableContentError.status,
+    timestamp: TIMESTAMP,
+    headers: {},
+    body: [
+      {
+        path: '',
+        message: `must have required property 'clientId'`,
+      },
+    ],
+  })
+})
+
+test('when received message "clientId" field is invalid', async () => {
+  const ctx = await Context.create(import.meta.dirname)
+
+  const res = await ctx.sendMessageRaw({
+    ...MESSAGE_VALID,
+    clientId: 'invalid',
+  })
+
+  await ctx.shutdown()
+
+  expect(res).toStrictEqual({
+    id: res.id,
+    clientId: res.clientId,
+    type: TYPES.RESPONSE,
+    status: UnprocessableContentError.status,
+    timestamp: TIMESTAMP,
+    headers: {},
+    body: [
+      {
+        path: 'clientId',
         message: `must match format "uuid"`,
       },
     ],
@@ -82,6 +137,7 @@ test('when received message "type" field is missing', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -107,6 +163,7 @@ test('when received message "type" is invalid', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -114,7 +171,7 @@ test('when received message "type" is invalid', async () => {
     body: [
       {
         path: 'type',
-        message: 'must be equal to constant',
+        message: `must be one of: ${TYPES_RECEIVED}`,
       },
     ],
   })
@@ -132,6 +189,7 @@ test('when received message "method" field is missing', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -157,6 +215,7 @@ test('when received message "method" is invalid', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -182,6 +241,7 @@ test('when received message "route" field is missing', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -207,6 +267,7 @@ test('when received message "route" field is invalid', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -232,6 +293,7 @@ test('when received message "timestamp" field is missing', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -257,6 +319,7 @@ test('when received message "timestamp" field is invalid', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -282,6 +345,7 @@ test('when received message "headers" field is missing', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -307,6 +371,7 @@ test('when received message "headers" field is invalid (null)', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -332,6 +397,7 @@ test('when received message "headers" field is invalid (array)', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -357,6 +423,7 @@ test('when received message "query" field is missing', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
@@ -382,6 +449,7 @@ test('when received message "body" field is missing', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: CLIENT_ID,
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,

@@ -1,5 +1,5 @@
 import * as uuid from 'uuid'
-import { describe, test, expect, mock } from 'bun:test'
+import { jest, describe, test, expect, mock } from 'bun:test'
 import { buildSocketRoutes, createSocketHandler } from './socket'
 import { TYPES } from './messages'
 
@@ -10,6 +10,11 @@ import {
   UnprocessableContentError,
   InternalServerError,
 } from './errors'
+
+const ID = uuid.v4()
+const CLIENT_ID = uuid.v4()
+const METHOD = 'GET'
+const TIMESTAMP = '2000-01-01T00:00:00.000Z'
 
 class TestError extends RequestError {
   static get status () { return 999 }
@@ -145,15 +150,11 @@ describe('buildSocketRoutes()', () => {
 
 describe('createSocketHandler()', () => {
   describe('message()', () => {
-    const ID = uuid.v4()
-    const METHOD = 'GET'
-    const TIMESTAMP = '2000-01-01T00:00:00.000Z'
-
     const HEADERS = new Headers({
       'Content-Type': 'application/json',
     })
 
-    test('when parsing incoming message parsing fails', async () => {
+    test('when parsing incoming message fails', async () => {
       const routes = [
         {
           method: METHOD,
@@ -170,287 +171,430 @@ describe('createSocketHandler()', () => {
       expect(ws.send).not.toHaveBeenCalled()
     })
 
-    test('when request validation fails', async () => {
-      const routes = [
-        {
-          method: METHOD,
-          patternSegments: [],
-          middlewareChain: [],
-        },
-      ]
+    describe(`"type" = "${TYPES.HEARTBEAT}"`, () => {
+      test('when a heartbeat message is received', async () => {
+        const ws = { send: mock() }
+        const { message } = createSocketHandler([])
 
-      const incomingMessage = JSON.stringify({
-        id: 'invalid',
-        type: TYPES.REQUEST,
-        method: METHOD,
-        route: '/',
-        timestamp: TIMESTAMP,
-        headers: {},
-        query: {},
-        body: null,
+        await message(ws, JSON.stringify({
+          type: TYPES.HEARTBEAT,
+        }))
+
+        expect(ws.send).not.toHaveBeenCalled()
       })
+    })
 
-      const ws = { send: mock() }
-      const { message } = createSocketHandler(routes)
-
-      await message(ws, incomingMessage)
-
-      const sendParams = JSON.parse(ws.send.mock.calls[0][0])
-
-      expect(sendParams).toStrictEqual({
-        id: 'invalid',
-        type: TYPES.RESPONSE,
-        status: UnprocessableContentError.status,
-        timestamp: TIMESTAMP,
-        headers: {},
-        body: [
+    describe(`"type" = "${TYPES.REQUEST}"`, () => {
+      test('when validation fails', async () => {
+        const routes = [
           {
-            path: 'id',
-            message: 'must match format "uuid"',
+            method: METHOD,
+            patternSegments: [],
+            middlewareChain: [],
           },
-        ],
-      })
-    })
+        ]
 
-    test('when incoming message does NOT match any routes', async () => {
-      const routes = [
-        {
+        const incomingMessage = JSON.stringify({
+          id: 'invalid',
+          clientId: CLIENT_ID,
+          type: TYPES.REQUEST,
           method: METHOD,
-          patternSegments: [],
-          middlewareChain: [],
-        },
-      ]
+          route: '/',
+          timestamp: TIMESTAMP,
+          headers: {},
+          query: {},
+          body: null,
+        })
 
-      const incomingMessage = JSON.stringify({
-        id: ID,
-        type: TYPES.REQUEST,
-        method: METHOD,
-        route: '/users',
-        timestamp: TIMESTAMP,
-        headers: HEADERS,
-        query: {},
-        body: null,
-      })
+        const ws = { send: mock() }
+        const { message } = createSocketHandler(routes)
 
-      const ws = { send: mock() }
-      const { message } = createSocketHandler(routes)
+        await message(ws, incomingMessage)
 
-      await message(ws, incomingMessage)
+        const sendParams = JSON.parse(ws.send.mock.calls[0][0])
 
-      const sendParams = JSON.parse(ws.send.mock.calls[0][0])
-
-      expect(sendParams).toStrictEqual({
-        id: ID,
-        type: TYPES.RESPONSE,
-        status: NotFoundError.status,
-        timestamp: TIMESTAMP,
-        headers: {},
-        body: null,
-      })
-    })
-
-    test('when incoming message does NOT match any methods', async () => {
-      const routes = [
-        {
-          method: METHOD,
-          patternSegments: ['users'],
-          middlewareChain: [],
-        },
-      ]
-
-      const incomingMessage = JSON.stringify({
-        id: ID,
-        type: TYPES.REQUEST,
-        method: 'POST',
-        route: '/users',
-        timestamp: TIMESTAMP,
-        headers: HEADERS,
-        query: {},
-        body: null,
-      })
-
-      const ws = { send: mock() }
-      const { message } = createSocketHandler(routes)
-
-      await message(ws, incomingMessage)
-
-      const sendParams = JSON.parse(ws.send.mock.calls[0][0])
-
-      expect(sendParams).toStrictEqual({
-        id: ID,
-        type: TYPES.RESPONSE,
-        status: MethodNotAllowedError.status,
-        timestamp: TIMESTAMP,
-        headers: {},
-        body: null,
-      })
-    })
-
-    test('when middleware fails (generic Error)', async () => {
-      const routes = [
-        {
-          method: METHOD,
-          patternSegments: [],
-          middlewareChain: [
-            (_req, _res, _next) => {
-              throw new Error('Bad')
+        expect(sendParams).toStrictEqual({
+          id: 'invalid',
+          clientId: CLIENT_ID,
+          type: TYPES.RESPONSE,
+          status: UnprocessableContentError.status,
+          timestamp: TIMESTAMP,
+          headers: {},
+          body: [
+            {
+              path: 'id',
+              message: 'must match format "uuid"',
             },
           ],
-        },
-      ]
-
-      const incomingMessage = JSON.stringify({
-        id: ID,
-        type: TYPES.REQUEST,
-        method: METHOD,
-        route: '/',
-        timestamp: TIMESTAMP,
-        headers: HEADERS,
-        query: {},
-        body: null,
+        })
       })
 
-      const ws = { send: mock() }
-      const { message } = createSocketHandler(routes)
+      test('when message does NOT match any routes', async () => {
+        const routes = [
+          {
+            method: METHOD,
+            patternSegments: [],
+            middlewareChain: [],
+          },
+        ]
 
-      await message(ws, incomingMessage)
+        const incomingMessage = JSON.stringify({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.REQUEST,
+          method: METHOD,
+          route: '/users',
+          timestamp: TIMESTAMP,
+          headers: HEADERS,
+          query: {},
+          body: null,
+        })
 
-      const sendParams = JSON.parse(ws.send.mock.calls[0][0])
+        const ws = { send: mock() }
+        const { message } = createSocketHandler(routes)
 
-      expect(sendParams).toStrictEqual({
-        id: ID,
-        type: TYPES.RESPONSE,
-        status: InternalServerError.status,
-        timestamp: TIMESTAMP,
-        headers: {},
-        body: 'Bad',
+        await message(ws, incomingMessage)
+
+        const sendParams = JSON.parse(ws.send.mock.calls[0][0])
+
+        expect(sendParams).toStrictEqual({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.RESPONSE,
+          status: NotFoundError.status,
+          timestamp: TIMESTAMP,
+          headers: {},
+          body: null,
+        })
+      })
+
+      test('when message does NOT match any methods', async () => {
+        const routes = [
+          {
+            method: METHOD,
+            patternSegments: ['users'],
+            middlewareChain: [],
+          },
+        ]
+
+        const incomingMessage = JSON.stringify({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.REQUEST,
+          method: 'POST',
+          route: '/users',
+          timestamp: TIMESTAMP,
+          headers: HEADERS,
+          query: {},
+          body: null,
+        })
+
+        const ws = { send: mock() }
+        const { message } = createSocketHandler(routes)
+
+        await message(ws, incomingMessage)
+
+        const sendParams = JSON.parse(ws.send.mock.calls[0][0])
+
+        expect(sendParams).toStrictEqual({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.RESPONSE,
+          status: MethodNotAllowedError.status,
+          timestamp: TIMESTAMP,
+          headers: {},
+          body: null,
+        })
+      })
+
+      test('when middleware fails (generic Error)', async () => {
+        const routes = [
+          {
+            method: METHOD,
+            patternSegments: [],
+            middlewareChain: [
+              (_req, _res, _next) => {
+                throw new Error('Bad')
+              },
+            ],
+          },
+        ]
+
+        const incomingMessage = JSON.stringify({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.REQUEST,
+          method: METHOD,
+          route: '/',
+          timestamp: TIMESTAMP,
+          headers: HEADERS,
+          query: {},
+          body: null,
+        })
+
+        const ws = { send: mock() }
+        const { message } = createSocketHandler(routes)
+
+        await message(ws, incomingMessage)
+
+        const sendParams = JSON.parse(ws.send.mock.calls[0][0])
+
+        expect(sendParams).toStrictEqual({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.RESPONSE,
+          status: InternalServerError.status,
+          timestamp: TIMESTAMP,
+          headers: {},
+          body: 'Bad',
+        })
+      })
+
+      test('when middleware fails (RequestError subclass)', async () => {
+        const routes = [
+          {
+            method: METHOD,
+            patternSegments: [],
+            middlewareChain: [
+              (_req, _res, _next) => {
+                throw new TestError()
+              },
+            ],
+          },
+        ]
+
+        const incomingMessage = JSON.stringify({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.REQUEST,
+          method: METHOD,
+          route: '/',
+          timestamp: TIMESTAMP,
+          headers: HEADERS,
+          query: {},
+          body: null,
+        })
+
+        const ws = { send: mock() }
+        const { message } = createSocketHandler(routes)
+
+        await message(ws, incomingMessage)
+
+        const sendParams = JSON.parse(ws.send.mock.calls[0][0])
+
+        expect(sendParams).toStrictEqual({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.RESPONSE,
+          status: TestError.status,
+          timestamp: TIMESTAMP,
+          headers: {},
+          body: {
+            custom: 1,
+            message: 'This is a test',
+          },
+        })
+      })
+
+      test('when successful', async () => {
+        const routes = [
+          {
+            method: METHOD,
+            patternSegments: ['users'],
+            middlewareChain: [
+              (_req, _res, _next) => new Response('Success'),
+            ],
+          },
+        ]
+
+        const incomingMessage = JSON.stringify({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.REQUEST,
+          method: METHOD,
+          route: '/users',
+          timestamp: TIMESTAMP,
+          headers: HEADERS,
+          query: {},
+          body: null,
+        })
+
+        const ws = { send: mock() }
+        const { message } = createSocketHandler(routes)
+
+        await message(ws, incomingMessage)
+
+        const sendParams = JSON.parse(ws.send.mock.calls[0][0])
+
+        expect(sendParams).toStrictEqual({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.RESPONSE,
+          status: 200,
+          timestamp: TIMESTAMP,
+          headers: {},
+          body: 'Success',
+        })
+      })
+
+      test('when route and method match with dynamic params', async () => {
+        const routes = [
+          {
+            method: METHOD,
+            patternSegments: ['users', ':userId'],
+            middlewareChain: [
+              (req, _res, _next) => Response.json(req.params),
+            ],
+          },
+        ]
+
+        const incomingMessage = JSON.stringify({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.REQUEST,
+          method: METHOD,
+          route: '/users/123',
+          timestamp: TIMESTAMP,
+          headers: HEADERS,
+          query: {},
+          body: null,
+        })
+
+        const ws = { send: mock() }
+        const { message } = createSocketHandler(routes)
+
+        await message(ws, incomingMessage)
+
+        const sendParams = JSON.parse(ws.send.mock.calls[0][0])
+
+        expect(sendParams).toStrictEqual({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: TYPES.RESPONSE,
+          status: 200,
+          timestamp: TIMESTAMP,
+          headers: {
+            'content-type': 'application/json;charset=utf-8',
+          },
+          body: {
+            userId: '123',
+          },
+        })
       })
     })
+  })
 
-    test('when middleware fails (RequestError subclass)', async () => {
-      const routes = [
-        {
-          method: METHOD,
-          patternSegments: [],
-          middlewareChain: [
-            (_req, _res, _next) => {
-              throw new TestError()
-            },
-          ],
+  describe('open()', () => {
+    test('when a client connects', () => {
+      const ws = {
+        data: {
+          clientId: CLIENT_ID,
         },
-      ]
+        send: mock(),
+        close: mock(),
+      }
 
-      const incomingMessage = JSON.stringify({
-        id: ID,
-        type: TYPES.REQUEST,
-        method: METHOD,
-        route: '/',
-        timestamp: TIMESTAMP,
-        headers: HEADERS,
-        query: {},
-        body: null,
+      const { open } = createSocketHandler([], {
+        ws: {
+          heartbeatInterval: 20,
+        },
       })
 
-      const ws = { send: mock() }
-      const { message } = createSocketHandler(routes)
-
-      await message(ws, incomingMessage)
+      open(ws)
 
       const sendParams = JSON.parse(ws.send.mock.calls[0][0])
 
       expect(sendParams).toStrictEqual({
-        id: ID,
-        type: TYPES.RESPONSE,
-        status: TestError.status,
+        id: sendParams.id,
+        clientId: CLIENT_ID,
+        type: TYPES.WELCOME,
         timestamp: TIMESTAMP,
         headers: {},
         body: {
-          custom: 1,
-          message: 'This is a test',
+          clientId: CLIENT_ID,
+          heartbeatInterval: 20,
         },
       })
     })
+  })
 
-    test('when successful', async () => {
-      const routes = [
-        {
-          method: METHOD,
-          patternSegments: ['users'],
-          middlewareChain: [
-            (_req, _res, _next) => new Response('Success'),
-          ],
-        },
-      ]
-
-      const incomingMessage = JSON.stringify({
-        id: ID,
-        type: TYPES.REQUEST,
-        method: METHOD,
-        route: '/users',
-        timestamp: TIMESTAMP,
-        headers: HEADERS,
-        query: {},
-        body: null,
-      })
-
-      const ws = { send: mock() }
-      const { message } = createSocketHandler(routes)
-
-      await message(ws, incomingMessage)
-
-      const sendParams = JSON.parse(ws.send.mock.calls[0][0])
-
-      expect(sendParams).toStrictEqual({
-        id: ID,
-        type: TYPES.RESPONSE,
-        status: 200,
-        timestamp: TIMESTAMP,
-        headers: {},
-        body: 'Success',
-      })
+  describe('reaper', () => {
+    const buildSocket = () => ({
+      data: {
+        clientId: CLIENT_ID,
+      },
+      send: mock(),
+      close: mock(),
     })
 
-    test('when route and method match with dynamic params', async () => {
-      const routes = [
-        {
-          method: METHOD,
-          patternSegments: ['users', ':userId'],
-          middlewareChain: [
-            (req, _res, _next) => Response.json(req.params),
-          ],
-        },
-      ]
+    test('when the disconnect heartbeat threshold elapses', () => {
+      const ws = buildSocket()
 
-      const incomingMessage = JSON.stringify({
-        id: ID,
-        type: TYPES.REQUEST,
-        method: METHOD,
-        route: '/users/123',
-        timestamp: TIMESTAMP,
-        headers: HEADERS,
-        query: {},
-        body: null,
-      })
-
-      const ws = { send: mock() }
-      const { message } = createSocketHandler(routes)
-
-      await message(ws, incomingMessage)
-
-      const sendParams = JSON.parse(ws.send.mock.calls[0][0])
-
-      expect(sendParams).toStrictEqual({
-        id: ID,
-        type: TYPES.RESPONSE,
-        status: 200,
-        timestamp: TIMESTAMP,
-        headers: {
-          'content-type': 'application/json;charset=utf-8',
-        },
-        body: {
-          userId: '123',
+      const { open } = createSocketHandler([], {
+        ws: {
+          disconnectThreshold: 100,
         },
       })
+
+      open(ws)
+
+      jest.advanceTimersByTime(100)
+
+      expect(ws.close).toHaveBeenCalledOnce()
+    })
+
+    test('when a heartbeat arrives before the threshold', async () => {
+      const ws = buildSocket()
+
+      const { open, message } = createSocketHandler([], {
+        ws: {
+          disconnectThreshold: 100,
+        },
+      })
+
+      open(ws)
+
+      jest.advanceTimersByTime(60)
+
+      await message(ws, JSON.stringify({
+        type: TYPES.HEARTBEAT,
+      }))
+
+      jest.advanceTimersByTime(60)
+
+      expect(ws.close).not.toHaveBeenCalled()
+
+      jest.advanceTimersByTime(40)
+
+      expect(ws.close).toHaveBeenCalledOnce()
+    })
+
+    test('when a heartbeat resets the disconnect threshold', async () => {
+      const ws = buildSocket()
+
+      const { open, message } = createSocketHandler([], {
+        ws: {
+          disconnectThreshold: 100,
+        },
+      })
+
+      open(ws)
+
+      jest.advanceTimersByTime(90)
+
+      expect(ws.close).not.toHaveBeenCalled()
+
+      await message(ws, JSON.stringify({
+        type: TYPES.HEARTBEAT,
+      }))
+
+      jest.advanceTimersByTime(90)
+
+      expect(ws.close).not.toHaveBeenCalled()
+
+      jest.advanceTimersByTime(110)
+
+      expect(ws.close).toHaveBeenCalledOnce()
     })
   })
 })

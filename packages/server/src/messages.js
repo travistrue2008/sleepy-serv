@@ -7,15 +7,68 @@ import { UnprocessableContentError } from './errors'
 export const TYPES = {
   REQUEST: 'request',
   RESPONSE: 'response',
+  WELCOME: 'welcome',
+  HEARTBEAT: 'heartbeat',
 }
 
-const SCHEMA_REQUEST = {
+export const TYPES_RECEIVED = [
+  TYPES.REQUEST,
+  TYPES.HEARTBEAT,
+]
+
+const ajv = new Ajv({
+  allErrors: true,
+  removeAdditional: 'all',
+})
+
+addFormats(ajv)
+
+const SCHEMA_BASE = {
   type: 'object',
   properties: {
     id: {
       type: 'string',
       format: 'uuid',
     },
+    clientId: {
+      type: 'string',
+      format: 'uuid',
+    },
+    type: {
+      type: 'string',
+      enum: TYPES_RECEIVED,
+    },
+    timestamp: {
+      type: 'string',
+      format: 'date-time',
+    },
+  },
+  required: [
+    'id',
+    'clientId',
+    'type',
+    'timestamp',
+  ],
+}
+
+const validateHeartbeat = ajv.compile({
+  type: 'object',
+  properties: {
+    ...SCHEMA_BASE.properties,
+    type: {
+      type: 'string',
+      const: TYPES.HEARTBEAT,
+    },
+  },
+  required: [
+    'type',
+  ],
+})
+
+const validateRequest = ajv.compile({
+  type: 'object',
+  properties: {
+    ...SCHEMA_BASE.properties,
     type: {
       type: 'string',
       const: TYPES.REQUEST,
@@ -35,10 +88,6 @@ const SCHEMA_REQUEST = {
       type: 'string',
       format: 'uri-reference',
     },
-    timestamp: {
-      type: 'string',
-      format: 'date-time',
-    },
     headers: {
       type: 'object',
     },
@@ -50,40 +99,59 @@ const SCHEMA_REQUEST = {
     },
   },
   required: [
-    'id',
-    'type',
+    ...SCHEMA_BASE.required,
     'method',
     'route',
-    'timestamp',
     'headers',
     'query',
     'body',
   ],
+})
+
+const TYPE_VALIDATORS = {
+  [TYPES.HEARTBEAT]: validateHeartbeat,
+  [TYPES.REQUEST]: validateRequest,
 }
 
-export function createMessage (type, opts = {}) {
+export function createMessage (clientId, type, opts = {}) {
+  const timestamp = new Date().toISOString()
+
+  const base = {
+    id: opts.id ?? uuid.v4(),
+    clientId,
+    type,
+    timestamp,
+  }
+
   return {
     ...opts,
-    type,
-    id: opts.id ?? uuid.v4(),
-    timestamp: new Date().toISOString(),
-    headers: opts.headers ?? new Headers(),
-    body: opts.body ?? null,
+    ...base,
   }
 }
 
-export function validateRequest (message) {
-  const ajv = new Ajv({
-    allErrors: true,
-    removeAdditional: 'all',
-  })
+export function validateMessage (message) {
+  const validate = TYPE_VALIDATORS[message.type]
 
-  addFormats(ajv)
+  if (message.type === undefined) {
+    throw new UnprocessableContentError([
+      {
+        path: '',
+        message: `must have required property 'type'`,
+      },
+    ])
+  }
 
-  const valid = ajv.validate(SCHEMA_REQUEST, message)
+  if (!TYPES_RECEIVED.includes(message.type)) {
+    throw new UnprocessableContentError([
+      {
+        path: 'type',
+        message: `must be one of: ${TYPES_RECEIVED}`,
+      },
+    ])
+  }
 
-  if (!valid) {
-    const errors = ajv.errors.map(item => formatError('', item))
+  if (!validate(message)) {
+    const errors = validate.errors.map(item => formatError('', item))
 
     throw new UnprocessableContentError(errors)
   }

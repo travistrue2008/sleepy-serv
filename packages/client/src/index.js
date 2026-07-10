@@ -1,4 +1,7 @@
+import * as uuid from 'uuid'
 import { TYPES, createMessage } from './messages'
+
+const CLIENT_ID = uuid.v4()
 
 export * from './messages'
 
@@ -9,9 +12,12 @@ export const QUEUE = {
 }
 
 export default class SleepySocketClient {
+  #clientId = null
   #queueType = QUEUE.NONE
   #secure = false
   #timeout = 30
+  #heartbeatInterval = 30
+  #heartbeatTimer = null
   #socket = null
   #dispatchedMessages = []
 
@@ -29,6 +35,14 @@ export default class SleepySocketClient {
 
   get timeout () {
     return this.#timeout
+  }
+
+  get heartbeatInterval () {
+    return this.#heartbeatInterval
+  }
+
+  get clientId () {
+    return this.#clientId
   }
 
   static async connect (host, port, opts = {}) {
@@ -59,24 +73,56 @@ export default class SleepySocketClient {
         reject(new Error('Connection failed.'))
       }
 
-      socket.addEventListener('open', () => {
+      const onWelcome = event => {
+        const message = JSON.parse(event.data)
+
         clearTimeout(timer)
-        socket.removeEventListener('error', onError)
+        socket.removeEventListener('message', onWelcome)
+
+        if (message.type !== TYPES.WELCOME) {
+          reject(new Error('Expected a welcome message.'))
+
+          return
+        }
+
+        client.#clientId = message.body.clientId
+        client.#heartbeatInterval = message.body.heartbeatInterval
 
         socket.addEventListener('message', event => (
           client.#handleMessage(event)
         ))
 
         socket.addEventListener('close', event => client.#handleClose(event))
-
+        client.#startHeartbeat()
         resolve(client)
+      }
+
+      socket.addEventListener('open', () => {
+        socket.removeEventListener('error', onError)
+        socket.addEventListener('message', onWelcome)
       }, { once: true })
 
       socket.addEventListener('error', onError)
     })
   }
 
+  #startHeartbeat () {
+    this.#heartbeatTimer = setInterval(() => {
+      const message = createMessage(this.#clientId, TYPES.HEARTBEAT)
+
+      this.#socket.send(JSON.stringify(message))
+    }, this.#heartbeatInterval)
+  }
+
+  #stopHeartbeat () {
+    clearInterval(this.#heartbeatTimer)
+
+    this.#heartbeatTimer = null
+  }
+
   #handleClose (event) {
+    this.#stopHeartbeat()
+
     for (const entry of this.#dispatchedMessages) {
       clearTimeout(entry.timer)
       entry.reject(new Error('socket closed'))
@@ -145,6 +191,8 @@ export default class SleepySocketClient {
   }
 
   async close () {
+    this.#stopHeartbeat()
+
     await this.#socket.close()
 
     this.#socket = null
@@ -155,9 +203,9 @@ export default class SleepySocketClient {
       throw new Error('socket is closed')
     }
 
-    const message = createMessage(TYPES.REQUEST, {
-      query: data.query ?? {},
+    const message = createMessage(CLIENT_ID, TYPES.REQUEST, {
       ...data,
+      query: data.query ?? {},
     })
 
     return new Promise((resolve, reject) => {

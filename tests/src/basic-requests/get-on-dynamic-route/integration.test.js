@@ -14,6 +14,7 @@ test('when making a GET request on a dynamic route', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: res.clientId,
     type: TYPES.RESPONSE,
     status: 200,
     timestamp: res.timestamp,

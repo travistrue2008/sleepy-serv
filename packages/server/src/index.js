@@ -324,7 +324,7 @@ function buildServer (port, routes, opts) {
     port,
     hostname,
     routes: routes.server,
-    websocket: createSocketHandler(routes.socket),
+    websocket: createSocketHandler(routes.socket, opts),
     fetch (req, server) {
       const upgraded = checkForSocket(req, server, opts)
 

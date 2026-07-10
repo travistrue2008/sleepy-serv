@@ -11,6 +11,7 @@ export const FMT = {
 export class Context {
   static #currentOpenPort = 3000
 
+  #clientId = null
   #port = null
   #app = null
   #socket = null
@@ -30,7 +31,17 @@ export class Context {
           reject(event)
         })
 
-        ctx.#socket.addEventListener('open', resolve)
+        ctx.#socket.addEventListener('message', event => {
+          const message = JSON.parse(event.data)
+
+          if (message.type !== TYPES.WELCOME) {
+            return
+          }
+
+          ctx.#clientId = message.body.clientId
+
+          resolve()
+        })
       })
     }
 
@@ -99,6 +110,7 @@ export class Context {
     return new Promise(resolve => {
       const message = JSON.stringify({
         id: uuid.v4(),
+        clientId: this.#clientId,
         type: TYPES.REQUEST,
         method,
         route,

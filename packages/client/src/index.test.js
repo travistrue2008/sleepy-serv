@@ -9,7 +9,9 @@ import {
   afterEach,
 } from 'bun:test'
 
+const CLIENT_ID = '11111111-1111-4111-8111-111111111111'
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
+const HEARTBEAT_INTERVAL = 30_000
 
 class MockWebSocket {
   static last = null
@@ -96,16 +98,27 @@ class MockWebSocket {
   }
 }
 
-/* connect the client and immediately drive the socket open */
-
 async function connectAndOpen (opts) {
   const promise = SleepySocketClient.connect('localhost', 3000, opts)
 
   MockWebSocket.last.open()
+  MockWebSocket.last.receive(sendWelcome())
 
   return {
     client: await promise,
     socket: MockWebSocket.last,
+  }
+}
+
+function sendWelcome () {
+  return {
+    type: TYPES.WELCOME,
+    timestamp: TIMESTAMP,
+    headers: {},
+    body: {
+      clientId: CLIENT_ID,
+      heartbeatInterval: HEARTBEAT_INTERVAL,
+    },
   }
 }
 
@@ -168,12 +181,38 @@ describe('SleepySocketClient', () => {
       await expect(promise).rejects.toThrow('Connection timed out.')
     })
 
+    test('when opened but no welcome frame arrives', async () => {
+      const promise = SleepySocketClient.connect('localhost', 3000)
+
+      MockWebSocket.last.open()
+
+      jest.advanceTimersByTime(30_000)
+
+      await expect(promise).rejects.toThrow('Connection timed out.')
+    })
+
+    test('when the first frame is not a welcome', async () => {
+      const promise = SleepySocketClient.connect('localhost', 3000)
+
+      MockWebSocket.last.open()
+      MockWebSocket.last.receive({ type: TYPES.RESPONSE })
+
+      await expect(promise).rejects.toThrow('Expected a welcome message.')
+    })
+
     test('when successful', async () => {
       const { client } = await connectAndOpen()
 
       expect(client.queueType).toBe(QUEUE.NONE)
       expect(client.secure).toBe(false)
       expect(client.timeout).toBe(30)
+    })
+
+    test('when the welcome frame arrives', async () => {
+      const { client } = await connectAndOpen()
+
+      expect(client.clientId).toBe(CLIENT_ID)
+      expect(client.heartbeatInterval).toBe(HEARTBEAT_INTERVAL)
     })
 
     test('when "opts.queue" is set', async () => {
@@ -236,6 +275,35 @@ describe('SleepySocketClient', () => {
     })
   })
 
+  describe('heartbeat', () => {
+    test('when the heartbeat interval elapses', async () => {
+      const { socket } = await connectAndOpen()
+
+      jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent).toStrictEqual({
+        id: sent.id,
+        clientId: CLIENT_ID,
+        type: TYPES.HEARTBEAT,
+        timestamp: sent.timestamp,
+        headers: {},
+        body: null,
+      })
+    })
+
+    test('when the client is closed', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      await client.close()
+
+      jest.advanceTimersByTime(HEARTBEAT_INTERVAL * 3)
+
+      expect(socket.sent).toHaveLength(0)
+    })
+  })
+
   describe('send()', () => {
     test('when timeout occurs', async () => {
       const { client, socket } = await connectAndOpen()
@@ -251,6 +319,7 @@ describe('SleepySocketClient', () => {
 
       expect(sent).toStrictEqual({
         id: sent.id,
+        clientId: sent.clientId,
         type: TYPES.REQUEST,
         method: 'GET',
         route: '/',
@@ -285,6 +354,7 @@ describe('SleepySocketClient', () => {
 
       expect(sent).toStrictEqual({
         id: sent.id,
+        clientId: sent.clientId,
         type: TYPES.REQUEST,
         method: 'GET',
         route: '/',
@@ -313,6 +383,7 @@ describe('SleepySocketClient', () => {
 
       expect(sent).toStrictEqual({
         id: sent.id,
+        clientId: sent.clientId,
         type: TYPES.REQUEST,
         method: 'GET',
         route: '/',

@@ -18,6 +18,7 @@ test('when a request carries a query object', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
+    clientId: res.clientId,
     type: TYPES.RESPONSE,
     status: 200,
     timestamp: res.timestamp,

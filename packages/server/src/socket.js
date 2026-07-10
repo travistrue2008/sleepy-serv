@@ -1,5 +1,5 @@
 import { executeMiddlewareChain } from './utils'
-import { TYPES, createMessage, validateRequest } from './messages'
+import { TYPES, createMessage, validateMessage } from './messages'
 
 import {
   NotFoundError,
@@ -44,8 +44,7 @@ function buildParams (patternSegments, requestSegments) {
     segment.startsWith(':') ? {
       ...accum,
       [segment.slice(1)]: requestSegments[index],
-    } : accum
-  , {})
+    } : accum, {})
 }
 
 function matchRoute (routes, message) {
@@ -85,13 +84,13 @@ function buildRequest (message, params) {
   }
 }
 
-async function buildOutgoingMessage (id, response) {
+async function buildOutgoingMessage (id, clientId, response) {
   const text = await response.text()
   const contentType = response.headers.get('content-type') ?? ''
   const usingJson = contentType.includes('application/json')
   const body = usingJson ? JSON.parse(text) : text
 
-  return createMessage(TYPES.RESPONSE, {
+  return createMessage(clientId, TYPES.RESPONSE, {
     id,
     status: response.status,
     headers: response.headers,
@@ -107,15 +106,52 @@ export function buildSocketRoutes (moduleRoutes) {
   }))
 }
 
-export function createSocketHandler (routes) {
+export function createSocketHandler (routes, opts = {}) {
   const sockets = {}
+  const heartbeatInterval = opts.ws?.heartbeatInterval ?? 30_000
+  const disconnectThreshold = opts.ws?.disconnectThreshold ?? 120_000
+
+  function setReaper (ws) {
+    return setTimeout(() => ws.close(), disconnectThreshold)
+  }
+
+  function resetReaper (ws) {
+    const entry = sockets[ws.data?.clientId]
+
+    if (!entry) {
+      return
+    }
+
+    clearTimeout(entry.reaperHandle)
+
+    entry.reaperHandle = setReaper(ws)
+  }
 
   return {
     open (ws) {
-      sockets[ws.data.clientId] = ws
+      sockets[ws.data.clientId] = {
+        ws,
+        reaperHandle: setReaper(ws),
+      }
+
+      const welcomeMessage = createMessage(ws.data.clientId, TYPES.WELCOME, {
+        headers: {},
+        body: {
+          clientId: ws.data.clientId,
+          heartbeatInterval,
+        },
+      })
+
+      ws.send(JSON.stringify(welcomeMessage))
     },
 
     close (ws) {
+      const entry = sockets[ws.data.clientId]
+
+      if (entry) {
+        clearTimeout(entry.reaperHandle)
+      }
+
       delete sockets[ws.data.clientId]
     },
 
@@ -126,26 +162,33 @@ export function createSocketHandler (routes) {
         return
       }
 
-      try {
-        validateRequest(incomingMessage)
+      resetReaper(ws)
 
-        const { id } = incomingMessage
+      try {
+        validateMessage(incomingMessage)
+
+        if (incomingMessage.type === TYPES.HEARTBEAT) {
+          return
+        }
+
+        const { id, clientId } = incomingMessage
         const { middlewareChain, params } = matchRoute(routes, incomingMessage)
         const req = buildRequest(incomingMessage, params)
         const res = await executeMiddlewareChain(req, {}, middlewareChain)
-        const outgoingMessage = await buildOutgoingMessage(id, res)
+        const outgoingMessage = await buildOutgoingMessage(id, clientId, res)
 
         ws.send(JSON.stringify(outgoingMessage))
       } catch (err) {
         console.error(err)
 
-        const { id } = incomingMessage
+        const { id, clientId } = incomingMessage
         const status = err.constructor.status ?? InternalServerError.status
         const body = err.output !== undefined ? err.output : err.message
 
-        const res = createMessage(TYPES.RESPONSE, {
+        const res = createMessage(clientId, TYPES.RESPONSE, {
           id,
           status,
+          headers: {},
           body,
         })
 
