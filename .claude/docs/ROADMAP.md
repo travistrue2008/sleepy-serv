@@ -11,6 +11,13 @@
 - [ ] Support static directories
 - [ ] Support CORS
 - [ ] Support WebSocket
+  - [x] `/ws` upgrade with a per-connection `clientId`
+  - [x] File-route request/response frames over the socket (shared middleware chains)
+  - [x] Message validation (`request` type; `id` + `clientId` required as uuids)
+  - [x] Heartbeat / presence (`opts.ws.heartbeatInterval` + `disconnectThreshold`, welcome frame, server-side reaping)
+  - [ ] Formal `response`/`notification`/`acknowledge` envelopes
+  - [ ] Client-resilience (heartbeat ack → half-open detection → reconnect)
+  - [ ] Identity model (session / player IDs)
 - [ ] Support Body Parsing
   - [ ] Raw
   - [ ] Binary
