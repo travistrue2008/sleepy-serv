@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test'
+import { test, expect } from 'bun:test'
 import { boot } from '../../helpers'
 
 const HEARTBEAT_INTERVAL = 20
@@ -26,7 +26,7 @@ test('when a request carries the cached clientId', async () => {
 
   await shutdown()
 
-  expect(res.clientId).toBe(res.clientId)
+  expect(res.clientId).toBe(client.clientId)
   expect(res.status).toBe(200)
   expect(res.body).toStrictEqual({ ok: true })
 })

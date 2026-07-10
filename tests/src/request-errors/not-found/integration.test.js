@@ -15,7 +15,7 @@ test('when the route does not exist', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: res.clientId,
+    clientId: client.clientId,
     type: TYPES.RESPONSE,
     status: NotFoundError.status,
     timestamp: res.timestamp,

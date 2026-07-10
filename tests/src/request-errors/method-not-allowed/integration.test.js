@@ -14,7 +14,7 @@ test('when the route exists but the method is not allowed', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: res.clientId,
+    clientId: client.clientId,
     type: TYPES.RESPONSE,
     status: 405,
     timestamp: res.timestamp,

@@ -18,7 +18,7 @@ test.each([
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: res.clientId,
+    clientId: client.clientId,
     type: TYPES.RESPONSE,
     status: 200,
     timestamp: res.timestamp,

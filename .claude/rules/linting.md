@@ -1,7 +1,7 @@
 ---
 paths:
   - "**.*.js
-  - "**.*.mjs"
+  - **.*.mjs
 ---
 
 # Linting

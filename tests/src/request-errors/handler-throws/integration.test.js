@@ -14,7 +14,7 @@ test('when the handler itself throws a RequestError', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: res.clientId,
+    clientId: client.clientId,
     type: TYPES.RESPONSE,
     status: 500,
     timestamp: res.timestamp,

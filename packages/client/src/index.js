@@ -1,7 +1,4 @@
-import * as uuid from 'uuid'
 import { TYPES, createMessage } from './messages'
-
-const CLIENT_ID = uuid.v4()
 
 export * from './messages'
 
@@ -203,7 +200,7 @@ export default class SleepySocketClient {
       throw new Error('socket is closed')
     }
 
-    const message = createMessage(CLIENT_ID, TYPES.REQUEST, {
+    const message = createMessage(this.#clientId, TYPES.REQUEST, {
       ...data,
       query: data.query ?? {},
     })

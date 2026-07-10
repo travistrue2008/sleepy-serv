@@ -12,12 +12,16 @@ unit tests (colocated `*.test.js`) and integration tests
 ## Structure
 
 - Follow **AAA** (Arrange, Act, Assert) within each `test()` body.
-- `describe()` is named after the unit under test, with parens as if calling it:
-  - `describe('createMessage()')` for a plain function.
-  - `describe('.connect()')` for a static method (leading dot, no class name).
-  - `describe('send()')` for an instance method (no leading dot).
-- Every `test()` name starts with `"when …"`, describing the triggering condition/scenario, e.g.
-  `test('when the queue is empty', ...)`.
+- `describe()` block usage:
+  - Use to group tests for functions, classes, and class methods
+  - Avoid using for high-level tests (such as E2E tests)
+  - Class methods (static and instance) get a nested `describe()` block
+  - Function/instance method example: `describe('createMessage()')`
+  - Static method example: `describe('.connect()')` (leading dot, no class name)
+- Every `test()` name starts with `"when …"`
+  - Test labels to describe the triggering condition/scenario (the "cause")
+  - Assertions will articulate the expected "effect"
+  - Example: `test('when the queue is empty', ...)`
 - Write and order **failure cases before success cases** within a `describe()` block.
 
 ## Assertions
