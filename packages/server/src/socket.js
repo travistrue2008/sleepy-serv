@@ -1,11 +1,19 @@
+import crypto from 'node:crypto'
+import * as uuid from 'uuid'
+
 import { executeMiddlewareChain } from './utils'
 import { TYPES, createMessage, validateMessage } from './messages'
 
 import {
   NotFoundError,
+  UnauthorizedError,
   MethodNotAllowedError,
   InternalServerError,
 } from './errors'
+
+function randomToken (count) {
+  return crypto.randomBytes(count).toString('base64url')
+}
 
 function parseMessage (raw) {
   try {
@@ -106,79 +114,220 @@ export function buildSocketRoutes (moduleRoutes) {
   }))
 }
 
-export function createSocketHandler (routes, opts = {}) {
+export function buildSocketHandlers (routes, opts = {}) {
   const sockets = {}
+  const sessions = new Map()
+  const tickets = new Map()
   const heartbeatInterval = opts.ws?.heartbeatInterval ?? 30_000
   const disconnectThreshold = opts.ws?.disconnectThreshold ?? 120_000
+  const reclaimTtl = opts.ws?.reclaimTtl ?? 300_000
+  const ticketTtl = opts.ws?.ticketTtl ?? 10_000
 
   function armReaper (ws) {
     clearTimeout(ws.data.reaperHandle)
 
-    ws.data.reaperHandle = setTimeout(() => ws.close(), disconnectThreshold)
+    ws.data.reaperHandle = setTimeout(() => {
+      ws.data.reaped = true
+
+      ws.close()
+    }, disconnectThreshold)
+  }
+
+  function sessionActive (session) {
+    return !session.expiresAt || session.expiresAt > Date.now()
+  }
+
+  function bindTicket (clientId) {
+    const ticket = randomToken(24)
+    const expiresAt = Date.now() + ticketTtl
+
+    tickets.set(ticket, {
+      clientId,
+      expiresAt,
+    })
+
+    return ticket
+  }
+
+  function redeemTicket (ticket) {
+    const entry = ticket ? tickets.get(ticket) : undefined
+
+    if (!entry) {
+      return undefined
+    }
+
+    tickets.delete(ticket)
+
+    if (entry.expiresAt <= Date.now()) {
+      return undefined
+    }
+
+    return entry.clientId
   }
 
   return {
-    open (ws) {
-      sockets[ws.data.clientId] = ws
+    endpoints: {
+      '/ws': {
+        'GET': (req, server) => {
+          const ticket = new URL(req.url).searchParams.get('ticket')
+          const clientId = redeemTicket(ticket)
 
-      armReaper(ws)
+          if (!clientId) {
+            throw new NotFoundError()
+          }
 
-      const welcomeMessage = createMessage(ws.data.clientId, TYPES.WELCOME, {
-        headers: {},
-        body: {
-          clientId: ws.data.clientId,
-          heartbeatInterval,
+          const useSocket = server.upgrade(req, {
+            data: {
+              clientId,
+            },
+          })
+
+          if (!useSocket) {
+            throw new NotFoundError()
+          }
+
+          return new Response()
         },
-      })
+        'POST': () => {
+          const clientId = uuid.v4()
 
-      ws.send(JSON.stringify(welcomeMessage))
+          return Response.json({
+            clientId,
+            ticket: bindTicket(clientId),
+          })
+        },
+      },
+      '/ws/:clientId': {
+        'PUT': req => {
+          const header = req.headers.get('authorization')
+
+          const token = header?.startsWith('Bearer ')
+            ? header.slice('Bearer '.length)
+            : undefined
+
+          const session = sessions.get(req.params.clientId)
+
+          if (session && !sessionActive(session)) {
+            sessions.delete(req.params.clientId)
+          }
+
+          if (!session || !sessionActive(session)) {
+            throw new NotFoundError()
+          }
+
+          if (session.token !== token) {
+            throw new UnauthorizedError()
+          }
+
+          return Response.json({
+            clientId: req.params.clientId,
+            ticket: bindTicket(req.params.clientId),
+          },
+          )
+        },
+      },
     },
+    server: {
+      open (ws) {
+        const { clientId } = ws.data
+        const token = randomToken(32)
+        const existing = sockets[clientId]
 
-    close (ws) {
-      clearTimeout(ws.data.reaperHandle)
+        if (existing && existing !== ws) {
+          existing.data.superseded = true
 
-      delete sockets[ws.data.clientId]
-    },
+          existing.close()
+        }
 
-    async message (ws, raw) {
-      const incomingMessage = parseMessage(raw)
+        sessions.set(clientId, { token })
+        sockets[clientId] = ws
 
-      if (incomingMessage === undefined) {
-        return
-      }
+        armReaper(ws)
 
-      armReaper(ws)
+        const welcomeMessage = createMessage(clientId, TYPES.WELCOME, {
+          headers: {},
+          body: {
+            token,
+            heartbeatInterval,
+          },
+        })
 
-      try {
-        validateMessage(incomingMessage)
+        ws.send(JSON.stringify(welcomeMessage))
+      },
+      close (ws, code) {
+        clearTimeout(ws.data.reaperHandle)
 
-        if (incomingMessage.type === TYPES.HEARTBEAT) {
+        if (ws.data.superseded) {
           return
         }
 
-        const { id, clientId } = incomingMessage
-        const { middlewareChain, params } = matchRoute(routes, incomingMessage)
-        const req = buildRequest(incomingMessage, params)
-        const res = await executeMiddlewareChain(req, {}, middlewareChain)
-        const outgoingMessage = await buildOutgoingMessage(id, clientId, res)
+        const { clientId } = ws.data
 
-        ws.send(JSON.stringify(outgoingMessage))
-      } catch (err) {
-        console.error(err)
+        if (sockets[clientId] === ws) {
+          delete sockets[clientId]
+        }
 
-        const { id, clientId } = incomingMessage
-        const status = err.constructor.status ?? InternalServerError.status
-        const body = err.output !== undefined ? err.output : err.message
+        if (code === 1000 && !ws.data.reaped) {
+          sessions.delete(clientId)
 
-        const res = createMessage(clientId, TYPES.RESPONSE, {
-          id,
-          status,
-          headers: {},
-          body,
-        })
+          return
+        }
 
-        ws.send(JSON.stringify(res))
-      }
+        const session = sessions.get(clientId)
+
+        if (session) {
+          session.expiresAt = Date.now() + reclaimTtl
+        }
+      },
+      async message (ws, raw) {
+        const incomingMsg = parseMessage(raw)
+
+        if (incomingMsg === undefined) {
+          return
+        }
+
+        armReaper(ws)
+
+        try {
+          validateMessage(incomingMsg)
+
+          if (incomingMsg.type === TYPES.HEARTBEAT) {
+            const { id, clientId } = incomingMsg
+            const ack = createMessage(clientId, TYPES.HEARTBEAT, { id })
+
+            ws.send(JSON.stringify(ack))
+
+            return
+          }
+
+          const { id, clientId } = incomingMsg
+          const { middlewareChain, params } = matchRoute(routes, incomingMsg)
+          const req = buildRequest(incomingMsg, params)
+          const res = await executeMiddlewareChain(req, {}, middlewareChain)
+          const outgoingMsg = await buildOutgoingMessage(id, clientId, res)
+
+          ws.send(JSON.stringify(outgoingMsg))
+        } catch (err) {
+          console.error(err)
+
+          const { id, clientId } = incomingMsg
+          const status = err.constructor.status ?? InternalServerError.status
+          const body = err.output !== undefined ? err.output : err.message
+
+          const headers = err.output !== undefined
+            ? { 'content-type': 'application/json;charset=utf-8' }
+            : {}
+
+          const res = createMessage(clientId, TYPES.RESPONSE, {
+            id,
+            status,
+            headers,
+            body,
+          })
+
+          ws.send(JSON.stringify(res))
+        }
+      },
     },
   }
 }

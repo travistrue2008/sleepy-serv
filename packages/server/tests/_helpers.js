@@ -16,6 +16,43 @@ export class Context {
   #app = null
   #socket = null
 
+  static async #createSocket (ctx) {
+    const domain = `localhost:${ctx.#port}/ws`
+
+    const response = await fetch(`http://${domain}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json;charset=utf-8',
+      },
+      body: JSON.stringify({}),
+    })
+
+    const { ticket } = await response.json()
+
+    ctx.#socket = new WebSocket(`ws://${domain}?ticket=${ticket}`)
+  }
+
+  static async #waitForSocketOpen (ctx) {
+    await new Promise((resolve, reject) => {
+      ctx.#socket.addEventListener('error', event => {
+        console.error(event)
+        reject(event)
+      })
+
+      ctx.#socket.addEventListener('message', event => {
+        const message = JSON.parse(event.data)
+
+        if (message.type !== TYPES.WELCOME) {
+          return
+        }
+
+        ctx.#clientId = message.clientId
+
+        resolve()
+      })
+    })
+  }
+
   static async create (dirname, opts = {}) {
     const ctx = new this()
 
@@ -23,26 +60,8 @@ export class Context {
     ctx.#app = await createApp(ctx.#port, dirname, opts)
 
     if (!opts.hostname) {
-      ctx.#socket = new WebSocket(`ws://localhost:${ctx.#port}/ws`)
-
-      await new Promise((resolve, reject) => {
-        ctx.#socket.addEventListener('error', event => {
-          console.error(event)
-          reject(event)
-        })
-
-        ctx.#socket.addEventListener('message', event => {
-          const message = JSON.parse(event.data)
-
-          if (message.type !== TYPES.WELCOME) {
-            return
-          }
-
-          ctx.#clientId = message.body.clientId
-
-          resolve()
-        })
-      })
+      await this.#createSocket(ctx)
+      await this.#waitForSocketOpen(ctx)
     }
 
     return ctx

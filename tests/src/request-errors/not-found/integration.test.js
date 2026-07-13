@@ -19,7 +19,9 @@ test('when the route does not exist', async () => {
     type: TYPES.RESPONSE,
     status: NotFoundError.status,
     timestamp: res.timestamp,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: null,
   })
 })

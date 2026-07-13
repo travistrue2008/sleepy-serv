@@ -48,7 +48,7 @@ export async function parseJson (req, res, next) {
     return next()
   }
 
-  if (contentType !== 'application/json') {
+  if (contentType !== 'application/json;charset=utf-8') {
     throw new UnsupportedMediaTypeError('content-type')
   }
 

@@ -3,7 +3,6 @@ import path from 'path'
 import querystring from 'querystring'
 import readline from 'node:readline'
 
-import * as uuid from 'uuid'
 import * as _middleware from './middleware'
 
 import { stdin, stdout } from 'node:process'
@@ -16,7 +15,7 @@ import {
 
 import {
   buildSocketRoutes,
-  createSocketHandler,
+  buildSocketHandlers,
 } from './socket'
 
 export * from './errors'
@@ -37,8 +36,6 @@ const ALLOWED_FILES_METHODS = [
   'delete.js',
   'delete.ts',
 ]
-
-const RESERVED_ROUTES = ['/ws']
 
 // const ALLOWED_FILES_ALL = [
 //   ...ALLOWED_FILES_META,
@@ -62,7 +59,7 @@ function methodNotAllowedHandler (_req) {
 }
 
 /* TODO: add whitelist support */
-function validateDirectoryIllegalFiles (targetPath, filenames) {
+function validateDirectoryIllegalFiles (_targetPath, _filenames) {
   //   const hasInvalidFiles = filenames.some(filename =>
   //     !ALLOWED_FILES_ALL.includes(filename)
   //   )
@@ -92,8 +89,8 @@ ${targetPath}
   }
 }
 
-function validateReservedRoutes (rootPath) {
-  const reservedPaths = RESERVED_ROUTES.map(route =>
+function validateReservedRoutes (rootPath, reservedRoutes) {
+  const reservedPaths = reservedRoutes.map(route =>
     path.join(rootPath, 'api', route),
   )
 
@@ -116,26 +113,6 @@ function validateDirectory (targetPath, entries) {
 
   validateDirectoryIllegalFiles(targetPath, filenames)
   validateLeafDirectory(targetPath, filenames, entries)
-}
-
-function checkForSocket (req, server, opts) {
-  const url = new URL(req.url)
-
-  if (url.pathname === '/ws') {
-    const useSocket = server.upgrade(req, {
-      data: {
-        clientId: uuid.v4(),
-      },
-    })
-
-    if (!useSocket) {
-      throw new NotFoundError()
-    }
-
-    return true
-  }
-
-  return false
 }
 
 function getAllFilePathsRec (targetPath, paths) {
@@ -299,8 +276,6 @@ function buildOutputRoutes (moduleRoutes) {
 }
 
 async function buildRoutes (rootPath, opts) {
-  validateReservedRoutes(rootPath)
-
   const basePath = `${rootPath}/api`
   const mountPath = opts.mountPath || ''
   const rootMiddleware = opts.middleware || []
@@ -317,20 +292,25 @@ async function buildRoutes (rootPath, opts) {
   }
 }
 
-function buildServer (port, routes, opts) {
+function buildServer (rootPath, port, routes, opts) {
   const hostname = opts.hostname || '0.0.0.0'
+  const socket = buildSocketHandlers(routes.socket, opts)
+  const reservedRoutes = Object.keys(socket.endpoints)
+
+  const allRoutes = {
+    ...routes.server,
+    ...socket.endpoints,
+  }
+
+  validateReservedRoutes(rootPath, reservedRoutes)
 
   return Bun.serve({
     port,
     hostname,
-    routes: routes.server,
-    websocket: createSocketHandler(routes.socket, opts),
-    fetch (req, server) {
-      const upgraded = checkForSocket(req, server, opts)
-
-      if (!upgraded) {
-        throw new NotFoundError()
-      }
+    routes: allRoutes,
+    websocket: socket.server,
+    async fetch (_req, _server) {
+      throw new NotFoundError()
     },
     error (err) {
       console.error(err)
@@ -362,7 +342,7 @@ function processIO (port, server, opts) {
 
 export async function createApp (port, rootPath, opts = {}) {
   const routes = await buildRoutes(rootPath, opts)
-  const server = buildServer(port, routes, opts)
+  const server = buildServer(rootPath, port, routes, opts)
 
   processIO(port, server, opts)
 

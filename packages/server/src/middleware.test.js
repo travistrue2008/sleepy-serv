@@ -54,7 +54,7 @@ describe('parseJson()', () => {
     const req = {
       method: 'POST',
       headers: new Headers({
-        'content-type': 'application/json',
+        'content-type': 'application/json;charset=utf-8',
       }),
       json: mock().mockRejectedValue(new Error('Cannot parse JSON')),
     }
@@ -78,7 +78,7 @@ describe('parseJson()', () => {
     const req = {
       method: 'POST',
       headers: new Headers({
-        'content-type': 'application/json',
+        'content-type': 'application/json;charset=utf-8',
       }),
       json: mock().mockResolvedValue(BODY),
     }

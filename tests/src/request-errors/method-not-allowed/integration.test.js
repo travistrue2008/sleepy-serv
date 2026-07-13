@@ -1,6 +1,7 @@
 import { test, expect } from 'bun:test'
 import { TYPES } from 'sleepy-socket'
 import { boot } from '../../helpers'
+import { MethodNotAllowedError } from '../../../../packages/server/src/errors'
 
 test('when the route exists but the method is not allowed', async () => {
   const { client, shutdown } = await boot(import.meta.dirname)
@@ -16,9 +17,11 @@ test('when the route exists but the method is not allowed', async () => {
     id: res.id,
     clientId: client.clientId,
     type: TYPES.RESPONSE,
-    status: 405,
+    status: MethodNotAllowedError.status,
     timestamp: res.timestamp,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: null,
   })
 })

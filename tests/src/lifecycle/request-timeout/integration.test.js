@@ -11,7 +11,7 @@ test('when the server never replies', async () => {
 
   jest.advanceTimersByTime(30_000)
 
-  await expect(promise).rejects.toThrow('Request timed out.')
+  await expect(promise).rejects.toThrow(new Error('Request timed out.'))
 
   await shutdown()
 })

@@ -14,9 +14,22 @@ test('when app-level validateSchema middleware rejects a request', async () => {
 
   await shutdown()
 
-  expect(res.type).toBe(TYPES.RESPONSE)
-  expect(res.status).toBe(UnprocessableContentError.status)
-  expect(res.body).toBeTruthy()
+  expect(res).toStrictEqual({
+    id: res.id,
+    clientId: client.clientId,
+    type: TYPES.RESPONSE,
+    timestamp: res.timestamp,
+    status: UnprocessableContentError.status,
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
+    body: [
+      {
+        path: 'query.term',
+        message: 'must NOT have fewer than 3 characters',
+      },
+    ],
+  })
 })
 
 test('when the request satisfies the schema', async () => {
@@ -30,6 +43,17 @@ test('when the request satisfies the schema', async () => {
 
   await shutdown()
 
-  expect(res.status).toBe(200)
-  expect(res.body).toStrictEqual({ term: 'yes' })
+  expect(res).toStrictEqual({
+    id: res.id,
+    clientId: client.clientId,
+    type: TYPES.RESPONSE,
+    timestamp: res.timestamp,
+    status: 200,
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
+    body: {
+      term: 'yes',
+    },
+  })
 })

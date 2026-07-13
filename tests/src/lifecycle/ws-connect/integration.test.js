@@ -1,12 +1,15 @@
 import { test, expect } from 'bun:test'
 import { boot } from '../../helpers'
+import { TYPES } from '../../../../packages/server/src/messages'
 
 const HEARTBEAT_INTERVAL = 20
 
 test('when the client connects', async () => {
   const { client, shutdown } = await boot(import.meta.dirname, {
-    ws: {
-      heartbeatInterval: HEARTBEAT_INTERVAL,
+    server: {
+      ws: {
+        heartbeatInterval: HEARTBEAT_INTERVAL,
+      },
     },
   })
 
@@ -26,7 +29,15 @@ test('when a request carries the cached clientId', async () => {
 
   await shutdown()
 
-  expect(res.clientId).toBe(client.clientId)
-  expect(res.status).toBe(200)
-  expect(res.body).toStrictEqual({ ok: true })
+  expect(res).toStrictEqual({
+    id: res.id,
+    clientId: client.clientId,
+    type: TYPES.RESPONSE,
+    status: 200,
+    timestamp: res.timestamp,
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
+    body: { ok: true },
+  })
 })

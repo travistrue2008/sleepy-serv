@@ -38,7 +38,9 @@ test('when received message "id" field is missing', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: '',
@@ -64,7 +66,9 @@ test('when received message "id" field is invalid', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: 'id',
@@ -89,7 +93,9 @@ test('when received message "clientId" field is missing', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: '',
@@ -115,7 +121,9 @@ test('when received message "clientId" field is invalid', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: 'clientId',
@@ -141,7 +149,9 @@ test('when received message "type" field is missing', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: '',
@@ -167,7 +177,9 @@ test('when received message "type" is invalid', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: 'type',
@@ -193,7 +205,9 @@ test('when received message "method" field is missing', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: '',
@@ -219,7 +233,9 @@ test('when received message "method" is invalid', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: 'method',
@@ -245,7 +261,9 @@ test('when received message "route" field is missing', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: '',
@@ -271,7 +289,9 @@ test('when received message "route" field is invalid', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: 'route',
@@ -297,7 +317,9 @@ test('when received message "timestamp" field is missing', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: '',
@@ -323,7 +345,9 @@ test('when received message "timestamp" field is invalid', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: 'timestamp',
@@ -349,7 +373,9 @@ test('when received message "headers" field is missing', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: '',
@@ -375,7 +401,9 @@ test('when received message "headers" field is invalid (null)', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: 'headers',
@@ -401,7 +429,9 @@ test('when received message "headers" field is invalid (array)', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: 'headers',
@@ -427,7 +457,9 @@ test('when received message "query" field is missing', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: '',
@@ -453,7 +485,9 @@ test('when received message "body" field is missing', async () => {
     type: TYPES.RESPONSE,
     status: UnprocessableContentError.status,
     timestamp: TIMESTAMP,
-    headers: {},
+    headers: {
+      'content-type': 'application/json;charset=utf-8',
+    },
     body: [
       {
         path: '',

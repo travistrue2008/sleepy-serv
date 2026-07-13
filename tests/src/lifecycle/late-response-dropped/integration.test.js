@@ -11,16 +11,16 @@ test('when a reply arrives for an already-timed-out request', async () => {
 
   const { client, shutdown } = await boot(import.meta.dirname, {
     client: {
-      timeout: 0.1,
+      timeout: 100,
     },
   })
 
-  const fn = () => client.send({
+  const promise = client.send({
     method: 'GET',
     route: '/slow-reply',
   })
 
-  await expect(fn()).rejects.toThrow('Request timed out.')
+  await expect(promise).rejects.toThrow(new Error('Request timed out.'))
 
   await Bun.sleep(300)
 
@@ -29,8 +29,8 @@ test('when a reply arrives for an already-timed-out request', async () => {
     route: '/ok',
   })
 
+  await shutdown()
+
   expect(res.status).toBe(200)
   expect(res.body).toStrictEqual({ ok: true })
-
-  await shutdown()
 })
