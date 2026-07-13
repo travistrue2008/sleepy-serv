@@ -13,6 +13,7 @@ const RECONNECT_JITTER = 0.5
 export default class SleepySocketClient {
   #clientId = null
   #queueType = QUEUE.NONE
+  #ready = false
   #closing = false
   #secure = false
   #timeout = 30_000
@@ -30,7 +31,7 @@ export default class SleepySocketClient {
   #dispatchedMessages = []
 
   get isConnected () {
-    return !!this.#socket
+    return this.#ready
   }
 
   get queueType () {
@@ -172,6 +173,8 @@ export default class SleepySocketClient {
       this.#startHeartbeat()
       this.#armLiveness()
 
+      this.#ready = true
+
       succeed()
     }
 
@@ -273,6 +276,8 @@ export default class SleepySocketClient {
   }
 
   #handleClose (event) {
+    this.#ready = false
+
     this.#stopHeartbeat()
     clearTimeout(this.#livenessTimer)
 
@@ -362,6 +367,7 @@ export default class SleepySocketClient {
     }
 
     this.#closing = true
+    this.#ready = false
 
     this.#stopHeartbeat()
     clearTimeout(this.#livenessTimer)
@@ -377,7 +383,7 @@ export default class SleepySocketClient {
   }
 
   async send (data) {
-    if (!this.#socket) {
+    if (!this.#ready) {
       throw new Error('Socket is closed')
     }
 

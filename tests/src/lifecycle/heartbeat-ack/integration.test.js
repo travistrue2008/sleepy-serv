@@ -1,4 +1,4 @@
-import { jest, spyOn, test, expect } from 'bun:test'
+import { spyOn, test, expect } from 'bun:test'
 import { createServer, createSocketClient } from '../../helpers'
 import { TYPES } from '../../../../packages/client/src/messages'
 
@@ -20,9 +20,6 @@ test('when a heartbeat is sent', async () => {
   const client = await createSocketClient(server.port)
   const sendSpy = spyOn(client.socket, 'send')
   const nextMessagePromise = nextMessage(client)
-
-  jest.advanceTimersByTime(100)
-
   const ack = await nextMessagePromise
 
   await client.close()

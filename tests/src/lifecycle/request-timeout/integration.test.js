@@ -1,15 +1,17 @@
-import { jest, describe, test, expect } from 'bun:test'
+import { test, expect } from 'bun:test'
 import { boot } from '../../helpers'
 
 test('when the server never replies', async () => {
-  const { client, shutdown } = await boot(import.meta.dirname)
+  const { client, shutdown } = await boot(import.meta.dirname, {
+    client: {
+      timeout: 100,
+    },
+  })
 
   const promise = client.send({
     method: 'GET',
     route: '/hang',
   })
-
-  jest.advanceTimersByTime(30_000)
 
   await expect(promise).rejects.toThrow(new Error('Request timed out.'))
 

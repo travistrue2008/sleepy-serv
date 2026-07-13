@@ -1,4 +1,4 @@
-import { jest, test, expect } from 'bun:test'
+import { test, expect } from 'bun:test'
 import { QUEUE } from 'sleepy-socket'
 import { boot } from '../helpers'
 
@@ -27,8 +27,6 @@ async function makeRequests (client) {
 }
 
 test('when default "queue" is used', async () => {
-  jest.useRealTimers()
-
   const { client, shutdown } = await boot(import.meta.dirname)
   const results = await makeRequests(client)
 
@@ -38,8 +36,6 @@ test('when default "queue" is used', async () => {
 })
 
 test('when multiple calls respond out-of-order (queue = NONE)', async () => {
-  jest.useRealTimers()
-
   const { client, shutdown } = await boot(import.meta.dirname, {
     client: {
       queue: QUEUE.NONE,
@@ -54,8 +50,6 @@ test('when multiple calls respond out-of-order (queue = NONE)', async () => {
 })
 
 test('when multiple calls respond out-of-order (queue = FIFO)', async () => {
-  jest.useRealTimers()
-
   const { client, shutdown } = await boot(import.meta.dirname, {
     client: {
       queue: QUEUE.FIFO,
@@ -70,8 +64,6 @@ test('when multiple calls respond out-of-order (queue = FIFO)', async () => {
 })
 
 test('when multiple calls respond out-of-order (queue = LIFO)', async () => {
-  jest.useRealTimers()
-
   const { client, shutdown } = await boot(import.meta.dirname, {
     client: {
       queue: QUEUE.LIFO,

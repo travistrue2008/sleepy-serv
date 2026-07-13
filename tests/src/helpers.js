@@ -35,6 +35,40 @@ export async function putSession (port, clientId, token) {
   }
 }
 
+/*
+  Poll a predicate on real timers until it is truthy or the timeout elapses.
+  The root E2E suite runs on real timers (see test-setup.js), so there is no
+  fake clock to advance; this awaits genuine wall-clock events like a reconnect
+  swapping in a new socket or a reaper closing one.
+ */
+
+export function waitFor (predicate, opts = {}) {
+  const timeout = opts.timeout ?? 1000
+  const interval = opts.interval ?? 10
+
+  return new Promise((resolve, reject) => {
+    const start = Date.now()
+
+    const check = () => {
+      if (predicate()) {
+        resolve()
+
+        return
+      }
+
+      if (Date.now() - start >= timeout) {
+        reject(new Error('waitFor timed out.'))
+
+        return
+      }
+
+      setTimeout(check, interval)
+    }
+
+    check()
+  })
+}
+
 export async function createServer (dirname, opts = {}) {
   const app = await createApp(0, dirname, opts)
 

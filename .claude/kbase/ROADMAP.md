@@ -15,9 +15,9 @@
   - [x] File-route request/response frames over the socket (shared middleware chains)
   - [x] Message validation (`request` type; `id` + `clientId` required as uuids)
   - [x] Heartbeat / presence (`opts.ws.heartbeatInterval` + `disconnectThreshold`, welcome frame, server-side reaping)
-  - [ ] Formal `response`/`notification`/`acknowledge` envelopes
-  - [ ] Client-resilience (heartbeat ack → half-open detection → reconnect)
-  - [ ] Identity model (session / player IDs)
+  - [ ] Formal envelopes (`response` built; `notification`/`acknowledge` pending)
+  - [x] Client-resilience (heartbeat ack → half-open detection → reconnect)
+  - [ ] Identity model (session + token reclaim built; player/user IDs pending)
 - [ ] Support Body Parsing
   - [ ] Raw
   - [ ] Binary
@@ -95,3 +95,13 @@
 
 - Request on resource with `mountPath` applied
 - Request on resource that HAS querystring parameters
+
+### Lifecycle / Resilience (root E2E, real sockets)
+
+- Connect + welcome handshake carries the `clientId` and `heartbeatInterval`
+- Heartbeat is acked by the server
+- Request times out when the server never replies
+- A late reply for an already-timed-out request is dropped
+- A willing close (code 1000) makes the `clientId` terminal (reclaim 404s)
+- An involuntary drop auto-reconnects and reclaims the same `clientId`
+- Concurrent requests drain per `queue` (none / fifo / lifo)

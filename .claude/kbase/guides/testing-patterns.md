@@ -2,10 +2,16 @@
 
 ## Time
 
-- `test-setup.js` (repo root, preloaded via `bunfig.toml`) globally wraps every test in
+- `test-setup.js` (repo root, preloaded via `bunfig.toml`) wraps tests in
   `jest.useFakeTimers()` + `setSystemTime(EPOCH)` (`beforeEach`) and resets both
-  (`afterEach`). Individual tests don't need their own timer setup/teardown — just call
-  `jest.advanceTimersByTime(ms)` directly to fast-forward.
+  (`afterEach`), but **only** for files whose `Bun.main` path starts with `/packages`.
+  Package unit/integration tests thus get the frozen clock; root `tests/**` E2E run on
+  real timers. Bun has no directory-scoped hooks, so this per-file gate on `Bun.main`
+  (which resolves to the running test file under `bun test`) is the mechanism.
+- Package tests fast-forward with `jest.advanceTimersByTime(ms)`. E2E tests instead use
+  small real thresholds (server `ws.disconnectThreshold` / `heartbeatInterval`, client
+  `timeout` / `reconnect.minDelay`, around 100ms) plus `waitFor()` from
+  `tests/src/helpers.js` to await genuine wall-clock events.
 - Bun's `bun:test` exposes Jest-compatible fake timer APIs (`jest.useFakeTimers`,
   `jest.advanceTimersByTime`, `jest.runAllTimers`, etc.) via its `jest` export.
 
