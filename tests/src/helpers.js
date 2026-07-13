@@ -10,14 +10,6 @@ import { createApp } from 'sleepy-serv'
   timeout); all other opts pass through to createApp.
  */
 
-/*
-  Raw handshake helpers for driving the two-step reconnect flow directly over
-  HTTP + WebSocket, without the SleepySocketClient's private internals.
-  postSession mints a fresh identity; putSession reclaims an existing one with
-  a bearer token; openRawSocket redeems a ticket and resolves on the welcome
-  frame.
- */
-
 export async function postSession (port) {
   const response = await fetch(`http://localhost:${port}/ws`, {
     method: 'POST',
@@ -41,22 +33,6 @@ export async function putSession (port, clientId, token) {
     status: response.status,
     body: response.ok ? await response.json() : null,
   }
-}
-
-export function openRawSocket (port, ticket) {
-  return new Promise((resolve, reject) => {
-    const url = `ws://localhost:${port}/ws?ticket=${ticket}`
-    const socket = new WebSocket(url)
-
-    socket.addEventListener('message', event => {
-      resolve({
-        socket,
-        welcome: JSON.parse(event.data),
-      })
-    }, { once: true })
-
-    socket.addEventListener('error', reject)
-  })
 }
 
 export async function createServer (dirname, opts = {}) {
