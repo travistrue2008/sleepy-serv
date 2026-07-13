@@ -25,13 +25,6 @@ unit tests (colocated `*.test.js`) and integration tests
 - Write and order **failure cases before success cases** within a `describe()` block.
 - Avoid mixing the _Act_ and _Assert_ phases where possible
 - Don't write helper functions that mix _Act_ and _Assert_ phases
-- When testing functions that should throw an error
-  - If synchronous:
-    1. Wrap the function call into a variable called `fn`
-    2. Pass `fn` into `expect()`
-  - If asynchronous:
-    1. Call the function, assign return value to a variable called `promise`
-    2. Pass `promise` into `await expect()`
 
 ## Assertions
 
@@ -41,6 +34,13 @@ unit tests (colocated `*.test.js`) and integration tests
 - When an object contains a generated/non-deterministic field (e.g. a uuid `id`), echo the actual
   value back into the expected object (`id: actual.id`) instead of asserting on it separately —
   this keeps `toStrictEqual` exact everywhere else without fighting randomness.
+- When testing functions that should throw an error
+  - If synchronous:
+    1. Wrap the function call into a variable called `fn`
+    2. Pass `fn` into `expect()`
+  - If asynchronous:
+    1. Call the function, assign return value to a variable called `promise`
+    2. Pass `promise` into `await expect()`
 
 ## References
 

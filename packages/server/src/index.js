@@ -37,11 +37,6 @@ const ALLOWED_FILES_METHODS = [
   'delete.ts',
 ]
 
-// const ALLOWED_FILES_ALL = [
-//   ...ALLOWED_FILES_META,
-//   ...ALLOWED_FILES_METHODS,
-// ]
-
 /* istanbul ignore if */
 if (process.stdin.isTTY) {
   process.stdin.setRawMode(true)
@@ -56,20 +51,6 @@ const rl = readline.createInterface({
 
 function methodNotAllowedHandler (_req) {
   throw new MethodNotAllowedError()
-}
-
-/* TODO: add whitelist support */
-function validateDirectoryIllegalFiles (_targetPath, _filenames) {
-  //   const hasInvalidFiles = filenames.some(filename =>
-  //     !ALLOWED_FILES_ALL.includes(filename)
-  //   )
-
-  //   if (hasInvalidFiles) {
-  //     throw new TypeError(`
-  // Directory contains illegal files:
-  // ${targetPath}
-  //     `.trim())
-  //   }
 }
 
 function validateLeafDirectory (targetPath, filenames, entries) {
@@ -111,7 +92,6 @@ function validateDirectory (targetPath, entries) {
     .filter(entry => entry.stat.isFile())
     .map(entry => path.basename(entry.path))
 
-  validateDirectoryIllegalFiles(targetPath, filenames)
   validateLeafDirectory(targetPath, filenames, entries)
 }
 

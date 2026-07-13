@@ -6,8 +6,4 @@ Directories are resources, method-named files are handlers. `api/users/:userId/g
 
 404 and 405 live in **two places**: every known path is pre-seeded with all six verbs pointing at a 405 handler (`buildServerRoutes`), while the server-level `fetch` fallback throws `NotFoundError` for unknown paths (`buildServer`).
 
-## Gotcha: the `/api` file whitelist is not enforced
-
-`validateDirectoryIllegalFiles` in `index.js` is commented out, so the "only method/meta files allowed in `/api`" rule is **not currently enforced** despite the README/ROADMAP implying it is.
-
 See also: [Overview](./overview.md), [Request Flow](./request-flow.md), [Errors](./errors.md).
