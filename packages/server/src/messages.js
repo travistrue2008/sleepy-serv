@@ -1,6 +1,6 @@
+import crypto from 'node:crypto'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
-import * as uuid from 'uuid'
 import { formatError } from './utils'
 import { UnprocessableContentError } from './errors'
 
@@ -117,7 +117,7 @@ export function createMessage (clientId, type, opts = {}) {
   const timestamp = new Date().toISOString()
 
   const base = {
-    id: opts.id ?? uuid.v4(),
+    id: opts.id ?? crypto.randomUUID(),
     clientId,
     type,
     timestamp,

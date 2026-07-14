@@ -1,4 +1,4 @@
-import * as uuid from 'uuid'
+import crypto from 'node:crypto'
 import { TYPES } from '../src/messages'
 import { createApp } from '../src'
 
@@ -128,7 +128,7 @@ export class Context {
   async sendMessage (method, route, payload = {}) {
     return new Promise(resolve => {
       const message = JSON.stringify({
-        id: uuid.v4(),
+        id: crypto.randomUUID(),
         clientId: this.#clientId,
         type: TYPES.REQUEST,
         method,

@@ -1,4 +1,4 @@
-import * as uuid from 'uuid'
+import crypto from 'node:crypto'
 import { describe, test, expect } from 'bun:test'
 import { UnprocessableContentError } from './errors'
 
@@ -9,8 +9,8 @@ import {
   validateMessage,
 } from './messages'
 
-const ID = uuid.v4()
-const CLIENT_ID = uuid.v4()
+const ID = crypto.randomUUID()
+const CLIENT_ID = crypto.randomUUID()
 const STATUS = 200
 const METHOD = 'GET'
 const ROUTE = '/users/123'

@@ -1,5 +1,4 @@
 import crypto from 'node:crypto'
-import * as uuid from 'uuid'
 import { TYPES } from './messages'
 
 import {
@@ -27,8 +26,8 @@ import {
   InternalServerError,
 } from './errors'
 
-const ID = uuid.v4()
-const CLIENT_ID = uuid.v4()
+const ID = crypto.randomUUID()
+const CLIENT_ID = crypto.randomUUID()
 const METHOD = 'GET'
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
 
@@ -212,9 +211,10 @@ describe('buildSocketRoutes()', () => {
 describe('buildSocketHandlers()', () => {
   beforeEach(() => {
     spyOn(crypto, 'randomBytes').mockImplementation(b => BYTES[b])
-    spyOn(uuid, 'v4')
+    spyOn(crypto, 'randomUUID')
 
-    UUIDs.forEach((_, index) => uuid.v4.mockReturnValueOnce(UUIDs[index]))
+    UUIDs.forEach((_, index) =>
+      crypto.randomUUID.mockReturnValueOnce(UUIDs[index]))
   })
 
   afterEach(() => {

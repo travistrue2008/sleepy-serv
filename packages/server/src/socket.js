@@ -1,5 +1,4 @@
 import crypto from 'node:crypto'
-import * as uuid from 'uuid'
 
 import { executeMiddlewareChain } from './utils'
 import { TYPES, createMessage, validateMessage } from './messages'
@@ -189,7 +188,7 @@ export function buildSocketHandlers (routes, opts = {}) {
           return new Response()
         },
         'POST': () => {
-          const clientId = uuid.v4()
+          const clientId = crypto.randomUUID()
 
           return Response.json({
             clientId,

@@ -1,11 +1,11 @@
-import * as uuid from 'uuid'
+import crypto from 'node:crypto'
 import { test, expect } from 'bun:test'
 import { UnprocessableContentError } from '../../../src/errors'
 import { TYPES, TYPES_RECEIVED } from '../../../src/messages'
 import { Context } from '../../_helpers'
 
-const ID = uuid.v4()
-const CLIENT_ID = uuid.v4()
+const ID = crypto.randomUUID()
+const CLIENT_ID = crypto.randomUUID()
 const METHOD = 'GET'
 const ROUTE = '/'
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
