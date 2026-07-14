@@ -48,10 +48,10 @@ const NOTIFICATION = {
 
 ### Server send interface
 
-The server produces notifications through two methods on the `app`:
+The server produces notifications through two methods on `app.commands`:
 
-- `broadcast(event, body)`: send to every connected client.
-- `send(clientId, event, body)`: send to one client, addressed by its session `clientId`.
+- `app.commands.broadcast(event, body)`: send to every connected client.
+- `app.commands.send(clientId, event, body)`: send to one client, addressed by its session `clientId`.
 
 `broadcast` is just `send` fanned out over all clients; the two share the same message
 shape and differ only in targeting. There is deliberately no `sendToGroup`: a group send
