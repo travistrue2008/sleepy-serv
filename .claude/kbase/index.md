@@ -21,6 +21,10 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 
 - [Linting](./style/linting.md) — `eslint.config.mjs` rationale and per-rule decisions.
 
+## Ideas
+
+- [sleepy-socket Protocol](./ideas/sleepy-socket.md): outstanding protocol slices (notification/ack, client routing, player identity, gRPC forward path).
+
 ## Roadmap
 
 - [Roadmap](./ROADMAP.md) — feature checklist and test-case catalog.
