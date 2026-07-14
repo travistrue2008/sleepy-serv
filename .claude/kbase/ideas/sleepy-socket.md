@@ -64,6 +64,12 @@ addressing one that is not connected is a caller error rather than something to 
 There is no queue that holds it for later delivery. `broadcast` never hits this, since it
 only ever sends to the sockets that are currently live.
 
+The missing-client lookup is the *only* failure `send` raises. The socket write itself
+does not throw: Bun's `ServerWebSocket.send` is synchronous and returns a status code (0
+dropped, -1 backpressure) instead of raising, even on a closed socket. So `send` needs no
+try/catch around the write and nothing to `await`; guarding it would only hide a
+serialization bug in the caller's `body`.
+
 ### Why no reply half
 
 An earlier draft paired notifications with an `acknowledge` (later, a reply). It was
