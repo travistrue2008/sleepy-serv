@@ -175,11 +175,25 @@ async function reconnect (delay = 500, clientId = CLIENT_ID) {
 
 /* build a response frame that correlates to a sent request id */
 
-function response (id, body = null) {
+function response (id, body) {
   return {
     id,
     type: TYPES.RESPONSE,
     status: 200,
+    timestamp: TIMESTAMP,
+    headers: {},
+    body,
+  }
+}
+
+/* build a server-initiated notification frame */
+
+function notification (event, body) {
+  return {
+    id: uuid.v4(),
+    clientId: CLIENT_ID,
+    type: TYPES.NOTIFICATION,
+    event,
     timestamp: TIMESTAMP,
     headers: {},
     body,
@@ -417,7 +431,7 @@ describe('SleepySocketClient', () => {
 
         jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
 
-        socket.receive(response('unmatched'))
+        socket.receive(response('unmatched', null))
 
         jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
 
@@ -790,6 +804,88 @@ describe('SleepySocketClient', () => {
     })
   })
 
+  describe('notification', () => {
+    test('when a handler is removed with off(), it stops receiving',
+      async () => {
+        const { client, socket } = await connectAndOpen()
+        const received = []
+        const handler = message => received.push(message)
+
+        client.on('notification', handler)
+        client.off('notification', handler)
+        socket.receive(notification('state_changed', { score: 1 }))
+
+        expect(received).toStrictEqual([])
+      })
+
+    test('when a notification arrives, subscribers receive the message',
+      async () => {
+        const { client, socket } = await connectAndOpen()
+        const received = []
+        const frame = notification('state_changed', { score: 1 })
+
+        client.on('notification', message => received.push(message))
+        socket.receive(frame)
+
+        expect(received).toStrictEqual([frame])
+      })
+
+    test('when a notification arrives, pending requests are untouched',
+      async () => {
+        const { client, socket } = await connectAndOpen()
+
+        const promise = client.send({
+          method: 'GET',
+          route: '/',
+        })
+
+        const sent = JSON.parse(socket.sent[0])
+
+        socket.receive(notification('state_changed', { score: 1 }))
+        socket.receive(response(sent.id, { userId: '123' }))
+
+        const res = await promise
+
+        expect(res).toStrictEqual({
+          id: sent.id,
+          type: TYPES.RESPONSE,
+          status: 200,
+          timestamp: TIMESTAMP,
+          headers: {},
+          body: {
+            userId: '123',
+          },
+        })
+      })
+
+    test('when a notification arrives, the liveness reaper resets',
+      async () => {
+        const { client, socket } = await connectAndOpen()
+
+        jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+
+        socket.receive(notification('state_changed', { score: 1 }))
+
+        jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+
+        expect(client.isConnected).toBe(true)
+      })
+  })
+
+  describe('#handleMessage()', () => {
+    test('when an unknown message type arrives', async () => {
+      const { socket } = await connectAndOpen()
+
+      const fn = () => socket.receive({
+        id: uuid.v4(),
+        type: 'garbage',
+        timestamp: TIMESTAMP,
+      })
+
+      expect(fn).toThrow(RangeError)
+    })
+  })
+
   describe('send()', () => {
     test('when timeout occurs', async () => {
       const { client, socket } = await connectAndOpen()
@@ -929,9 +1025,9 @@ describe('SleepySocketClient', () => {
 
       await flush()
 
-      socket.receive(response(id2))
-      socket.receive(response(id1))
-      socket.receive(response(id3))
+      socket.receive(response(id2, null))
+      socket.receive(response(id1, null))
+      socket.receive(response(id3, null))
 
       await Promise.all([p1, p2, p3])
 
@@ -962,9 +1058,9 @@ describe('SleepySocketClient', () => {
 
       await flush()
 
-      socket.receive(response(id2))
-      socket.receive(response(id1))
-      socket.receive(response(id3))
+      socket.receive(response(id2, null))
+      socket.receive(response(id1, null))
+      socket.receive(response(id3, null))
 
       await Promise.all([p1, p2, p3])
 
@@ -995,9 +1091,9 @@ describe('SleepySocketClient', () => {
 
       await flush()
 
-      socket.receive(response(id2))
-      socket.receive(response(id1))
-      socket.receive(response(id3))
+      socket.receive(response(id2, null))
+      socket.receive(response(id1, null))
+      socket.receive(response(id3, null))
 
       await Promise.all([p1, p2, p3])
 

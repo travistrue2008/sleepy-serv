@@ -11,7 +11,7 @@ unit tests (colocated `*.test.js`) and integration tests
 
 ## Structure
 
-- Follow **AAA** (Arrange, Act, Assert) within each `test()` body.
+- Follow **AAA** (_Arrange_, _Act_, _Assert_) within each `test()` body.
 - `describe()` block usage:
   - Use to group tests for functions, classes, and class methods
   - Avoid using for high-level tests (such as E2E tests)
@@ -19,7 +19,9 @@ unit tests (colocated `*.test.js`) and integration tests
   - Function/instance method example: `describe('createMessage()')`
   - Static method example: `describe('.connect()')` (leading dot, no class name)
 - Every `test()` name starts with `"when …"`
-  - Test labels to describe the triggering condition/scenario (the "cause")
+  - Test labels
+    - Describe the "cause" (_Act_ portion)
+    - **DOES NOT** describe the "effect" (_Assert_ portion)
   - Assertions will articulate the expected "effect"
   - Example: `test('when the queue is empty', ...)`
 - Write and order **failure cases before success cases** within a `describe()` block.

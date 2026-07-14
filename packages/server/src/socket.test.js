@@ -38,16 +38,20 @@ const BYTES = {
 
 const BASE64_24 = BYTES[24].toString('base64url')
 const BASE64_32 = BYTES[32].toString('base64url')
-const UUIDs = ['00000000-0000-0000-0000-000000000000']
 
-function buildSocket () {
+const UUIDs = [
+  '00000000-0000-0000-0000-000000000000',
+  '00000000-0000-0000-0000-000000000001',
+]
+
+function buildSocket (clientId) {
   const send = mock()
 
   return {
     send,
     close: mock(),
     data: {
-      clientId: CLIENT_ID,
+      clientId,
     },
     get welcome () {
       return JSON.parse(send.mock.calls[0][0])
@@ -227,7 +231,7 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when parsing incoming message fails', async () => {
-      const ws = buildSocket()
+      const ws = buildSocket(CLIENT_ID)
 
       const { server } = buildSocketHandlers([
         {
@@ -244,7 +248,7 @@ describe('buildSocketHandlers()', () => {
 
     describe(`"type" = "${TYPES.HEARTBEAT}"`, () => {
       test('when a heartbeat message is received', async () => {
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
         const { server } = buildSocketHandlers([])
 
         await server.message(ws, JSON.stringify({
@@ -277,7 +281,7 @@ describe('buildSocketHandlers()', () => {
           body: null,
         })
 
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
 
         const { server } = buildSocketHandlers([
           {
@@ -320,7 +324,7 @@ describe('buildSocketHandlers()', () => {
           body: null,
         })
 
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
 
         const { server } = buildSocketHandlers([
           {
@@ -358,7 +362,7 @@ describe('buildSocketHandlers()', () => {
           body: null,
         })
 
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
 
         const { server } = buildSocketHandlers([
           {
@@ -396,7 +400,7 @@ describe('buildSocketHandlers()', () => {
           body: null,
         })
 
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
 
         const { server } = buildSocketHandlers([
           {
@@ -436,7 +440,7 @@ describe('buildSocketHandlers()', () => {
           body: null,
         })
 
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
 
         const { server } = buildSocketHandlers([
           {
@@ -481,7 +485,7 @@ describe('buildSocketHandlers()', () => {
           body: null,
         })
 
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
 
         const { server } = buildSocketHandlers([
           {
@@ -519,7 +523,7 @@ describe('buildSocketHandlers()', () => {
           body: null,
         })
 
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
 
         const { server } = buildSocketHandlers([
           {
@@ -558,7 +562,7 @@ describe('buildSocketHandlers()', () => {
         },
       })
 
-      const ws = buildSocket()
+      const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
 
@@ -577,7 +581,7 @@ describe('buildSocketHandlers()', () => {
 
     test('when the welcome carries a fresh token', () => {
       const { server } = buildSocketHandlers([])
-      const ws = buildSocket()
+      const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
 
@@ -598,8 +602,8 @@ describe('buildSocketHandlers()', () => {
 
     test('when an existing socket for the client is registered', () => {
       const { server } = buildSocketHandlers([])
-      const oldWs = buildSocket()
-      const newWs = buildSocket()
+      const oldWs = buildSocket(CLIENT_ID)
+      const newWs = buildSocket(CLIENT_ID)
 
       server.open(oldWs)
       server.open(newWs)
@@ -617,7 +621,7 @@ describe('buildSocketHandlers()', () => {
         },
       })
 
-      const ws = buildSocket()
+      const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
       jest.advanceTimersByTime(100)
@@ -633,7 +637,7 @@ describe('buildSocketHandlers()', () => {
         },
       })
 
-      const ws = buildSocket()
+      const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
       jest.advanceTimersByTime(60)
@@ -652,7 +656,7 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when a heartbeat resets the disconnect threshold', async () => {
-      const ws = buildSocket()
+      const ws = buildSocket(CLIENT_ID)
 
       const { server } = buildSocketHandlers([], {
         ws: {
@@ -683,8 +687,8 @@ describe('buildSocketHandlers()', () => {
     test('when the socket was superseded', async () => {
       const { endpoints, server } = buildSocketHandlers([])
       const executePUT = endpoints['/ws/:clientId'].PUT
-      const oldSocket = buildSocket()
-      const newSocket = buildSocket()
+      const oldSocket = buildSocket(CLIENT_ID)
+      const newSocket = buildSocket(CLIENT_ID)
 
       server.open(oldSocket)
       server.close(oldSocket, 1000)
@@ -703,7 +707,7 @@ describe('buildSocketHandlers()', () => {
     test('when an involuntary close occurs', async () => {
       const { endpoints, server } = buildSocketHandlers([])
       const executePUT = endpoints['/ws/:clientId'].PUT
-      const ws = buildSocket()
+      const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
 
@@ -727,7 +731,7 @@ describe('buildSocketHandlers()', () => {
       })
 
       const executePUT = endpoints['/ws/:clientId'].PUT
-      const ws = buildSocket()
+      const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
       jest.advanceTimersByTime(100)
@@ -751,7 +755,7 @@ describe('buildSocketHandlers()', () => {
       })
 
       const executePUT = endpoints['/ws/:clientId'].PUT
-      const ws = buildSocket()
+      const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
 
@@ -767,7 +771,7 @@ describe('buildSocketHandlers()', () => {
     test('when a willing close occurs', () => {
       const { endpoints, server } = buildSocketHandlers([])
       const executePUT = endpoints['/ws/:clientId'].PUT
-      const ws = buildSocket()
+      const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
 
@@ -929,7 +933,7 @@ describe('buildSocketHandlers()', () => {
       test('when the bearer token is missing', () => {
         const { endpoints, server } = buildSocketHandlers([])
         const executePUT = endpoints['/ws/:clientId'].PUT
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
 
         server.open(ws)
 
@@ -942,7 +946,7 @@ describe('buildSocketHandlers()', () => {
       test('when the token does not match', () => {
         const { endpoints, server } = buildSocketHandlers([])
         const executePUT = endpoints['/ws/:clientId'].PUT
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
 
         server.open(ws)
 
@@ -955,7 +959,7 @@ describe('buildSocketHandlers()', () => {
       test('when the clientId and token match', async () => {
         const { endpoints, server } = buildSocketHandlers([])
         const executePUT = endpoints['/ws/:clientId'].PUT
-        const ws = buildSocket()
+        const ws = buildSocket(CLIENT_ID)
 
         server.open(ws)
 
@@ -966,6 +970,84 @@ describe('buildSocketHandlers()', () => {
         expect(result).toStrictEqual({
           clientId: CLIENT_ID,
           ticket: BASE64_24,
+        })
+      })
+    })
+  })
+
+  describe('commands', () => {
+    describe('send()', () => {
+      test('when the client has no live socket', () => {
+        const { commands } = buildSocketHandlers([])
+
+        const fn = () => commands.send(CLIENT_ID, 'state_changed', {
+          ok: true,
+        })
+
+        expect(fn).toThrow(ReferenceError)
+      })
+
+      test('when the client has a live socket', () => {
+        const { server, commands } = buildSocketHandlers([])
+        const ws = buildSocket(CLIENT_ID)
+
+        server.open(ws)
+        commands.send(CLIENT_ID, 'state_changed', { score: 1 })
+
+        const notification = JSON.parse(ws.send.mock.calls[1][0])
+
+        expect(notification).toStrictEqual({
+          id: notification.id,
+          clientId: CLIENT_ID,
+          type: TYPES.NOTIFICATION,
+          timestamp: TIMESTAMP,
+          event: 'state_changed',
+          headers: {},
+          body: {
+            score: 1,
+          },
+        })
+      })
+    })
+
+    describe('broadcast()', () => {
+      const CLIENT_ID_A = '00000000-0000-0000-0000-000000000010'
+      const CLIENT_ID_B = '00000000-0000-0000-0000-000000000011'
+
+      test('when multiple clients are connected', () => {
+        const { server, commands } = buildSocketHandlers([])
+        const wsA = buildSocket(CLIENT_ID_A)
+        const wsB = buildSocket(CLIENT_ID_B)
+
+        server.open(wsA)
+        server.open(wsB)
+        commands.broadcast('player_joined', { name: 'x' })
+
+        const notifA = JSON.parse(wsA.send.mock.calls[1][0])
+        const notifB = JSON.parse(wsB.send.mock.calls[1][0])
+
+        expect(notifA).toStrictEqual({
+          id: notifA.id,
+          clientId: CLIENT_ID_A,
+          type: TYPES.NOTIFICATION,
+          timestamp: TIMESTAMP,
+          event: 'player_joined',
+          headers: {},
+          body: {
+            name: 'x',
+          },
+        })
+
+        expect(notifB).toStrictEqual({
+          id: notifB.id,
+          clientId: CLIENT_ID_B,
+          type: TYPES.NOTIFICATION,
+          timestamp: TIMESTAMP,
+          event: 'player_joined',
+          headers: {},
+          body: {
+            name: 'x',
+          },
         })
       })
     })

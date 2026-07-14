@@ -15,7 +15,7 @@
   - [x] File-route request/response frames over the socket (shared middleware chains)
   - [x] Message validation (`request` type; `id` + `clientId` required as uuids)
   - [x] Heartbeat / presence (`opts.ws.heartbeatInterval` + `disconnectThreshold`, welcome frame, server-side reaping)
-  - [ ] Formal envelopes (`response` built; `notification`/`acknowledge` pending)
+  - [x] Formal envelopes (`response` + `notification`)
   - [x] Client-resilience (heartbeat ack → half-open detection → reconnect)
   - [ ] Identity model (session + token reclaim built; player/user IDs pending)
 - [ ] Support Body Parsing

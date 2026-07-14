@@ -9,6 +9,7 @@ export const TYPES = {
   RESPONSE: 'response',
   WELCOME: 'welcome',
   HEARTBEAT: 'heartbeat',
+  NOTIFICATION: 'notification',
 }
 
 export const TYPES_RECEIVED = [

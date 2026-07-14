@@ -7,19 +7,33 @@ already built and shipping (request/response envelope, pending-request registry,
 handshake, heartbeat/presence, reconnect, session + ticket reclaim) is documented in
 [WebSocket Layer](../architecture/websocket.md); it is not repeated here.
 
-## notification / acknowledge (unbuilt)
+## notification
 
-The protocol has two interaction patterns: client-initiated `request/response` (built)
-and server-initiated `notification/acknowledge` (unbuilt). The symmetry is exact:
-**request : response :: notification : acknowledge**. Responses and acknowledgments are
-the terminal halves and are never themselves replied to, which is what structurally
-prevents an infinite acknowledgment loop (no ack of an ack, so no ack-storm).
+**Status: built.** The server send interface and the client `notification` event
+described below now ship; the built mechanics are summarized in
+[WebSocket Layer](../architecture/websocket.md). The design rationale is kept here.
 
-A notification is discriminated by its own `event` field, not a reused `route`.
-Overloading `route` would conflate two different concepts: a request `route` names a
-**server handler** that processes the message, while a notification `event` names a
-**client-side reaction**. Keeping them distinct avoids a wrong-abstraction that bites
-later. The server generates the notification `id`; the client echoes it on the ack.
+The protocol has two client-initiated halves (`request/response`, built) and one
+server-initiated half: the `notification`. A notification is **one-directional,
+fire-and-forget, and best-effort**. There is no `acknowledge` or reply type. This mirrors
+how real push systems deliver at the last mile (APNs, FCM, Web Push all push
+one-directionally down a connection the client holds open) and it is what keeps the
+protocol at three types, each with a single honest shape.
+
+A notification is discriminated by a single `event` name, not by HTTP `method` + `route`.
+Two reasons. First, a push is an announcement, not an operation: there is no HTTP verb to
+put in `method` (`player_joined` is neither a GET nor a POST of anything), and the client
+does not file-route notifications by path, so `route` would name nothing routable.
+Second, the request half of this protocol already uses `method` for the HTTP verb, so a
+notification carrying its own `method` would give one word two meanings across the
+protocol. A single past-tense `event` name avoids both problems. The server generates the
+notification `id`.
+
+This makes the protocol a deliberate hybrid: the request/response half is HTTP-flavored
+(`method` + `route` + `status`, because a client request maps to a routable server
+handler), while the notification half is JSON-RPC-notification-flavored (a name plus a
+payload, sent fire-and-forget with no reply). The two halves differ because they have
+different jobs, not by accident.
 
 ```js
 const NOTIFICATION = {
@@ -30,30 +44,89 @@ const NOTIFICATION = {
   headers: { },
   body: { },              // payload; e.g. the full state object
 }
-
-const ACKNOWLEDGE = {
-  type: 'acknowledge',
-  id: 'a71e...-uuid',     // echoes the notification id
-  timestamp: '...',
-  headers: { },
-  body: { },
-}
 ```
 
-An ack or response whose `id` matches nothing is silently dropped, never error-replied.
-Error-replying to it would reintroduce the acknowledgment loop through a side door. (The
-client already applies this rule to responses; see the pending-request registry in
-[WebSocket Layer](../architecture/websocket.md).)
+### Server send interface
+
+The server produces notifications through two methods on the `app`:
+
+- `broadcast(event, body)`: send to every connected client.
+- `send(clientId, event, body)`: send to one client, addressed by its session `clientId`.
+
+`broadcast` is just `send` fanned out over all clients; the two share the same message
+shape and differ only in targeting. There is deliberately no `sendToGroup`: a group send
+is nothing more than a loop over `send`, so it would add an interface without adding an
+abstraction. An app that needs group semantics keeps its own membership list and loops.
+
+Because notifications are in-session only, a `send` to a `clientId` whose socket is not
+currently live throws a `ReferenceError`: a targeted push names a specific client, so
+addressing one that is not connected is a caller error rather than something to swallow.
+There is no queue that holds it for later delivery. `broadcast` never hits this, since it
+only ever sends to the sockets that are currently live.
+
+### Why no reply half
+
+An earlier draft paired notifications with an `acknowledge` (later, a reply). It was
+dropped after working through what such a reply would actually buy, and what it would
+cost:
+
+- **Presence does not need it.** Liveness is already client-driven via heartbeats; any
+  inbound frame resets the reaper. A per-notification ack is just a redundant frame
+  resetting a timer heartbeats already reset.
+- **Delivery does not need it.** TCP gives ordered, reliable delivery on a live socket,
+  and there is no buffer/replay behind an ack to act on a reported loss anyway. An app
+  can layer its own recovery on top (see the note below), but the core provides none, so
+  an ack would report a loss nothing in the core could act on.
+- **A reply would force server-side state.** To correlate a reply to the push that
+  prompted it, the server would keep a pending-notification registry plus timeouts, one
+  entry per outstanding notification per client. Broadcasting to N clients turns one push
+  into N pending entries and N timers. That memory and timer churn buys nothing the two
+  points above do not already cover.
+
+When a client genuinely must respond to a notification (the rarer case), it sends a
+normal **request**. A request self-routes on `method`+`route` and self-describes in its
+`body`, so if it needs to reference the push that prompted it, that id simply travels in
+the request. Correlation stays an application concern, surfacing only when a real feature
+needs it, rather than a standing cost paid by every notification.
+
+Consequence to keep in mind: with no ack and no server tracking, a **missing** or
+**undelivered** notification is not observable to the server. Recovery from a dropped
+notification is therefore an **application** concern, not a core one, and deliberately
+so: how much state to re-send and when varies too much between apps to abstract usefully.
+A drop-in game may want to resend the entire application state; a chat app adding a member
+to a group may or may not replay history depending on settings. The core stays
+best-effort and leaves recovery to the app, which means a notification must never be the
+sole carrier of state the client cannot otherwise recover.
+
+### In-session only
+
+A notification reaches only a client that is currently connected with a live socket.
+Unlike OS push (Web Push, APNs, FCM), there is no vendor intermediary holding a
+connection and no background context to wake, so a backgrounded or closed client receives
+nothing. These are **in-session realtime** messages, not push notifications in the OS
+sense. Reaching a disconnected client would be a separate Web Push / APNs / FCM
+integration, not an extension of this socket layer.
+
+### Client-side handling
+
+For now the client stays deliberately thin: it exposes a `notification` event
+(EventEmitter surface) that application code subscribes to, and hands the subscriber the
+notification message. The library does not route, translate, or dispatch notifications;
+deciding what a given `event` means and how to apply it is the app's job. Anything richer
+(per-event routing, translating the wire message into domain actions, reducer wiring) is
+left to the application and is out of scope for the core. How far to take client-side
+handling is still open, so the minimal EventEmitter surface is the deliberate starting
+point.
 
 ## Why not a JSON-RPC library
 
 The pending-request registry is hand-rolled rather than pulled from a JSON-RPC library.
 Full frameworks such as rpc-websockets want to own the socket and conflict with Bun's
 native WebSocket server; some also cannot issue server-initiated calls, which the
-notification type depends on. The transport-agnostic codec json-rpc-2.0 plugs into any
-socket, but its notifications are fire-and-forget by spec, which fights the
-acknowledged-notification presence design. Decision: keep the custom HTTP-flavored
-framing (`method`, `route`, `status`) and borrow only the registry idea. The framing
+notification type depends on. (json-rpc-2.0's fire-and-forget notifications are not an
+objection here: fire-and-forget is exactly the notification model chosen below.)
+Decision: keep the custom HTTP-flavored framing (`method`, `route`, `status`) and borrow
+only the registry idea. The framing
 also lets client-to-server messages drop into the same handler/dispatch core an HTTP
 adapter calls: shared logic, not shared endpoints (an HTTP route returns to one caller,
 while a socket message often broadcasts).
@@ -81,19 +154,6 @@ Both halves are required and operate independently. The built implementation of 
 in [WebSocket Layer](../architecture/websocket.md); that page notes the two reapers can
 fire in either order, which is why reclaim is gated on the token rather than on the
 server having already noticed the drop.
-
-**Translate at the boundary.** The raw wire message is not dispatched directly. If it
-were, reducers would depend on transport fields (`type`, `timestamp`, `headers`) and
-break the day the protocol changes. Instead `onmessage` maps the notification into a
-clean domain action, keeping the store ignorant of transport concerns (the same
-shared-core / thin-adapter principle, applied on the client side). The client also sends
-the ack here, which is terminal and never acked back.
-
-**Full-state broadcast collapses the router.** Because the app broadcasts the entire
-state object on every change, most notifications reduce to a single `state_changed`
-event whose reducer simply replaces state. Fine-grained events only earn their place
-when the client must react differently to **why** state changed (for example animations
-or sounds on a correct answer).
 
 ## Identity: the player/user tier (unbuilt)
 

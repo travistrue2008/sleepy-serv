@@ -164,6 +164,22 @@ export function buildSocketHandlers (routes, opts = {}) {
     return entry.clientId
   }
 
+  function sendToClient (clientId, event, body) {
+    const ws = sockets[clientId]
+
+    if (!ws) {
+      throw new ReferenceError(`No live socket for client: ${clientId}`)
+    }
+
+    const message = createMessage(clientId, TYPES.NOTIFICATION, {
+      event,
+      headers: {},
+      body,
+    })
+
+    ws.send(JSON.stringify(message))
+  }
+
   return {
     endpoints: {
       '/ws': {
@@ -326,6 +342,16 @@ export function buildSocketHandlers (routes, opts = {}) {
 
           ws.send(JSON.stringify(res))
         }
+      },
+    },
+    commands: {
+      send (clientId, event, body) {
+        sendToClient(clientId, event, body)
+      },
+      broadcast (event, body) {
+        const keys = Object.keys(sockets)
+
+        keys.forEach(clientId => sendToClient(clientId, event, body))
       },
     },
   }

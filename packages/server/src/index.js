@@ -284,7 +284,7 @@ function buildServer (rootPath, port, routes, opts) {
 
   validateReservedRoutes(rootPath, reservedRoutes)
 
-  return Bun.serve({
+  const server = Bun.serve({
     port,
     hostname,
     routes: allRoutes,
@@ -302,6 +302,11 @@ function buildServer (rootPath, port, routes, opts) {
         : new Response(err.message, { status })
     },
   })
+
+  return {
+    server,
+    commands: socket.commands,
+  }
 }
 
 function processIO (port, server, opts) {
@@ -322,12 +327,13 @@ function processIO (port, server, opts) {
 
 export async function createApp (port, rootPath, opts = {}) {
   const routes = await buildRoutes(rootPath, opts)
-  const server = buildServer(rootPath, port, routes, opts)
+  const {server, commands } = buildServer(rootPath, port, routes, opts)
 
   processIO(port, server, opts)
 
   return {
     routes: routes.output,
     server,
+    commands,
   }
 }

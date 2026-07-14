@@ -5,6 +5,7 @@ export const TYPES = {
   HEARTBEAT: 'heartbeat',
   REQUEST: 'request',
   RESPONSE: 'response',
+  NOTIFICATION: 'notification',
 }
 
 export function createMessage (clientId, type, opts = {}) {

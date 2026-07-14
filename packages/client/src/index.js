@@ -28,6 +28,7 @@ export default class SleepySocketClient {
   #heartbeatTimer = null
   #reconnectTimer = null
   #reconnectConfig = null
+  #listeners = new Map()
   #dispatchedMessages = []
 
   get isConnected () {
@@ -304,11 +305,8 @@ export default class SleepySocketClient {
     this.#scheduleReconnect(0)
   }
 
-  #handleMessage (event) {
-    this.#armLiveness()
-
-    const reply = JSON.parse(event.data)
-    const entry = this.#dispatchedMessages.find(item => item.id === reply.id)
+  #handleRequest (data) {
+    const entry = this.#dispatchedMessages.find(item => item.id === data.id)
 
     if (!entry) {
       return
@@ -316,10 +314,34 @@ export default class SleepySocketClient {
 
     clearTimeout(entry.timer)
 
-    entry.response = reply
+    entry.response = data
     entry.ready = true
 
     this.#drain()
+  }
+
+  #handleNotification (data) {
+    this.#emit('notification', data)
+  }
+
+  #handleMessage (event) {
+    this.#armLiveness()
+
+    const data = JSON.parse(event.data)
+
+    switch (data.type) {
+      case TYPES.HEARTBEAT:
+        return
+
+      case TYPES.RESPONSE:
+        return this.#handleRequest(data)
+
+      case TYPES.NOTIFICATION:
+        return this.#handleNotification(data)
+
+      default:
+        throw new RangeError(`Unknown message type: ${data.type}`)
+    }
   }
 
   #processNone () {
@@ -359,6 +381,34 @@ export default class SleepySocketClient {
       case QUEUE.LIFO:
         return this.#processLifo()
     }
+  }
+
+  #emit (event, payload) {
+    const handlers = this.#listeners.get(event)
+
+    if (!handlers) {
+      return
+    }
+
+    for (const handler of handlers) {
+      try {
+        handler(payload)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  }
+
+  on (event, handler) {
+    if (!this.#listeners.has(event)) {
+      this.#listeners.set(event, new Set())
+    }
+
+    this.#listeners.get(event).add(handler)
+  }
+
+  off (event, handler) {
+    this.#listeners.get(event)?.delete(handler)
   }
 
   async close () {
