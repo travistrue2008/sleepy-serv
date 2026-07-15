@@ -96,6 +96,33 @@ describe('parseJson()', () => {
 
     expect(next).toHaveBeenCalledWith()
   })
+
+  test('when the content-type has no charset', async () => {
+    const BODY = {
+      a: 'asdf',
+    }
+
+    const req = {
+      method: 'POST',
+      headers: new Headers({
+        'content-type': 'application/json',
+      }),
+      json: mock().mockResolvedValue(BODY),
+    }
+
+    const res = {}
+    const next = mock()
+
+    await parseJson(req, res, next)
+
+    expect(req.json).toBeCalledWith()
+
+    expect(res).toStrictEqual({
+      body: BODY,
+    })
+
+    expect(next).toHaveBeenCalledWith()
+  })
 })
 
 describe('setValidationFormats()', () => {

@@ -13,8 +13,10 @@ import {
 } from 'bun:test'
 
 import {
-  buildSocketRoutes,
+  buildSocketState,
+  buildSocketServer,
   buildSocketHandlers,
+  buildSocketCommands,
 } from './socket'
 
 import {
@@ -28,7 +30,6 @@ import {
 
 const ID = crypto.randomUUID()
 const CLIENT_ID = crypto.randomUUID()
-const METHOD = 'GET'
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
 
 const BYTES = {
@@ -42,6 +43,8 @@ const BASE64_32 = BYTES[32].toString('base64url')
 const UUIDs = [
   '00000000-0000-0000-0000-000000000000',
   '00000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000002',
+  '00000000-0000-0000-0000-000000000003',
 ]
 
 function buildSocket (clientId) {
@@ -55,35 +58,6 @@ function buildSocket (clientId) {
     },
     get welcome () {
       return JSON.parse(send.mock.calls[0][0])
-    },
-  }
-}
-
-function buildRequest (method, opts = {}) {
-  const body = opts.body || undefined
-  const query = opts.query || {}
-  const searchParams = new URLSearchParams(query)
-  const url = ['http://localhost/ws', searchParams.toString()].join('?')
-  const json = () => new Promise(resolve => resolve(body))
-
-  return {
-    method,
-    url,
-    json,
-  }
-}
-
-function buildPutRequest (token) {
-  const rawHeaders = token !== undefined
-    ? { 'authorization': `Bearer ${token}` }
-    : {}
-
-  return {
-    method: 'PUT',
-    url: `http://localhost/ws/${CLIENT_ID}`,
-    headers: new Headers(rawHeaders),
-    params: {
-      clientId: CLIENT_ID,
     },
   }
 }
@@ -105,125 +79,147 @@ class TestError extends RequestError {
   }
 }
 
-describe('buildSocketRoutes()', () => {
-  const fnA = () => { }
-  const fnB = () => { }
-  const fnC = () => { }
-  const fnD = () => { }
-  const fnE = () => { }
-  const fnF = () => { }
+beforeEach(() => {
+  spyOn(crypto, 'randomBytes').mockImplementation(b => BYTES[b])
+  spyOn(crypto, 'randomUUID')
 
-  test('when only the root is provided: /', () => {
-    const result = buildSocketRoutes([
-      {
-        method: 'GET',
-        path: '/',
-        handler: fnA,
-        middlewareChain: [fnB],
-      },
-    ])
-
-    expect(result).toStrictEqual([
-      {
-        method: 'GET',
-        patternSegments: [],
-        middlewareChain: [fnB],
-      },
-    ])
-  })
-
-  test('when only top-level route provided: /users', () => {
-    const result = buildSocketRoutes([
-      {
-        method: 'GET',
-        path: '/users',
-        handler: fnA,
-        middlewareChain: [fnB],
-      },
-    ])
-
-    expect(result).toStrictEqual([
-      {
-        method: 'GET',
-        patternSegments: ['users'],
-        middlewareChain: [fnB],
-      },
-    ])
-  })
-
-  test('when only top-level route provided: /users/:userId', () => {
-    const result = buildSocketRoutes([
-      {
-        method: 'GET',
-        path: '/users/:userId',
-        handler: fnA,
-        middlewareChain: [fnB],
-      },
-    ])
-
-    expect(result).toStrictEqual([
-      {
-        method: 'GET',
-        patternSegments: ['users', ':userId'],
-        middlewareChain: [fnB],
-      },
-    ])
-  })
-
-  test('when multiple items are provided', () => {
-    const result = buildSocketRoutes([
-      {
-        method: 'GET',
-        path: '/users/:userId',
-        handler: fnD,
-        middlewareChain: [fnE, fnF],
-      },
-      {
-        method: 'GET',
-        path: '/users',
-        handler: fnB,
-        middlewareChain: [fnC],
-      },
-      {
-        method: 'GET',
-        path: '/',
-        handler: fnA,
-        middlewareChain: [],
-      },
-    ])
-
-    expect(result).toStrictEqual([
-      {
-        method: 'GET',
-        patternSegments: ['users', ':userId'],
-        middlewareChain: [fnE, fnF],
-      },
-      {
-        method: 'GET',
-        patternSegments: ['users'],
-        middlewareChain: [fnC],
-      },
-      {
-        method: 'GET',
-        patternSegments: [],
-        middlewareChain: [],
-      },
-    ])
+  UUIDs.forEach((_, index) => {
+    crypto.randomUUID.mockReturnValueOnce(UUIDs[index])
   })
 })
 
-describe('buildSocketHandlers()', () => {
-  beforeEach(() => {
-    spyOn(crypto, 'randomBytes').mockImplementation(b => BYTES[b])
-    spyOn(crypto, 'randomUUID')
+afterEach(() => {
+  mock.restore()
+})
 
-    UUIDs.forEach((_, index) =>
-      crypto.randomUUID.mockReturnValueOnce(UUIDs[index]))
+describe('buildSocketState()', () => {
+  test('when NO opts are provided', () => {
+    const result = buildSocketState()
+
+    expect(result).toStrictEqual({
+      disconnectThreshold: 120000,
+      heartbeatInterval: 30000,
+      reclaimTtl: 300000,
+      ticketTtl: 10000,
+      sessions: new Map(),
+      tickets: new Map(),
+      sockets: new Map(),
+    })
   })
 
-  afterEach(() => {
-    mock.restore()
+  test('when base opts are provided', () => {
+    const result = buildSocketState({})
+
+    expect(result).toStrictEqual({
+      disconnectThreshold: 120000,
+      heartbeatInterval: 30000,
+      reclaimTtl: 300000,
+      ticketTtl: 10000,
+      sessions: new Map(),
+      tickets: new Map(),
+      sockets: new Map(),
+    })
   })
+
+  test('when "opts.ws" is provided', () => {
+    const result = buildSocketState({
+      ws: {},
+    })
+
+    expect(result).toStrictEqual({
+      disconnectThreshold: 120000,
+      heartbeatInterval: 30000,
+      reclaimTtl: 300000,
+      ticketTtl: 10000,
+      sessions: new Map(),
+      tickets: new Map(),
+      sockets: new Map(),
+    })
+  })
+
+  test('when "opts.ws.heartbeatInterval" is provided', () => {
+    const result = buildSocketState({
+      ws: {
+        disconnectThreshold: 100,
+      },
+    })
+
+    expect(result).toStrictEqual({
+      disconnectThreshold: 100,
+      heartbeatInterval: 30000,
+      reclaimTtl: 300000,
+      ticketTtl: 10000,
+      sessions: new Map(),
+      tickets: new Map(),
+      sockets: new Map(),
+    })
+  })
+
+  test('when "opts.ws.disconnectThreshold" is provided', () => {
+    const result = buildSocketState({
+      ws: {
+        heartbeatInterval: 100,
+      },
+    })
+
+    expect(result).toStrictEqual({
+      disconnectThreshold: 120000,
+      heartbeatInterval: 100,
+      reclaimTtl: 300000,
+      ticketTtl: 10000,
+      sessions: new Map(),
+      tickets: new Map(),
+      sockets: new Map(),
+    })
+  })
+
+  test('when "opts.ws.reclaimTtl" is provided', () => {
+    const result = buildSocketState({
+      ws: {
+        reclaimTtl: 100,
+      },
+    })
+
+    expect(result).toStrictEqual({
+      disconnectThreshold: 120000,
+      heartbeatInterval: 30000,
+      reclaimTtl: 100,
+      ticketTtl: 10000,
+      sessions: new Map(),
+      tickets: new Map(),
+      sockets: new Map(),
+    })
+  })
+
+  test('when "opts.ws.ticketTtl" is provided', () => {
+    const result = buildSocketState({
+      ws: {
+        ticketTtl: 100,
+      },
+    })
+
+    expect(result).toStrictEqual({
+      disconnectThreshold: 120000,
+      heartbeatInterval: 30000,
+      reclaimTtl: 300000,
+      ticketTtl: 100,
+      sessions: new Map(),
+      tickets: new Map(),
+      sockets: new Map(),
+    })
+  })
+})
+
+
+describe('buildSocketServer()', () => {
+  const state = buildSocketState({
+    ws: {
+      disconnectThreshold: 60_000,
+      heartbeatInterval: 20_000,
+    },
+  })
+
+  const server = buildSocketServer([], state)
 
   describe('message()', () => {
     const HEADERS = new Headers({
@@ -231,15 +227,8 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when parsing incoming message fails', async () => {
+      const server = buildSocketServer([], state)
       const ws = buildSocket(CLIENT_ID)
-
-      const { server } = buildSocketHandlers([
-        {
-          method: METHOD,
-          patternSegments: [],
-          middlewareChain: [],
-        },
-      ])
 
       await server.message(ws, 'invalid json')
 
@@ -248,8 +237,8 @@ describe('buildSocketHandlers()', () => {
 
     describe(`"type" = "${TYPES.HEARTBEAT}"`, () => {
       test('when a heartbeat message is received', async () => {
+        const server = buildSocketServer([], state)
         const ws = buildSocket(CLIENT_ID)
-        const { server } = buildSocketHandlers([])
 
         await server.message(ws, JSON.stringify({
           id: ID,
@@ -269,27 +258,21 @@ describe('buildSocketHandlers()', () => {
 
     describe(`"type" = "${TYPES.REQUEST}"`, () => {
       test('when validation fails', async () => {
+        const server = buildSocketServer([], state)
+
+        const ws = buildSocket(CLIENT_ID)
+
         const incomingMessage = JSON.stringify({
           id: 'invalid',
           clientId: CLIENT_ID,
           type: TYPES.REQUEST,
-          method: METHOD,
+          method: 'GET',
           route: '/',
           timestamp: TIMESTAMP,
           headers: {},
           query: {},
           body: null,
         })
-
-        const ws = buildSocket(CLIENT_ID)
-
-        const { server } = buildSocketHandlers([
-          {
-            method: METHOD,
-            patternSegments: [],
-            middlewareChain: [],
-          },
-        ])
 
         await server.message(ws, incomingMessage)
 
@@ -312,27 +295,28 @@ describe('buildSocketHandlers()', () => {
       })
 
       test('when message does NOT match any routes', async () => {
+        const server = buildSocketServer([
+          {
+            method: 'GET',
+            path: '/',
+            chain: [() => new Response('Done')],
+            segments: [],
+          },
+        ], state)
+
+        const ws = buildSocket(CLIENT_ID)
+
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
           type: TYPES.REQUEST,
-          method: METHOD,
+          method: 'GET',
           route: '/users',
           timestamp: TIMESTAMP,
           headers: HEADERS,
           query: {},
           body: null,
         })
-
-        const ws = buildSocket(CLIENT_ID)
-
-        const { server } = buildSocketHandlers([
-          {
-            method: METHOD,
-            patternSegments: [],
-            middlewareChain: [],
-          },
-        ])
 
         await server.message(ws, incomingMessage)
 
@@ -350,6 +334,17 @@ describe('buildSocketHandlers()', () => {
       })
 
       test('when message does NOT match any methods', async () => {
+        const server = buildSocketServer([
+          {
+            method: 'GET',
+            path: '/users',
+            chain: [() => new Response('Done')],
+            segments: ['users'],
+          },
+        ], state)
+
+        const ws = buildSocket(CLIENT_ID)
+
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
@@ -361,16 +356,6 @@ describe('buildSocketHandlers()', () => {
           query: {},
           body: null,
         })
-
-        const ws = buildSocket(CLIENT_ID)
-
-        const { server } = buildSocketHandlers([
-          {
-            method: METHOD,
-            patternSegments: ['users'],
-            middlewareChain: [],
-          },
-        ])
 
         await server.message(ws, incomingMessage)
 
@@ -388,31 +373,32 @@ describe('buildSocketHandlers()', () => {
       })
 
       test('when middleware fails (generic Error)', async () => {
+        const server = buildSocketServer([
+          {
+            method: 'GET',
+            path: '/',
+            chain: [
+              () => {
+                throw new Error('Bad')
+              },
+            ],
+            segments: [],
+          },
+        ], state)
+
+        const ws = buildSocket(CLIENT_ID)
+
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
           type: TYPES.REQUEST,
-          method: METHOD,
+          method: 'GET',
           route: '/',
           timestamp: TIMESTAMP,
           headers: HEADERS,
           query: {},
           body: null,
         })
-
-        const ws = buildSocket(CLIENT_ID)
-
-        const { server } = buildSocketHandlers([
-          {
-            method: METHOD,
-            patternSegments: [],
-            middlewareChain: [
-              (_req, _res, _next) => {
-                throw new Error('Bad')
-              },
-            ],
-          },
-        ])
 
         await server.message(ws, incomingMessage)
 
@@ -428,31 +414,32 @@ describe('buildSocketHandlers()', () => {
       })
 
       test('when middleware fails (RequestError subclass)', async () => {
+        const server = buildSocketServer([
+          {
+            method: 'GET',
+            path: '/',
+            chain: [
+              () => {
+                throw new TestError()
+              },
+            ],
+            segments: [],
+          },
+        ], state)
+
+        const ws = buildSocket(CLIENT_ID)
+
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
           type: TYPES.REQUEST,
-          method: METHOD,
+          method: 'GET',
           route: '/',
           timestamp: TIMESTAMP,
           headers: HEADERS,
           query: {},
           body: null,
         })
-
-        const ws = buildSocket(CLIENT_ID)
-
-        const { server } = buildSocketHandlers([
-          {
-            method: METHOD,
-            patternSegments: [],
-            middlewareChain: [
-              (_req, _res, _next) => {
-                throw new TestError()
-              },
-            ],
-          },
-        ])
 
         await server.message(ws, incomingMessage)
 
@@ -473,29 +460,28 @@ describe('buildSocketHandlers()', () => {
       })
 
       test('when successful', async () => {
+        const server = buildSocketServer([
+          {
+            method: 'GET',
+            path: '/users',
+            chain: [() => new Response('Success')],
+            segments: ['users'],
+          },
+        ], state)
+
+        const ws = buildSocket(CLIENT_ID)
+
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
           type: TYPES.REQUEST,
-          method: METHOD,
+          method: 'GET',
           route: '/users',
           timestamp: TIMESTAMP,
           headers: HEADERS,
           query: {},
           body: null,
         })
-
-        const ws = buildSocket(CLIENT_ID)
-
-        const { server } = buildSocketHandlers([
-          {
-            method: METHOD,
-            patternSegments: ['users'],
-            middlewareChain: [
-              (_req, _res, _next) => new Response('Success'),
-            ],
-          },
-        ])
 
         await server.message(ws, incomingMessage)
 
@@ -511,29 +497,28 @@ describe('buildSocketHandlers()', () => {
       })
 
       test('when route and method match with dynamic params', async () => {
+        const server = buildSocketServer([
+          {
+            method: 'GET',
+            path: '/users/:userId',
+            chain: [req => Response.json(req.params)],
+            segments: ['users', ':userId'],
+          },
+        ], state)
+
+        const ws = buildSocket(CLIENT_ID)
+
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
           type: TYPES.REQUEST,
-          method: METHOD,
+          method: 'GET',
           route: '/users/123',
           timestamp: TIMESTAMP,
           headers: HEADERS,
           query: {},
           body: null,
         })
-
-        const ws = buildSocket(CLIENT_ID)
-
-        const { server } = buildSocketHandlers([
-          {
-            method: METHOD,
-            patternSegments: ['users', ':userId'],
-            middlewareChain: [
-              (req, _res, _next) => Response.json(req.params),
-            ],
-          },
-        ])
 
         await server.message(ws, incomingMessage)
 
@@ -556,12 +541,6 @@ describe('buildSocketHandlers()', () => {
 
   describe('open()', () => {
     test('when a client connects', () => {
-      const { server } = buildSocketHandlers([], {
-        ws: {
-          heartbeatInterval: 20_000,
-        },
-      })
-
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
@@ -580,7 +559,8 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when the welcome carries a fresh token', () => {
-      const { server } = buildSocketHandlers([])
+      const state = buildSocketState()
+      const server = buildSocketServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
@@ -596,12 +576,9 @@ describe('buildSocketHandlers()', () => {
           token: BASE64_32,
         },
       })
-
-      console.log('calls:', crypto.randomBytes.mock.calls.length)
     })
 
     test('when an existing socket for the client is registered', () => {
-      const { server } = buildSocketHandlers([])
       const oldWs = buildSocket(CLIENT_ID)
       const newWs = buildSocket(CLIENT_ID)
 
@@ -611,46 +588,32 @@ describe('buildSocketHandlers()', () => {
       expect(oldWs.data.superseded).toBe(true)
       expect(oldWs.close).toHaveBeenCalledOnce()
     })
-  })
 
-  describe('reaper', () => {
     test('when the disconnect heartbeat threshold elapses', () => {
-      const { server } = buildSocketHandlers([], {
-        ws: {
-          disconnectThreshold: 100,
-        },
-      })
-
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      jest.advanceTimersByTime(100)
+      jest.advanceTimersByTime(state.disconnectThreshold + 1)
 
       expect(ws.close).toHaveBeenCalledOnce()
       expect(ws.data.reaped).toBe(true)
     })
 
     test('when a heartbeat arrives before the threshold', async () => {
-      const { server } = buildSocketHandlers([], {
-        ws: {
-          disconnectThreshold: 100,
-        },
-      })
-
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      jest.advanceTimersByTime(60)
+      jest.advanceTimersByTime(state.disconnectThreshold - 100)
 
       await server.message(ws, JSON.stringify({
         type: TYPES.HEARTBEAT,
       }))
 
-      jest.advanceTimersByTime(60)
+      jest.advanceTimersByTime(state.disconnectThreshold - 100)
 
       expect(ws.close).not.toHaveBeenCalled()
 
-      jest.advanceTimersByTime(40)
+      jest.advanceTimersByTime(state.disconnectThreshold - 100)
 
       expect(ws.close).toHaveBeenCalledOnce()
     })
@@ -658,14 +621,8 @@ describe('buildSocketHandlers()', () => {
     test('when a heartbeat resets the disconnect threshold', async () => {
       const ws = buildSocket(CLIENT_ID)
 
-      const { server } = buildSocketHandlers([], {
-        ws: {
-          disconnectThreshold: 100,
-        },
-      })
-
       server.open(ws)
-      jest.advanceTimersByTime(90)
+      jest.advanceTimersByTime(state.disconnectThreshold - 100)
 
       expect(ws.close).not.toHaveBeenCalled()
 
@@ -673,20 +630,21 @@ describe('buildSocketHandlers()', () => {
         type: TYPES.HEARTBEAT,
       }))
 
-      jest.advanceTimersByTime(90)
+      jest.advanceTimersByTime(state.disconnectThreshold - 100)
 
       expect(ws.close).not.toHaveBeenCalled()
 
-      jest.advanceTimersByTime(110)
+      jest.advanceTimersByTime(state.disconnectThreshold + 100)
 
       expect(ws.close).toHaveBeenCalledOnce()
     })
   })
 
   describe('close()', () => {
+    const handlers = buildSocketHandlers(state)
+    const updateTicket = handlers[2].handler
+
     test('when the socket was superseded', async () => {
-      const { endpoints, server } = buildSocketHandlers([])
-      const executePUT = endpoints['/ws/:clientId'].PUT
       const oldSocket = buildSocket(CLIENT_ID)
       const newSocket = buildSocket(CLIENT_ID)
 
@@ -694,8 +652,16 @@ describe('buildSocketHandlers()', () => {
       server.close(oldSocket, 1000)
       server.open(newSocket)
 
-      const req = buildPutRequest(newSocket.welcome.body.token)
-      const res = executePUT(req)
+      const res = updateTicket({
+        method: 'PUT',
+        headers: new Headers({
+          authorization: `Bearer ${newSocket.welcome.body.token}`,
+        }),
+        params: {
+          clientId: CLIENT_ID,
+        },
+      })
+
       const result = await res.json()
 
       expect(result).toStrictEqual({
@@ -705,14 +671,20 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when an involuntary close occurs', async () => {
-      const { endpoints, server } = buildSocketHandlers([])
-      const executePUT = endpoints['/ws/:clientId'].PUT
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
 
-      const req = buildPutRequest(BASE64_32)
-      const res = executePUT(req)
+      const res = updateTicket({
+        method: 'PUT',
+        headers: new Headers({
+          authorization: `Bearer ${BASE64_32}`,
+        }),
+        params: {
+          clientId: CLIENT_ID,
+        },
+      })
+
       const result = await res.json()
 
       server.close(ws, 1006)
@@ -724,21 +696,22 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when the reaper fired before an otherwise-clean close', async () => {
-      const { endpoints, server } = buildSocketHandlers([], {
-        ws: {
-          disconnectThreshold: 100,
-        },
-      })
-
-      const executePUT = endpoints['/ws/:clientId'].PUT
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      jest.advanceTimersByTime(100)
+      jest.advanceTimersByTime(state.disconnectThreshold + 100)
       server.close(ws, 1000)
 
-      const req = buildPutRequest(BASE64_32)
-      const res = executePUT(req)
+      const res = updateTicket({
+        method: 'PUT',
+        headers: new Headers({
+          authorization: `Bearer ${BASE64_32}`,
+        }),
+        params: {
+          clientId: CLIENT_ID,
+        },
+      })
+
       const result = await res.json()
 
       expect(result).toStrictEqual({
@@ -748,19 +721,19 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when the reclaim window has expired', () => {
-      const { endpoints, server } = buildSocketHandlers([], {
-        ws: {
-          reclaimTtl: 100,
-        },
-      })
-
-      const executePUT = endpoints['/ws/:clientId'].PUT
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
 
-      const req = buildPutRequest(BASE64_32)
-      const fn = () => executePUT(req)
+      const fn = () => updateTicket({
+        method: 'PUT',
+        headers: new Headers({
+          authorization: `Bearer ${BASE64_32}`,
+        }),
+        params: {
+          clientId: CLIENT_ID,
+        },
+      })
 
       server.close(ws, 1006)
       jest.advanceTimersByTime(101)
@@ -769,286 +742,531 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when a willing close occurs', () => {
-      const { endpoints, server } = buildSocketHandlers([])
-      const executePUT = endpoints['/ws/:clientId'].PUT
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
 
-      const req = buildPutRequest(BASE64_32)
-      const fn = () => executePUT(req)
+      const fn = () => updateTicket({
+        method: 'PUT',
+        headers: new Headers({
+          authorization: `Bearer ${BASE64_32}`,
+        }),
+        params: {
+          clientId: CLIENT_ID,
+        },
+      })
 
       server.close(ws, 1000)
 
       expect(fn).toThrow(NotFoundError)
     })
   })
+})
 
-  describe('endpoints', () => {
-    describe('GET', () => {
-      test('when the ticket is NOT in querystring', () => {
-        const { endpoints } = buildSocketHandlers([])
-        const executeGET = endpoints['/ws'].GET
-        const req = buildRequest('GET', undefined)
-        const fn = () => executeGET(req)
+describe('buildSocketHandlers()', () => {
+  const REQ_RAW = {}
 
-        expect(fn).toThrow(NotFoundError)
+  const state = buildSocketState()
+  const handlers = buildSocketHandlers(state)
+  const createSocket = handlers[0].handler
+  const createTicket = handlers[1].handler
+  const updateTicket = handlers[2].handler
+
+  describe('GET', () => {
+    test('when invoked via WebSocket message', async () => {
+      const upgrade = mock(() => true)
+      const ticketRes = createTicket({})
+      const ticketBody = await ticketRes.json()
+
+      const fn = () => createSocket({
+        clientId: crypto.randomUUID(),
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
       })
 
-      test('when the ticket does not exist', () => {
-        const { endpoints } = buildSocketHandlers([])
-        const executeGET = endpoints['/ws'].GET
-
-        const req = buildRequest('GET', {
-          query: {
-            ticket: 'nope',
-          },
-        })
-
-        const fn = () => executeGET(req)
-
-        expect(fn).toThrow(NotFoundError)
-      })
-
-      test('when the same ticket is redeemed twice', async () => {
-        const { endpoints } = buildSocketHandlers([])
-        const executeGET = endpoints['/ws'].GET
-        const executePOST = endpoints['/ws'].POST
-        const res = executePOST()
-        const result = await res.json()
-
-        const req = buildRequest('GET', {
-          query: {
-            ticket: BASE64_24,
-          },
-        })
-
-        const upgrade = mock(() => true)
-        const fn = () => executeGET(req, { upgrade })
-
-        fn() /* call first time */
-
-        expect(fn).toThrow(NotFoundError)
-
-        expect(upgrade).toHaveBeenCalledWith(req, {
-          data: {
-            clientId: UUIDs[0],
-          },
-        })
-      })
-
-      test('when the ticket has expired', async () => {
-        const { endpoints } = buildSocketHandlers([], {
-          ws: {
-            ticketTtl: 100,
-          },
-        })
-
-        const executeGET = endpoints['/ws'].GET
-        const executePOST = endpoints['/ws'].POST
-        const res = executePOST()
-        const result = await res.json()
-
-        const req = buildRequest('GET', {
-          query: {
-            ticket: BASE64_24,
-          },
-        })
-
-        const fn = () => executeGET(req)
-
-        jest.advanceTimersByTime(101)
-
-        expect(fn).toThrow(NotFoundError)
-      })
-
-      test('when the upgrade is refused', async () => {
-        const { endpoints } = buildSocketHandlers([])
-        const executeGET = endpoints['/ws'].GET
-        const executePOST = endpoints['/ws'].POST
-        const res = executePOST()
-        const result = await res.json()
-
-        const req = buildRequest('GET', {
-          query: {
-            ticket: BASE64_24,
-          },
-        })
-
-        const fn = () => executeGET(req, {
-          upgrade: mock(() => false),
-        })
-
-        expect(fn).toThrow(NotFoundError)
-      })
-
-      test('when the ticket is valid', async () => {
-        const { endpoints } = buildSocketHandlers([])
-        const executeGET = endpoints['/ws'].GET
-        const executePOST = endpoints['/ws'].POST
-        const upgrade = mock(() => true)
-        const res = executePOST()
-        const result = await res.json()
-
-        const req = buildRequest('GET', {
-          query: {
-            ticket: BASE64_24,
-          },
-        })
-
-        executeGET(req, { upgrade })
-
-        expect(upgrade).toHaveBeenCalledWith(req, {
-          data: {
-            clientId: UUIDs[0],
-          },
-        })
-      })
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: '',
+          message: 'must NOT be valid',
+        },
+      ]))
     })
 
-    describe('POST', () => {
-      test('when called, it mints a fresh clientId and ticket', async () => {
-        const { endpoints } = buildSocketHandlers([])
-        const executePOST = endpoints['/ws'].POST
-        const res = executePOST()
-        const result = await res.json()
+    test('when "req.query" is missing', () => {
+      const upgrade = mock(() => true)
 
-        expect(result).toStrictEqual({
+      const fn = () => createSocket({
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
+      })
+
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: '',
+          message: `must have required property 'query'`,
+        },
+      ]))
+    })
+
+    test('when "req.query.ticket" is missing', () => {
+      const upgrade = mock(() => true)
+
+      const fn = () => createSocket({
+        query: {},
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
+      })
+
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: 'query',
+          message: `must have required property 'ticket'`,
+        },
+      ]))
+    })
+
+    test('when "req.server" is missing', async () => {
+      const ticketRes = createTicket({})
+      const ticketBody = await ticketRes.json()
+
+      const fn = () => createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        raw: REQ_RAW,
+      })
+
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: '',
+          message: `must have required property 'server'`,
+        },
+      ]))
+    })
+
+    test('when "req.server.upgrade" is missing', async () => {
+      const ticketRes = createTicket({})
+      const ticketBody = await ticketRes.json()
+
+      const fn = () => createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {},
+        raw: REQ_RAW,
+      })
+
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: 'server',
+          message: `must have required property 'upgrade'`,
+        },
+      ]))
+    })
+
+    test('when "req.raw" is missing', async () => {
+      const upgrade = mock(() => true)
+      const ticketRes = createTicket({})
+      const ticketBody = await ticketRes.json()
+
+      const fn = () => createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+      })
+
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: '',
+          message: `must have required property 'raw'`,
+        },
+      ]))
+    })
+
+    test('when the provided ticket does not exist', () => {
+      const upgrade = mock(() => true)
+
+      const fn = () => createSocket({
+        query: {
+          ticket: 'nope',
+        },
+        server: {
+          upgrade,
+        },
+        raw: {
+          type: 'object',
+        },
+      })
+
+      expect(fn).toThrow(NotFoundError)
+    })
+
+    test('when the same ticket is redeemed twice', async () => {
+      const upgrade = mock(() => true)
+      const ticketRes = createTicket({})
+      const ticketBody = await ticketRes.json()
+
+      const fn = () => createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
+      })
+
+      fn() /* call first time */
+
+      expect(fn).toThrow(NotFoundError)
+
+      expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
+        data: {
           clientId: UUIDs[0],
-          ticket: BASE64_24,
-        })
+        },
       })
     })
 
-    describe('PUT', () => {
-      test('when the clientId has no session', () => {
-        const { endpoints } = buildSocketHandlers([])
-        const executePUT = endpoints['/ws/:clientId'].PUT
-        const req = buildPutRequest('whatever')
-        const fn = () => executePUT(req)
+    test('when the ticket has expired', async () => {
+      const ticketRes = createTicket({})
+      const ticketBody = await ticketRes.json()
 
-        expect(fn).toThrow(NotFoundError)
+      const fn = () => createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade: () => true,
+        },
+        raw: REQ_RAW,
       })
 
-      test('when the bearer token is missing', () => {
-        const { endpoints, server } = buildSocketHandlers([])
-        const executePUT = endpoints['/ws/:clientId'].PUT
-        const ws = buildSocket(CLIENT_ID)
+      jest.advanceTimersByTime(10_001)
 
-        server.open(ws)
+      expect(fn).toThrow(NotFoundError)
+    })
 
-        const req = buildPutRequest(undefined)
-        const fn = () => executePUT(req)
+    test('when the upgrade is refused', async () => {
+      const upgrade = mock(() => false)
+      const ticketRes = createTicket({})
+      const ticketBody = await ticketRes.json()
 
-        expect(fn).toThrow(UnauthorizedError)
+      const fn = () => createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
       })
 
-      test('when the token does not match', () => {
-        const { endpoints, server } = buildSocketHandlers([])
-        const executePUT = endpoints['/ws/:clientId'].PUT
-        const ws = buildSocket(CLIENT_ID)
+      expect(fn).toThrow(NotFoundError)
 
-        server.open(ws)
+      expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
+        data: {
+          clientId: UUIDs[0],
+        },
+      })
+    })
 
-        const req = buildPutRequest('wrong')
-        const fn = () => executePUT(req)
+    test('when the ticket is valid', async () => {
+      const upgrade = mock(() => true)
+      const ticketRes = createTicket({})
+      const ticketBody = await ticketRes.json()
 
-        expect(fn).toThrow(UnauthorizedError)
+      createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
       })
 
-      test('when the clientId and token match', async () => {
-        const { endpoints, server } = buildSocketHandlers([])
-        const executePUT = endpoints['/ws/:clientId'].PUT
-        const ws = buildSocket(CLIENT_ID)
-
-        server.open(ws)
-
-        const req = buildPutRequest(BASE64_32)
-        const res = executePUT(req)
-        const result = await res.json()
-
-        expect(result).toStrictEqual({
-          clientId: CLIENT_ID,
-          ticket: BASE64_24,
-        })
+      expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
+        data: {
+          clientId: UUIDs[0],
+        },
       })
     })
   })
 
-  describe('commands', () => {
-    describe('send()', () => {
-      test('when the client has no live socket', () => {
-        const { commands } = buildSocketHandlers([])
-
-        const fn = () => commands.send(CLIENT_ID, 'state_changed', {
-          ok: true,
-        })
-
-        expect(fn).toThrow(ReferenceError)
+  describe('POST', () => {
+    test('when invoked via WebSocket message', () => {
+      const fn = () => createTicket({
+        clientId: crypto.randomUUID(),
       })
 
-      test('when the client has a live socket', () => {
-        const { server, commands } = buildSocketHandlers([])
-        const ws = buildSocket(CLIENT_ID)
-
-        server.open(ws)
-        commands.send(CLIENT_ID, 'state_changed', { score: 1 })
-
-        const notification = JSON.parse(ws.send.mock.calls[1][0])
-
-        expect(notification).toStrictEqual({
-          id: notification.id,
-          clientId: CLIENT_ID,
-          type: TYPES.NOTIFICATION,
-          timestamp: TIMESTAMP,
-          event: 'state_changed',
-          headers: {},
-          body: {
-            score: 1,
-          },
-        })
-      })
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: '',
+          message: 'must NOT be valid',
+        },
+      ]))
     })
 
-    describe('broadcast()', () => {
-      const CLIENT_ID_A = '00000000-0000-0000-0000-000000000010'
-      const CLIENT_ID_B = '00000000-0000-0000-0000-000000000011'
+    test('when called, it mints a fresh clientId and ticket', async () => {
+      const res = createTicket({})
+      const result = await res.json()
 
-      test('when multiple clients are connected', () => {
-        const { server, commands } = buildSocketHandlers([])
-        const wsA = buildSocket(CLIENT_ID_A)
-        const wsB = buildSocket(CLIENT_ID_B)
+      expect(result).toStrictEqual({
+        clientId: UUIDs[0],
+        ticket: BASE64_24,
+      })
+    })
+  })
 
-        server.open(wsA)
-        server.open(wsB)
-        commands.broadcast('player_joined', { name: 'x' })
+  describe('PUT', () => {
+    test('when invoked via WebSocket message', () => {
+      const fn = () => updateTicket({
+        clientId: crypto.randomUUID(),
+        params: {
+          clientId: crypto.randomUUID(),
+        },
+        headers: new Headers({
+          authorization: 'Bearer abc',
+        }),
+      })
 
-        const notifA = JSON.parse(wsA.send.mock.calls[1][0])
-        const notifB = JSON.parse(wsB.send.mock.calls[1][0])
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: '',
+          message: 'must NOT be valid',
+        },
+      ]))
+    })
 
-        expect(notifA).toStrictEqual({
-          id: notifA.id,
-          clientId: CLIENT_ID_A,
-          type: TYPES.NOTIFICATION,
-          timestamp: TIMESTAMP,
-          event: 'player_joined',
-          headers: {},
-          body: {
-            name: 'x',
-          },
-        })
+    test('when "params" is missing', () => {
+      const fn = () => updateTicket({
+        headers: new Headers({
+          authorization: 'Bearer abc',
+        }),
+      })
 
-        expect(notifB).toStrictEqual({
-          id: notifB.id,
-          clientId: CLIENT_ID_B,
-          type: TYPES.NOTIFICATION,
-          timestamp: TIMESTAMP,
-          event: 'player_joined',
-          headers: {},
-          body: {
-            name: 'x',
-          },
-        })
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: '',
+          message: `must have required property 'params'`,
+        },
+      ]))
+    })
+
+    test('when "params.clientId" is missing', () => {
+      const fn = () => updateTicket({
+        params: {},
+        headers: new Headers({
+          authorization: 'Bearer abc',
+        }),
+      })
+
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: 'params',
+          message: `must have required property 'clientId'`,
+        },
+      ]))
+    })
+
+    test('when "headers.authorization" is missing', () => {
+      const fn = () => updateTicket({
+        params: {
+          clientId: UUIDs[0],
+        },
+        headers: new Headers({}),
+      })
+
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: 'headers',
+          message: `must have required property 'authorization'`,
+        },
+      ]))
+    })
+
+    test('when "headers.authorization" missing "Bearer "', () => {
+      const fn = () => updateTicket({
+        params: {
+          clientId: UUIDs[0],
+        },
+        headers: new Headers({
+          authorization: 'abc',
+        }),
+      })
+
+      expect(fn).toThrow(new UnprocessableContentError([
+        {
+          path: 'headers.authorization',
+          message: `must match pattern "^Bearer .+$"`,
+        },
+      ]))
+    })
+
+    test('when the clientId has no session', () => {
+      const fn = () => updateTicket({
+        params: {
+          clientId: 'does-not-exist',
+        },
+        headers: new Headers({
+          authorization: 'Bearer abc',
+        }),
+      })
+
+      expect(fn).toThrow(new NotFoundError())
+    })
+
+    test('when the token is incorrect', () => {
+      const server = buildSocketServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+
+      const fn = () => updateTicket({
+        params: {
+          clientId: CLIENT_ID,
+        },
+        headers: new Headers({
+          authorization: `Bearer abc`,
+        }),
+      })
+
+      expect(fn).toThrow(UnauthorizedError)
+    })
+
+    test('when client is closes unexpectedly (expired)', () => {
+      const server = buildSocketServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+      server.close(ws, 1006)
+      jest.advanceTimersByTime(state.reclaimTtl + 1)
+
+      const fn = () => updateTicket({
+        params: {
+          clientId: CLIENT_ID,
+        },
+        headers: new Headers({
+          authorization: `Bearer ${BASE64_32}`,
+        }),
+      })
+
+      expect(fn).toThrow(new NotFoundError())
+    })
+
+    test('when client is closes unexpectedly and (fresh)', async () => {
+      const server = buildSocketServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+      server.close(ws, 1006)
+
+      const result = updateTicket({
+        params: {
+          clientId: CLIENT_ID,
+        },
+        headers: new Headers({
+          authorization: `Bearer ${BASE64_32}`,
+        }),
+      })
+
+      const body = await result.json()
+
+      expect(result.status).toBe(200)
+
+      expect(body).toStrictEqual({
+        clientId: CLIENT_ID,
+        ticket: BASE64_24,
+      })
+    })
+  })
+})
+
+describe('buildSocketCommands()', () => {
+  const state = buildSocketState()
+  const server = buildSocketServer([], state)
+  const commands = buildSocketCommands(state)
+
+  describe('send()', () => {
+    test('when the client has no live socket', () => {
+      const fn = () => commands.send(CLIENT_ID, 'state_changed', {
+        ok: true,
+      })
+
+      expect(fn).toThrow(ReferenceError)
+    })
+
+    test('when the client has a live socket', () => {
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+      commands.send(CLIENT_ID, 'state_changed', { score: 1 })
+
+      const notification = JSON.parse(ws.send.mock.calls[1][0])
+
+      expect(notification).toStrictEqual({
+        id: notification.id,
+        clientId: CLIENT_ID,
+        type: TYPES.NOTIFICATION,
+        timestamp: TIMESTAMP,
+        event: 'state_changed',
+        headers: {},
+        body: {
+          score: 1,
+        },
+      })
+    })
+  })
+
+  describe('broadcast()', () => {
+    const CLIENT_ID_A = '00000000-0000-0000-0000-000000000010'
+    const CLIENT_ID_B = '00000000-0000-0000-0000-000000000011'
+
+    test('when multiple clients are connected', () => {
+      const wsA = buildSocket(CLIENT_ID_A)
+      const wsB = buildSocket(CLIENT_ID_B)
+
+      server.open(wsA)
+      server.open(wsB)
+      commands.broadcast('player_joined', { name: 'x' })
+
+      const notifA = JSON.parse(wsA.send.mock.calls[1][0])
+      const notifB = JSON.parse(wsB.send.mock.calls[1][0])
+
+      expect(notifA).toStrictEqual({
+        id: notifA.id,
+        clientId: CLIENT_ID_A,
+        type: TYPES.NOTIFICATION,
+        timestamp: TIMESTAMP,
+        event: 'player_joined',
+        headers: {},
+        body: {
+          name: 'x',
+        },
+      })
+
+      expect(notifB).toStrictEqual({
+        id: notifB.id,
+        clientId: CLIENT_ID_B,
+        type: TYPES.NOTIFICATION,
+        timestamp: TIMESTAMP,
+        event: 'player_joined',
+        headers: {},
+        body: {
+          name: 'x',
+        },
       })
     })
   })

@@ -1,5 +1,36 @@
 import { describe, test, expect, mock } from 'bun:test'
-import { formatError, executeMiddlewareChain } from './utils'
+
+import {
+  toSegments,
+  formatError,
+  executeMiddlewareChain,
+} from './utils'
+
+describe('toSegments()', () => {
+  test('when no slashes on either end', () => {
+    const result = toSegments('a/b')
+
+    expect(result).toStrictEqual(['a', 'b'])
+  })
+
+  test('when a leading slash is provided', () => {
+    const result = toSegments('/a/b')
+
+    expect(result).toStrictEqual(['a', 'b'])
+  })
+
+  test('when a trailing slash is provided', () => {
+    const result = toSegments('a/b/')
+
+    expect(result).toStrictEqual(['a', 'b'])
+  })
+
+  test('when an empty segment is provided', () => {
+    const result = toSegments('a//b')
+
+    expect(result).toStrictEqual(['a', '', 'b'])
+  })
+})
 
 describe('formatError()', () => {
   test('when instancePath is empty (root) with a prefix', () => {
@@ -117,22 +148,21 @@ describe('formatError()', () => {
 
 describe('executeMiddlewareChain()', () => {
   const REQ = { url: '/users' }
-  const RES = { data: 1 }
 
   test('when NO middleware is provided', async () => {
-    const fn = () => executeMiddlewareChain({}, {}, [])
+    const fn = () => executeMiddlewareChain({}, [])
 
     await expect(fn).toThrow(new RangeError('Middleware chain is empty'))
   })
 
   test('when a single middleware is provided', async () => {
     const middleware = mock().mockResolvedValueOnce(new Response('OK'))
-    const result = await executeMiddlewareChain(REQ, RES, [middleware])
+    const result = await executeMiddlewareChain(REQ, [middleware])
     const output = await result.text()
 
     expect(output).toBe('OK')
     expect(middleware).toHaveBeenCalledOnce()
-    expect(middleware).toHaveBeenCalledWith(REQ, RES, null)
+    expect(middleware).toHaveBeenCalledWith(REQ, {}, null)
   })
 
   test('when multiple middleware are provided', async () => {
@@ -151,15 +181,15 @@ describe('executeMiddlewareChain()', () => {
       }),
     ]
 
-    const result = await executeMiddlewareChain(REQ, RES, chain)
+    const result = await executeMiddlewareChain(REQ, chain)
     const output = await result.text()
 
     expect(output).toBe('OK')
     expect(order).toStrictEqual(['a', 'b'])
     expect(chain[0]).toHaveBeenCalledOnce()
-    expect(chain[0]).toHaveBeenCalledWith(REQ, RES, expect.any(Function))
+    expect(chain[0]).toHaveBeenCalledWith(REQ, {}, expect.any(Function))
     expect(chain[1]).toHaveBeenCalledOnce()
-    expect(chain[1]).toHaveBeenCalledWith(REQ, RES, null)
+    expect(chain[1]).toHaveBeenCalledWith(REQ, {}, null)
   })
 
   test('when "next()" is NOT called', async () => {
@@ -168,7 +198,7 @@ describe('executeMiddlewareChain()', () => {
       mock().mockResolvedValueOnce(new Response('OK')),
     ]
 
-    const fn = () => executeMiddlewareChain(REQ, RES, chain)
+    const fn = () => executeMiddlewareChain(REQ, chain)
     const err = new TypeError('Handler does not return a Response object')
 
     await expect(fn).toThrow(err)
@@ -184,7 +214,7 @@ describe('executeMiddlewareChain()', () => {
       }),
     ]
 
-    const fn = () => executeMiddlewareChain({}, {}, chain)
+    const fn = () => executeMiddlewareChain({}, chain)
     const err = new TypeError('Handler does not return a Response object')
 
     expect(fn).toThrow(err)
@@ -196,15 +226,13 @@ describe('executeMiddlewareChain()', () => {
       mock().mockResolvedValueOnce({ a: 1 }),
     ]
 
-    const fn = () => executeMiddlewareChain(REQ, RES, chain)
+    const fn = () => executeMiddlewareChain(REQ, chain)
     const err = new TypeError('Handler does not return a Response object')
 
     await expect(fn).toThrow(err)
   })
 
   test('when the response object accumulates', async () => {
-    const res = {}
-
     const chain = [
       mock().mockImplementationOnce((_req, res, next) => {
         res.pass1 = 'abc'
@@ -214,16 +242,14 @@ describe('executeMiddlewareChain()', () => {
       mock().mockImplementationOnce((_req, res, _next) => {
         res.pass2 = 'def'
 
-        return new Response('OK')
+        return Response.json(res)
       }),
     ]
 
-    const result = await executeMiddlewareChain(REQ, res, chain)
-    const output = await result.text()
+    const result = await executeMiddlewareChain(REQ, chain)
+    const output = await result.json()
 
-    expect(output).toBe('OK')
-
-    expect(res).toStrictEqual({
+    expect(output).toStrictEqual({
       pass1: 'abc',
       pass2: 'def',
     })
@@ -250,15 +276,15 @@ describe('executeMiddlewareChain()', () => {
       }),
     ]
 
-    const result = await executeMiddlewareChain(REQ, RES, chain)
+    const result = await executeMiddlewareChain(REQ, chain)
     const output = await result.text()
 
     expect(output).toBe('Early')
     expect(order).toStrictEqual(['a', 'b'])
     expect(chain[0]).toHaveBeenCalledOnce()
-    expect(chain[0]).toHaveBeenCalledWith(REQ, RES, expect.any(Function))
+    expect(chain[0]).toHaveBeenCalledWith(REQ, {}, expect.any(Function))
     expect(chain[1]).toHaveBeenCalledOnce()
-    expect(chain[1]).toHaveBeenCalledWith(REQ, RES, expect.any(Function))
+    expect(chain[1]).toHaveBeenCalledWith(REQ, {}, expect.any(Function))
     expect(chain[2]).not.toHaveBeenCalled()
   })
 
@@ -272,14 +298,14 @@ describe('executeMiddlewareChain()', () => {
       mock().mockResolvedValueOnce(new Response('OK')),
     ]
 
-    const result = await executeMiddlewareChain(REQ, RES, chain)
+    const result = await executeMiddlewareChain(REQ, chain)
     const output = await result.text()
 
     expect(output).toBe('OK')
     expect(chain[0]).toHaveBeenCalledOnce()
-    expect(chain[0]).toHaveBeenCalledWith(REQ, RES, expect.any(Function))
+    expect(chain[0]).toHaveBeenCalledWith(REQ, {}, expect.any(Function))
     expect(chain[1]).toHaveBeenCalledOnce()
-    expect(chain[1]).toHaveBeenCalledWith(REQ, RES, null)
+    expect(chain[1]).toHaveBeenCalledWith(REQ, {}, null)
   })
 
   test('when an error is thrown', async () => {
@@ -294,7 +320,7 @@ describe('executeMiddlewareChain()', () => {
       }),
     ]
 
-    const fn = () => executeMiddlewareChain({}, {}, chain)
+    const fn = () => executeMiddlewareChain({}, chain)
 
     expect(fn).toThrow(err)
   })

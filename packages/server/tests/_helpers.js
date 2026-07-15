@@ -16,8 +16,8 @@ export class Context {
   #app = null
   #socket = null
 
-  static async #createSocket (ctx) {
-    const domain = `localhost:${ctx.#port}/ws`
+  static async #createSocket (ctx, mountPath) {
+    const domain = `localhost:${ctx.#port}${mountPath}/ws`
 
     const response = await fetch(`http://${domain}`, {
       method: 'POST',
@@ -60,7 +60,7 @@ export class Context {
     ctx.#app = await createApp(ctx.#port, dirname, opts)
 
     if (!opts.hostname) {
-      await this.#createSocket(ctx)
+      await this.#createSocket(ctx, opts.mountPath || '')
       await this.#waitForSocketOpen(ctx)
     }
 

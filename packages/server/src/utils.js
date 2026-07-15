@@ -1,3 +1,18 @@
+export function toSegments (pathString) {
+  const [pathname] = String(pathString).split('?')
+  const segments = pathname.split('/')
+
+  if (pathname.startsWith('/')) {
+    segments.shift()
+  }
+
+  if (pathname.endsWith('/')) {
+    segments.pop()
+  }
+
+  return segments
+}
+
 export function formatError (prefix, input) {
   const fixedPath = input.instancePath || '/'
   const suffixPath = fixedPath.replace(/\//g, '.').replace('.', '')
@@ -8,14 +23,16 @@ export function formatError (prefix, input) {
   }
 }
 
-export async function executeMiddlewareChain (req, res, middlewareChain) {
-  if (!middlewareChain.length) {
+export async function executeMiddlewareChain (req, chain) {
+  const res = {}
+
+  if (!chain.length) {
     throw new RangeError('Middleware chain is empty')
   }
 
   const executeMiddleware = async (index) => {
-    const currentMiddleware = middlewareChain[index]
-    const isLastMiddleware = index === middlewareChain.length - 1
+    const currentMiddleware = chain[index]
+    const isLastMiddleware = index === chain.length - 1
 
     const next = !isLastMiddleware ?
       () => executeMiddleware(index + 1)

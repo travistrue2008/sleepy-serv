@@ -10,9 +10,10 @@ import { createApp } from 'sleepy-serv'
   timeout); all other opts pass through to createApp.
  */
 
-export async function postSession (port) {
+export async function postSession (port, headers = {}) {
   const response = await fetch(`http://localhost:${port}/ws`, {
     method: 'POST',
+    headers,
   })
 
   return {
@@ -21,11 +22,12 @@ export async function postSession (port) {
   }
 }
 
-export async function putSession (port, clientId, token) {
+export async function putSession (port, clientId, token, headers = {}) {
   const response = await fetch(`http://localhost:${port}/ws/${clientId}`, {
     method: 'PUT',
     headers: {
       authorization: `Bearer ${token}`,
+      ...headers,
     },
   })
 

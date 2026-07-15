@@ -6,17 +6,19 @@ import readline from 'node:readline'
 import * as _middleware from './middleware'
 
 import { stdin, stdout } from 'node:process'
-import { executeMiddlewareChain } from './utils'
+import { toSegments, executeMiddlewareChain } from './utils'
+
+import {
+  buildSocketState,
+  buildSocketServer,
+  buildSocketHandlers,
+  buildSocketCommands,
+} from './socket'
 
 import {
   NotFoundError,
   MethodNotAllowedError,
 } from './errors'
-
-import {
-  buildSocketRoutes,
-  buildSocketHandlers,
-} from './socket'
 
 export * from './errors'
 
@@ -53,6 +55,34 @@ function methodNotAllowedHandler (_req) {
   throw new MethodNotAllowedError()
 }
 
+function defaultMethodMap () {
+  return {
+    HEAD: methodNotAllowedHandler,
+    GET: methodNotAllowedHandler,
+    PUT: methodNotAllowedHandler,
+    POST: methodNotAllowedHandler,
+    PATCH: methodNotAllowedHandler,
+    DELETE: methodNotAllowedHandler,
+  }
+}
+
+function buildBunRequest (bunReq, server) {
+  const url = new URL(bunReq.url)
+  const qs = url.search.replace('?', '')
+  const json = () => bunReq.json()
+
+  return {
+    method: bunReq.method,
+    route: url.pathname,
+    headers: bunReq.headers,
+    params: bunReq.params ?? {},
+    query: querystring.parse(qs),
+    raw: bunReq,
+    server,
+    json,
+  }
+}
+
 function validateLeafDirectory (targetPath, filenames, entries) {
   const hasDirectories = entries.some(entry => entry.stat.isDirectory())
 
@@ -67,23 +97,6 @@ Directory is a leaf, but doesn't contain a method file:
 ${targetPath}
       `.trim())
     }
-  }
-}
-
-function validateReservedRoutes (rootPath, reservedRoutes) {
-  const reservedPaths = reservedRoutes.map(route =>
-    path.join(rootPath, 'api', route),
-  )
-
-  const foundItems = reservedPaths.filter(item => fs.existsSync(item))
-
-  if (foundItems.length) {
-    throw new TypeError(`
-Illegal directory:
-${foundItems.join('\n')}
-
-This is a reserved directory.
-    `.trim())
   }
 }
 
@@ -134,8 +147,24 @@ function getMetaFilePaths (targetPath) {
   return getFilteredFilePaths(targetPath, ALLOWED_FILES_META)
 }
 
-function buildRoutesPaths (rootPath, mountPath) {
-  const metadata = getMetaFilePaths(rootPath)
+function selectMetaPaths (metadata, modulePath) {
+  return metadata
+    .filter(metaPath => modulePath.startsWith(path.dirname(metaPath)))
+    .sort((a, b) => a.length - b.length)
+}
+
+async function resolveMetaMiddleware (metaPaths) {
+  const modules = await Promise.all(metaPaths.map(item => import(item)))
+
+  return modules
+    .map(item => item.middleware)
+    .reduce((accum, curr) => [
+      ...accum,
+      ...(curr || []),
+    ], [])
+}
+
+function buildRoutePaths (rootPath, mountPath, metadata) {
   const paths = getMethodFilePaths(rootPath)
 
   return paths.map(modulePath => {
@@ -148,13 +177,7 @@ function buildRoutesPaths (rootPath, mountPath) {
       .filter(item => item)
       .join('') || '/'
 
-    const metaMiddlewarePath = metadata
-      .filter(metaPath => {
-        const metaBasePath = path.dirname(metaPath)
-
-        return modulePath.startsWith(metaBasePath)
-      })
-      .sort((a, b) => a.length - b.length)
+    const metaMiddlewarePath = selectMetaPaths(metadata, modulePath)
 
     return {
       method: segments[lastIndex].toUpperCase(),
@@ -165,19 +188,9 @@ function buildRoutesPaths (rootPath, mountPath) {
   })
 }
 
-async function buildHandlers (route, rootMiddleware) {
+async function buildChain (route, rootMiddleware) {
   const module = await import(route.modulePath)
-
-  const middlewareModules = await Promise.all(
-    route.metaMiddlewarePath.map(item => import(item)),
-  )
-
-  const metaMiddleware = middlewareModules
-    .map(item => item.middleware)
-    .reduce((accum, curr) => [
-      ...accum,
-      ...(curr || []),
-    ], [])
+  const metaMiddleware = await resolveMetaMiddleware(route.metaMiddlewarePath)
 
   if (!module.default) {
     throw new ReferenceError(`
@@ -190,54 +203,87 @@ ${route.modulePath}
     ? module.default
     : [module.default]
 
-  const middlewareChain = [
-    ...rootMiddleware,
-    ...metaMiddleware,
-    ...baseChain,
-  ]
-
-  const handler = async bunReq => {
-    const query = bunReq.url.split('?')[1]
-
-    const req = {
-      method: bunReq.method,
-      url: bunReq.url,
-      route: new URL(bunReq.url).pathname,
-      headers: bunReq.headers,
-      query: query ? querystring.parse(query) : {},
-      params: bunReq.params ?? {},
-      body: null,
-      json: () => bunReq.json(),
-    }
-
-    return executeMiddlewareChain(req, {}, middlewareChain)
-  }
-
   return {
     method: route.method,
     path: route.path,
-    handler,
-    middlewareChain,
+    chain: [
+      ...rootMiddleware,
+      ...metaMiddleware,
+      ...baseChain,
+    ],
   }
 }
 
-function buildModuleRoutes (routePaths, rootMiddleware) {
+function buildNormalRoutes (routePaths, rootMiddleware) {
   return Promise.all(
-    routePaths.map(route => buildHandlers(route, rootMiddleware)),
+    routePaths.map(route => buildChain(route, rootMiddleware)),
   )
+}
+
+async function buildMergedRoutes (routePaths, middleware, state, opts) {
+  const { basePath, mountPath, metadata } = opts
+  const socketRoutes = buildSocketHandlers(state)
+
+  for (const socketRoute of socketRoutes) {
+    const mountedPath = `${mountPath}${socketRoute.path}`
+
+    const targetItem = routePaths.find(item => (
+      item.method === socketRoute.method &&
+      item.path === mountedPath
+    ))
+
+    if (targetItem) {
+      targetItem.chain.push(socketRoute.handler)
+
+      continue
+    }
+
+    const method = socketRoute.method.toLowerCase()
+    const modulePath = path.join(basePath, socketRoute.path, `${method}.js`)
+    const metaPaths = selectMetaPaths(metadata, modulePath)
+    const metaMiddleware = await resolveMetaMiddleware(metaPaths)
+
+    routePaths.push({
+      method: socketRoute.method,
+      path: mountedPath,
+      chain: [
+        ...middleware,
+        ...metaMiddleware,
+        socketRoute.handler,
+      ],
+    })
+  }
+
+  return routePaths
+}
+
+function  buildSocketRoutes (mergedRoutes) {
+  return mergedRoutes.map(route => ({
+    ...route,
+    segments: toSegments(route.path),
+  }))
+}
+
+function buildModuleRoutes (routePaths) {
+  return routePaths.map(route => {
+    const handler = async (bunReq, server) => {
+      const req = buildBunRequest(bunReq, server)
+
+      return executeMiddlewareChain(req, route.chain)
+    }
+
+    return {
+      method: route.method,
+      path: route.path,
+      handler,
+    }
+  })
 }
 
 function buildServerRoutes (moduleRoutes) {
   return moduleRoutes.reduce((accum, curr) => {
     if (!accum[curr.path]) {
-      accum[curr.path] = {
-        HEAD: methodNotAllowedHandler,
-        GET: methodNotAllowedHandler,
-        PUT: methodNotAllowedHandler,
-        POST: methodNotAllowedHandler,
-        PATCH: methodNotAllowedHandler,
-        DELETE: methodNotAllowedHandler,
-      }
+      accum[curr.path] = defaultMethodMap()
     }
 
     accum[curr.path][curr.method] = curr.handler
@@ -255,40 +301,48 @@ function buildOutputRoutes (moduleRoutes) {
   }, {})
 }
 
-async function buildRoutes (rootPath, opts) {
+async function buildRoutes (rootPath, state, opts) {
   const basePath = `${rootPath}/api`
   const mountPath = opts.mountPath || ''
-  const rootMiddleware = opts.middleware || []
-  const routePaths = buildRoutesPaths(basePath, mountPath)
-  const moduleRoutes = await buildModuleRoutes(routePaths, rootMiddleware)
+  const middleware = opts.middleware || []
+  const metadata = getMetaFilePaths(basePath)
+  const routePaths = buildRoutePaths(basePath, mountPath, metadata)
+  const normalRoutes = await buildNormalRoutes(routePaths, middleware)
+
+  const routingOpts = {
+    basePath,
+    mountPath,
+    metadata,
+  }
+
+  const mergedRoutes = await buildMergedRoutes(
+    normalRoutes,
+    middleware,
+    state,
+    routingOpts,
+  )
+
+  const socketRoutes = buildSocketRoutes(mergedRoutes)
+  const moduleRoutes = buildModuleRoutes(socketRoutes)
   const serverRoutes = buildServerRoutes(moduleRoutes)
   const outputRoutes = buildOutputRoutes(moduleRoutes)
-  const socketRoutes = buildSocketRoutes(moduleRoutes)
 
   return {
     server: serverRoutes,
-    output: outputRoutes,
     socket: socketRoutes,
+    output: outputRoutes,
   }
 }
 
-function buildServer (rootPath, port, routes, opts) {
+function buildServer (port, routes, state, opts) {
   const hostname = opts.hostname || '0.0.0.0'
-  const socket = buildSocketHandlers(routes.socket, opts)
-  const reservedRoutes = Object.keys(socket.endpoints)
+  const websocketServer = buildSocketServer(routes.socket, state)
 
-  const allRoutes = {
-    ...routes.server,
-    ...socket.endpoints,
-  }
-
-  validateReservedRoutes(rootPath, reservedRoutes)
-
-  const server = Bun.serve({
+  return Bun.serve({
     port,
     hostname,
-    routes: allRoutes,
-    websocket: socket.server,
+    routes: routes.server,
+    websocket: websocketServer,
     async fetch (_req, _server) {
       throw new NotFoundError()
     },
@@ -302,11 +356,6 @@ function buildServer (rootPath, port, routes, opts) {
         : new Response(err.message, { status })
     },
   })
-
-  return {
-    server,
-    commands: socket.commands,
-  }
 }
 
 function processIO (port, server, opts) {
@@ -326,8 +375,10 @@ function processIO (port, server, opts) {
 }
 
 export async function createApp (port, rootPath, opts = {}) {
-  const routes = await buildRoutes(rootPath, opts)
-  const {server, commands } = buildServer(rootPath, port, routes, opts)
+  const state = buildSocketState(opts)
+  const routes = await buildRoutes(rootPath, state, opts)
+  const server = buildServer(port, routes, state, opts)
+  const commands = buildSocketCommands(state)
 
   processIO(port, server, opts)
 

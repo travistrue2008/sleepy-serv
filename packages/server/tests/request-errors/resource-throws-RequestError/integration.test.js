@@ -10,9 +10,12 @@ test('when a RequestError sub-type is thrown', async () => {
 
   expect(res.status).toBe(UnprocessableContentError.status)
 
-  expect(res.body).toStrictEqual({
-    firstName: 'Required',
-  })
+  expect(res.body).toStrictEqual([
+    {
+      path: 'body',
+      message: `must have required property 'firstName'`,
+    },
+  ])
 })
 
 test('when a socket resource throws a RequestError sub-type', async () => {
@@ -23,7 +26,10 @@ test('when a socket resource throws a RequestError sub-type', async () => {
 
   expect(res.status).toBe(UnprocessableContentError.status)
 
-  expect(res.body).toStrictEqual({
-    firstName: 'Required',
-  })
+  expect(res.body).toStrictEqual([
+    {
+      path: 'body',
+      message: `must have required property 'firstName'`,
+    },
+  ])
 })
