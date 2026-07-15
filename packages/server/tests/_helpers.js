@@ -9,15 +9,12 @@ export const FMT = {
 }
 
 export class Context {
-  static #currentOpenPort = 3000
-
   #clientId = null
-  #port = null
   #app = null
   #socket = null
 
   static async #createSocket (ctx, mountPath) {
-    const domain = `localhost:${ctx.#port}${mountPath}/ws`
+    const domain = `localhost:${ctx.port}${mountPath}/ws`
 
     const response = await fetch(`http://${domain}`, {
       method: 'POST',
@@ -56,8 +53,7 @@ export class Context {
   static async create (dirname, opts = {}) {
     const ctx = new this()
 
-    ctx.#port = this.#getOpenPort()
-    ctx.#app = await createApp(ctx.#port, dirname, opts)
+    ctx.#app = await createApp(0, dirname, opts)
 
     if (!opts.hostname) {
       await this.#createSocket(ctx, opts.mountPath || '')
@@ -67,14 +63,8 @@ export class Context {
     return ctx
   }
 
-  static #getOpenPort () {
-    this.#currentOpenPort += 1
-
-    return this.#currentOpenPort
-  }
-
   get port () {
-    return this.#port
+    return this.#app.server.port
   }
 
   get app () {
@@ -110,7 +100,7 @@ export class Context {
   }
 
   async makeRequest (route, fmt, opts = {}) {
-    const baseUrl = `http://localhost:${this.#port}`
+    const baseUrl = `http://localhost:${this.port}`
     const url = new URL(route, baseUrl)
     const search = new URLSearchParams(opts.query ?? {})
 
