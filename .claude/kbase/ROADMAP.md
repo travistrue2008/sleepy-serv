@@ -17,7 +17,7 @@
   - [x] Heartbeat / presence (`opts.ws.heartbeatInterval` + `disconnectThreshold`, welcome frame, server-side reaping)
   - [x] Formal envelopes (`response` + `notification`)
   - [x] Client-resilience (heartbeat ack → half-open detection → reconnect)
-  - [ ] Identity model (session + token reclaim built; player/user IDs pending)
+  - [x] Identity model (session + token reclaim)
 - [ ] Support Body Parsing
   - [ ] Raw
   - [ ] Binary
