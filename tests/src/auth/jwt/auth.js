@@ -38,13 +38,16 @@ export async function authenticate (req, res, next) {
 
   const token = header.slice('Bearer '.length)
 
-  try {
-    const { payload } = await jwtVerify(token, SECRET)
+  let payload
 
-    res.user = payload
+  try {
+    ({ payload } = await jwtVerify(token, SECRET))
   } catch {
     throw new UnauthorizedError('Invalid token')
   }
 
-  return next()
+  return next({
+    ...res,
+    user: payload,
+  })
 }

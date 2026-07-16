@@ -10,7 +10,7 @@ import {
 } from './errors'
 
 const SCHEMA_EMPTY = {
-  type: 'object',
+  type: ['null', 'object'],
   properties: {},
 }
 
@@ -41,26 +41,30 @@ function buildFormatterSchema (schema) {
   }
 }
 
+async function parseBody (req) {
+  try {
+    const result = await req.json()
+
+    return result
+  } catch {
+    throw new BadRequestError('Invalid JSON')
+  }
+}
+
 export async function parseJson (req, res, next) {
   const contentType = req.headers.get('content-type')
 
   if (!contentType) {
-    return next()
+    return next(res)
   }
 
   if (!contentType.startsWith('application/json')) {
     throw new UnsupportedMediaTypeError('content-type')
   }
 
-  try {
-    res.body = await req.json()
-  } catch (err) {
-    console.error(err)
+  const body = await parseBody(req)
 
-    throw new BadRequestError('Body is invalid JSON')
-  }
-
-  return next()
+  return next(body)
 }
 
 export function setValidationFormats (formats) {
@@ -90,7 +94,7 @@ export function validateSchema (schemas) {
     const errors = Object
       .entries(formattedSchemas)
       .reduce((accum, [key, schema]) => {
-        const data = key === 'body' ? res[key] : req[key]
+        const data = key === 'body' ? res : req[key]
         const valid = schema ? ajv.validate(schema, data) : true
 
         return !valid
@@ -105,6 +109,6 @@ export function validateSchema (schemas) {
       throw new UnprocessableContentError(errors)
     }
 
-    return next()
+    return next(res)
   }
 }

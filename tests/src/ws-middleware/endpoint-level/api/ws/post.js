@@ -7,10 +7,10 @@ import { UnauthorizedError } from 'sleepy-serv'
   of calling next() would bypass the handshake.
  */
 
-export default function (req, _res, next) {
+export default function (req, res, next) {
   if (!req.headers.get('x-ws')) {
     throw new UnauthorizedError()
   }
 
-  return next()
+  return next(res)
 }

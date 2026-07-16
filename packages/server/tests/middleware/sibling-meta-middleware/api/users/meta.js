@@ -1,7 +1,6 @@
 export const middleware = [
-  (_req, res, next) => {
-    res.output = 'sibling-meta'
-
-    return next()
-  },
+  (_req, res, next) => next({
+    ...res,
+    output: 'sibling-meta',
+  }),
 ]

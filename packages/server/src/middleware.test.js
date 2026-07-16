@@ -20,14 +20,12 @@ describe('parseJson()', () => {
       json: mock().mockResolvedValue(),
     }
 
-    const res = {}
     const next = mock()
 
-    await parseJson(req, res, next)
+    await parseJson(req, null, next)
 
-    expect(req.json).not.toBeCalledWith()
-    expect(res).toStrictEqual({})
-    expect(next).toHaveBeenCalledWith()
+    expect(req.json).not.toBeCalled()
+    expect(next).toHaveBeenCalledWith(null)
   })
 
   test('when "content-type" is NOT "application/json"', async () => {
@@ -39,14 +37,12 @@ describe('parseJson()', () => {
       json: mock().mockResolvedValue(),
     }
 
-    const res = {}
     const next = mock()
-    const fn = () => parseJson(req, res, next)
+    const fn = () => parseJson(req, null, next)
 
     await expect(fn).toThrow(new UnsupportedMediaTypeError('content-type'))
 
     expect(req.json).not.toBeCalled()
-    expect(res).toStrictEqual({})
     expect(next).not.toHaveBeenCalled()
   })
 
@@ -59,14 +55,12 @@ describe('parseJson()', () => {
       json: mock().mockRejectedValue(new Error('Cannot parse JSON')),
     }
 
-    const res = {}
     const next = mock()
-    const fn = () => parseJson(req, res, next)
+    const fn = () => parseJson(req, null, next)
 
-    await expect(fn).toThrow(new BadRequestError('Body is invalid JSON'))
+    await expect(fn).toThrow(new BadRequestError('Invalid JSON'))
 
-    expect(req.json).toBeCalledWith()
-    expect(res).toStrictEqual({})
+    expect(req.json).toHaveBeenCalledOnce()
     expect(next).not.toHaveBeenCalled()
   })
 
@@ -83,18 +77,12 @@ describe('parseJson()', () => {
       json: mock().mockResolvedValue(BODY),
     }
 
-    const res = {}
     const next = mock()
 
-    await parseJson(req, res, next)
+    await parseJson(req, null, next)
 
     expect(req.json).toBeCalledWith()
-
-    expect(res).toStrictEqual({
-      body: BODY,
-    })
-
-    expect(next).toHaveBeenCalledWith()
+    expect(next).toHaveBeenCalledWith(BODY)
   })
 
   test('when the content-type has no charset', async () => {
@@ -110,18 +98,12 @@ describe('parseJson()', () => {
       json: mock().mockResolvedValue(BODY),
     }
 
-    const res = {}
     const next = mock()
 
-    await parseJson(req, res, next)
+    await parseJson(req, null, next)
 
-    expect(req.json).toBeCalledWith()
-
-    expect(res).toStrictEqual({
-      body: BODY,
-    })
-
-    expect(next).toHaveBeenCalledWith()
+    expect(req.json).toHaveBeenCalledOnce()
+    expect(next).toHaveBeenCalledWith(BODY)
   })
 })
 
@@ -148,12 +130,10 @@ describe('setValidationFormats()', () => {
       headers: {},
       params: {},
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith()
+    expect(next).toHaveBeenCalledWith(null)
   })
 })
 
@@ -203,12 +183,10 @@ describe('validateSchema()', () => {
       headers: {},
       params: {},
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith()
+    expect(next).toHaveBeenCalledWith(null)
   })
 
   test('when headers FAIL validation (format)', () => {
@@ -224,9 +202,7 @@ describe('validateSchema()', () => {
       },
       params: {},
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -251,12 +227,10 @@ describe('validateSchema()', () => {
       },
       params: {},
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith()
+    expect(next).toHaveBeenCalledWith(null)
   })
 
   test('when headers FAIL validation (pattern)', () => {
@@ -272,9 +246,7 @@ describe('validateSchema()', () => {
       },
       params: {},
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -299,12 +271,10 @@ describe('validateSchema()', () => {
       },
       params: {},
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith()
+    expect(next).toHaveBeenCalledWith(null)
   })
 
   test('when params FAIL validation (format)', () => {
@@ -320,9 +290,7 @@ describe('validateSchema()', () => {
         userId: '123',
       },
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -347,12 +315,11 @@ describe('validateSchema()', () => {
         userId: UUID,
       },
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith()
+
+    expect(next).toHaveBeenCalledWith(null)
   })
 
   test('when params FAIL validation (pattern)', () => {
@@ -368,9 +335,7 @@ describe('validateSchema()', () => {
         userId: '123',
       },
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -395,12 +360,11 @@ describe('validateSchema()', () => {
         userId: UUID,
       },
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith()
+
+    expect(next).toHaveBeenCalledWith(null)
   })
 
   test('when query FAIL validation (format)', () => {
@@ -416,9 +380,7 @@ describe('validateSchema()', () => {
       query: {
         userId: '123',
       },
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -443,12 +405,10 @@ describe('validateSchema()', () => {
       query: {
         userId: UUID,
       },
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith()
+    expect(next).toHaveBeenCalledWith(null)
   })
 
   test('when query FAIL validation (pattern)', () => {
@@ -464,9 +424,7 @@ describe('validateSchema()', () => {
       query: {
         userId: '123',
       },
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -491,9 +449,7 @@ describe('validateSchema()', () => {
       query: {
         userId: UUID,
       },
-    }, {
-      body: {},
-    }, next)
+    }, null, next)
 
     expect(fn).not.toThrow()
     expect(next).toHaveBeenCalledOnce()
@@ -510,9 +466,7 @@ describe('validateSchema()', () => {
       headers: {},
       params: {},
       query: {},
-    }, {
-      body: {},
-    }, next)
+    }, {}, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -544,16 +498,20 @@ describe('validateSchema()', () => {
       params: {},
       query: {},
     }, {
-      body: {
-        firstName: 'Tony',
-        lastName: 'Stark',
-        middleName: 'Edward',
-        dob: '2000-01-01',
-      },
+      firstName: 'Tony',
+      lastName: 'Stark',
+      middleName: 'Edward',
+      dob: '2000-01-01',
     }, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith()
+
+    expect(next).toHaveBeenCalledWith({
+      firstName: 'Tony',
+      lastName: 'Stark',
+      middleName: 'Edward',
+      dob: '2000-01-01',
+    })
   })
 
   test('when body contains extra fields (root)', () => {
@@ -564,11 +522,9 @@ describe('validateSchema()', () => {
     }
 
     const res = {
-      body: {
-        firstName: 'Some',
-        lastName: 'One',
-        middleName: 'Else',
-      },
+      firstName: 'Some',
+      lastName: 'One',
+      middleName: 'Else',
     }
 
     const middleware = validateSchema({
@@ -585,12 +541,12 @@ describe('validateSchema()', () => {
 
     middleware(req, res, next)
 
-    expect(res.body).toStrictEqual({
+    expect(res).toStrictEqual({
       firstName: 'Some',
       lastName: 'One',
     })
 
-    expect(next).toHaveBeenCalledWith()
+    expect(next).toHaveBeenCalledWith(res)
   })
 
   test('when body contains extra fields (sub-key)', () => {
@@ -601,11 +557,9 @@ describe('validateSchema()', () => {
     }
 
     const res = {
-      body: {
-        stats: {
-          strength: 12,
-          defense: 8,
-        },
+      stats: {
+        strength: 12,
+        defense: 8,
       },
     }
 
@@ -629,13 +583,13 @@ describe('validateSchema()', () => {
 
     middleware(req, res, next)
 
-    expect(res.body).toStrictEqual({
+    expect(res).toStrictEqual({
       stats: {
         strength: 12,
       },
     })
 
-    expect(next).toHaveBeenCalledWith()
+    expect(next).toHaveBeenCalledWith(res)
   })
 
   test('when a null value for a nullable field is provided', () => {
@@ -646,9 +600,7 @@ describe('validateSchema()', () => {
     }
 
     const res = {
-      body: {
-        dob: null,
-      },
+      dob: null,
     }
 
     const middleware = validateSchema({
@@ -666,7 +618,7 @@ describe('validateSchema()', () => {
     const next = mock()
 
     middleware(req, res, next)
-    expect(res.body).toStrictEqual({ dob: null })
-    expect(next).toHaveBeenCalledWith()
+    expect(res).toStrictEqual({ dob: null })
+    expect(next).toHaveBeenCalledWith(res)
   })
 })

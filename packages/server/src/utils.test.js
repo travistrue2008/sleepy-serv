@@ -162,17 +162,17 @@ describe('executeMiddlewareChain()', () => {
 
     expect(output).toBe('OK')
     expect(middleware).toHaveBeenCalledOnce()
-    expect(middleware).toHaveBeenCalledWith(REQ, {}, null)
+    expect(middleware).toHaveBeenCalledWith(REQ, null, null)
   })
 
   test('when multiple middleware are provided', async () => {
     const order = []
 
     const chain = [
-      mock().mockImplementationOnce((_req, _res, next) => {
+      mock().mockImplementationOnce((_req, res, next) => {
         order.push('a')
 
-        return next()
+        return next(res)
       }),
       mock().mockImplementationOnce((_req, _res, _next) => {
         order.push('b')
@@ -187,9 +187,9 @@ describe('executeMiddlewareChain()', () => {
     expect(output).toBe('OK')
     expect(order).toStrictEqual(['a', 'b'])
     expect(chain[0]).toHaveBeenCalledOnce()
-    expect(chain[0]).toHaveBeenCalledWith(REQ, {}, expect.any(Function))
+    expect(chain[0]).toHaveBeenCalledWith(REQ, null, expect.any(Function))
     expect(chain[1]).toHaveBeenCalledOnce()
-    expect(chain[1]).toHaveBeenCalledWith(REQ, {}, null)
+    expect(chain[1]).toHaveBeenCalledWith(REQ, null, null)
   })
 
   test('when "next()" is NOT called', async () => {
@@ -232,18 +232,27 @@ describe('executeMiddlewareChain()', () => {
     await expect(fn).toThrow(err)
   })
 
-  test('when the response object accumulates', async () => {
+  test('when next() is called with no argument', async () => {
     const chain = [
-      mock().mockImplementationOnce((_req, res, next) => {
-        res.pass1 = 'abc'
+      mock().mockImplementationOnce((_req, _res, next) => next()),
+      mock().mockResolvedValueOnce(new Response('OK')),
+    ]
 
-        return next()
-      }),
-      mock().mockImplementationOnce((_req, res, _next) => {
-        res.pass2 = 'def'
+    await executeMiddlewareChain(REQ, chain)
 
-        return Response.json(res)
-      }),
+    expect(chain[1]).toHaveBeenCalledWith(REQ, undefined, null)
+  })
+
+  test('when data is passed through next()', async () => {
+    const chain = [
+      mock().mockImplementationOnce((_req, res, next) => next({
+        ...res,
+        pass1: 'abc',
+      })),
+      mock().mockImplementationOnce((_req, res, _next) => Response.json({
+        ...res,
+        pass2: 'def',
+      })),
     ]
 
     const result = await executeMiddlewareChain(REQ, chain)
@@ -255,14 +264,27 @@ describe('executeMiddlewareChain()', () => {
     })
   })
 
+  test('when next() replaces the result value', async () => {
+    const chain = [
+      mock().mockImplementationOnce((_req, _res, next) => next({
+        swapped: true,
+      })),
+      mock().mockResolvedValueOnce(new Response('OK')),
+    ]
+
+    await executeMiddlewareChain(REQ, chain)
+
+    expect(chain[1]).toHaveBeenCalledWith(REQ, { swapped: true }, null)
+  })
+
   test('when a middleware returns a Response', async () => {
     const order = []
 
     const chain = [
-      mock().mockImplementationOnce((_req, _res, next) => {
+      mock().mockImplementationOnce((_req, res, next) => {
         order.push('a')
 
-        return next()
+        return next(res)
       }),
       mock().mockImplementationOnce((_req, _res, next) => {
         order.push('b')
@@ -282,18 +304,18 @@ describe('executeMiddlewareChain()', () => {
     expect(output).toBe('Early')
     expect(order).toStrictEqual(['a', 'b'])
     expect(chain[0]).toHaveBeenCalledOnce()
-    expect(chain[0]).toHaveBeenCalledWith(REQ, {}, expect.any(Function))
+    expect(chain[0]).toHaveBeenCalledWith(REQ, null, expect.any(Function))
     expect(chain[1]).toHaveBeenCalledOnce()
-    expect(chain[1]).toHaveBeenCalledWith(REQ, {}, expect.any(Function))
+    expect(chain[1]).toHaveBeenCalledWith(REQ, null, expect.any(Function))
     expect(chain[2]).not.toHaveBeenCalled()
   })
 
   test('when middleware is async', async () => {
     const chain = [
-      mock().mockImplementationOnce(async (_req, _res, next) => {
+      mock().mockImplementationOnce(async (_req, res, next) => {
         await Promise.resolve()
 
-        return next()
+        return next(res)
       }),
       mock().mockResolvedValueOnce(new Response('OK')),
     ]
@@ -303,9 +325,9 @@ describe('executeMiddlewareChain()', () => {
 
     expect(output).toBe('OK')
     expect(chain[0]).toHaveBeenCalledOnce()
-    expect(chain[0]).toHaveBeenCalledWith(REQ, {}, expect.any(Function))
+    expect(chain[0]).toHaveBeenCalledWith(REQ, null, expect.any(Function))
     expect(chain[1]).toHaveBeenCalledOnce()
-    expect(chain[1]).toHaveBeenCalledWith(REQ, {}, null)
+    expect(chain[1]).toHaveBeenCalledWith(REQ, null, null)
   })
 
   test('when an error is thrown', async () => {

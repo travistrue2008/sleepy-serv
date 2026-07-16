@@ -24,18 +24,16 @@ export function formatError (prefix, input) {
 }
 
 export async function executeMiddlewareChain (req, chain) {
-  const res = {}
-
   if (!chain.length) {
     throw new RangeError('Middleware chain is empty')
   }
 
-  const executeMiddleware = async (index) => {
+  const executeMiddleware = async (index, res) => {
     const currentMiddleware = chain[index]
     const isLastMiddleware = index === chain.length - 1
 
     const next = !isLastMiddleware ?
-      () => executeMiddleware(index + 1)
+      (data) => executeMiddleware(index + 1, data)
       : null
 
     const result = await currentMiddleware(req, res, next)
@@ -47,5 +45,5 @@ export async function executeMiddlewareChain (req, chain) {
     }
   }
 
-  return executeMiddleware(0)
+  return executeMiddleware(0, null)
 }

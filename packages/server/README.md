@@ -86,9 +86,9 @@ These functions take three parameters:
 - `res`: a results object
 - `next`: a function to call the next middleware in the chain (or `null` for the final handler)
 
-The `res` parameter might seem familiar if coming from ExpressJS, but this parameter has a different purpose. The `res` parameter is meant to act as a dedicated, persistent object that middleware can write their results to. This way, the `req` object stays as a lean `BunRequest`.
+The `res` parameter might seem familiar if coming from ExpressJS, but this parameter has a different purpose. The `res` parameter is the "result" value handed to the current middleware. Middleware do not mutate it. Instead, whatever a middleware passes into `next(data)` becomes the `res` value the next middleware receives. This way, the `req` object stays as a lean `BunRequest`, and each middleware decides exactly what the next one sees.
 
-The `next` parameter is a function that allows middleware to pass control to the next function in the middleware chain. For route handlers (the final function in the chain), `next` will be `null`.
+The `next` parameter is a function that advances the chain. Whatever you pass to it becomes the next middleware's `res`. Calling `next()` with no argument sets the next `res` to `undefined`, so to forward the current result unchanged, return `next(res)`. For route handlers (the final function in the chain), `next` will be `null`.
 
 These handlers can also be `async` functions and `sleepy-serv` will wait for them to finish before moving on.
 
@@ -99,8 +99,11 @@ As mentioned earlier, method definition files can also export an array of functi
 ```js
 export default [
   async (req, res, next) => {
-    res.body = await req.json()
-    return next() /* call the next middleware */
+    /* pass the parsed body forward as the next middleware's `res` */
+    return next({
+      ...res,
+      body: await req.json(),
+    })
   },
   (req, res) => { /* notice that the last function doesn't take `next` */
     console.log('JSON body:', res.body)
@@ -115,7 +118,7 @@ This is useful if you want to break common logic up into reusable functions. The
 #### Middleware Chain Behavior
 
 Each middleware function must do one of the following:
-- **Call `next()`**: Continue to the next middleware in the chain by returning `next()`
+- **Call `next(data)`**: Continue to the next middleware by returning `next(data)`, where `data` becomes that middleware's `res`. To forward the current result unchanged, return `next(res)`
 - **Return a Response**: End the chain (early) by returning a `BunResponse` object
 - **Throw an error**: Stop the chain and trigger error handling
 
@@ -137,12 +140,13 @@ export default [
   (req, res, next) => {
     console.log('2nd middleware')
 
-    res.user = {
-      id: 123,
-      name: 'John',
-    }
-
-    return next() // continue to route handler
+    return next({ // continue to route handler
+      ...res,
+      user: {
+        id: 123,
+        name: 'John',
+      },
+    })
   },
   (req, res) => {
     console.log('Final, "route" handler')
@@ -159,7 +163,7 @@ Middleware functions are executed in the following order:
 2. **Directory-level middleware** (from `meta.js` files, from root to leaf)
 3. **Route-level middleware** (defined in the route file array)
 
-Each middleware function receives the same `req` and `res` objects, allowing data to be passed between middleware functions through the `res` object.
+Each middleware function receives the same `req` object. The `res` value, by contrast, is whatever the previous middleware passed into `next(data)`, allowing data to be transformed or accumulated as it flows through the chain.
 
 #### Breaking the Middleware Chain - Responses
 
@@ -233,7 +237,7 @@ It's also possible for resource directories to contain a `meta.js` file. These f
 export const middleware = [
   (req, res, next) => {
     /* do middleware things */
-    return next() // Continue to next middleware
+    return next(res) // Continue to next middleware, forwarding `res`
   },
 ]
 ```
@@ -292,7 +296,7 @@ At the time of this writing, `meta.js` only exports middleware functions, but it
 
 ### parseJson(req, res, next)
 
-This middleware parses the request's `body` property as a JSON string, and then stores the results in `res.body`. It calls `next()` if parsing succeeds, and throws a `BadRequestError` if parsing fails. Additional body parsers can be written in the future to accommodate other body encoding schemes (such as XML or protobuf).
+This middleware parses the request's `body` property as a JSON string, and forwards the parsed value to the next middleware as `next({ ...res, body })`. It throws a `BadRequestError` if parsing fails, and forwards `res` unchanged when there is no `content-type`. Additional body parsers can be written in the future to accommodate other body encoding schemes (such as XML or protobuf).
 
 Example usage:
 
@@ -311,7 +315,7 @@ export default [
 
 ### validateSchema(schemas)
 
-This function returns a middleware function that validates request data against provided schemas. The returned middleware function has the signature `(req, res, next)` and automatically calls `next()` after successful validation.
+This function returns a middleware function that validates request data against provided schemas. The returned middleware function has the signature `(req, res, next)` and forwards `res` via `next(res)` after successful validation.
 
 The `schemas` object can contain these optional properties:
 - `headers`: takes a string formatter schema to evaluate `req.headers`

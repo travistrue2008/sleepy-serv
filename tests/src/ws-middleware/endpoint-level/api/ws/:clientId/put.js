@@ -3,6 +3,6 @@
   reclaim handler by returning next().
  */
 
-export default function (_req, _res, next) {
-  return next()
+export default function (_req, res, next) {
+  return next(res)
 }

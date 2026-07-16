@@ -721,13 +721,14 @@ describe('buildSocketServer()', () => {
         params: {
           clientId: CLIENT_ID,
         },
-      })
+      }, {})
 
       const result = await res.json()
 
       expect(result).toStrictEqual({
         clientId: CLIENT_ID,
         ticket: BASE64_24,
+        data: {},
       })
     })
 
@@ -744,7 +745,7 @@ describe('buildSocketServer()', () => {
         params: {
           clientId: CLIENT_ID,
         },
-      })
+      }, {})
 
       const result = await res.json()
 
@@ -753,6 +754,7 @@ describe('buildSocketServer()', () => {
       expect(result).toStrictEqual({
         clientId: CLIENT_ID,
         ticket: BASE64_24,
+        data: {},
       })
     })
 
@@ -771,13 +773,14 @@ describe('buildSocketServer()', () => {
         params: {
           clientId: CLIENT_ID,
         },
-      })
+      }, {})
 
       const result = await res.json()
 
       expect(result).toStrictEqual({
         clientId: CLIENT_ID,
         ticket: BASE64_24,
+        data: {},
       })
     })
 
@@ -1277,6 +1280,26 @@ describe('buildSocketHandlers()', () => {
       })
     })
 
+    test('when expired tickets exist, it sweeps them on mint', () => {
+      const state = buildSocketState()
+      const handlers = buildSocketHandlers(state)
+      const createTicket = handlers[1].handler
+
+      state.tickets.set('expired-a', {
+        clientId: 'x',
+        expiresAt: Date.now() - 100,
+      })
+
+      state.tickets.set('expired-b', {
+        clientId: 'y',
+        expiresAt: Date.now() - 100,
+      })
+
+      createTicket({}, {})
+
+      expect(state.tickets.size).toBe(1)
+    })
+
     test('when "res" has content', async () => {
       const res = createTicket({}, RES_HANDLER)
       const result = await res.json()
@@ -1286,22 +1309,6 @@ describe('buildSocketHandlers()', () => {
         ticket: BASE64_24,
         data: RES_HANDLER,
       })
-    })
-
-    test('when expired tickets exist, it sweeps them on mint', () => {
-      state.tickets.set('expired-a', {
-        clientId: 'x',
-        expiresAt: Date.now() - 1,
-      })
-
-      state.tickets.set('expired-b', {
-        clientId: 'y',
-        expiresAt: Date.now() - 1,
-      })
-
-      createTicket({}, {})
-
-      expect(state.tickets.size).toBe(1)
     })
   })
 

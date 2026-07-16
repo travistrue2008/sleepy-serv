@@ -1,8 +1,10 @@
 export default [
-  (_req, res, next) => {
-    res.list.push('module')
-
-    return next()
-  },
+  (_req, res, next) => next({
+    ...res,
+    list: [
+      ...res.list,
+      'module',
+    ],
+  }),
   (_req, res) => new Response(res.list.join('|')),
 ]

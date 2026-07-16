@@ -4,11 +4,10 @@ import { FMT, Context } from '../../_helpers'
 test('when all levels of middleware are defined', async () => {
   const ctx = await Context.create(import.meta.dirname, {
     middleware: [
-      (_req, res, next) => {
-        res.list = ['root']
-
-        return next()
-      },
+      (_req, res, next) => next({
+        ...res,
+        list: ['root'],
+      }),
     ],
   })
 
@@ -23,11 +22,10 @@ test('when all levels of middleware are defined', async () => {
 test('when all levels of socket middleware are defined', async () => {
   const ctx = await Context.create(import.meta.dirname, {
     middleware: [
-      (_req, res, next) => {
-        res.list = ['root']
-
-        return next()
-      },
+      (_req, res, next) => next({
+        ...res,
+        list: ['root'],
+      }),
     ],
   })
 

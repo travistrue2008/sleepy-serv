@@ -4,11 +4,10 @@ import { FMT, Context } from '../../_helpers'
 test('when app-level middleware is defined', async () => {
   const ctx = await Context.create(import.meta.dirname, {
     middleware: [
-      (_req, res, next) => {
-        res.output = 'root'
-
-        return next()
-      },
+      (_req, res, next) => next({
+        ...res,
+        output: 'root',
+      }),
     ],
   })
 
@@ -23,11 +22,10 @@ test('when app-level middleware is defined', async () => {
 test('when app-level socket middleware is defined', async () => {
   const ctx = await Context.create(import.meta.dirname, {
     middleware: [
-      (_req, res, next) => {
-        res.output = 'root'
-
-        return next()
-      },
+      (_req, res, next) => next({
+        ...res,
+        output: 'root',
+      }),
     ],
   })
 

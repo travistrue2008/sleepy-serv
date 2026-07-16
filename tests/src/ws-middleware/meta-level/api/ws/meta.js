@@ -7,12 +7,12 @@ import { UnauthorizedError } from 'sleepy-serv'
   this reserved-path meta chain ahead of the built-in terminal.
  */
 
-function requireMeta (req, _res, next) {
+function requireMeta (req, res, next) {
   if (!req.headers.get('x-meta')) {
     throw new UnauthorizedError()
   }
 
-  return next()
+  return next(res)
 }
 
 export const middleware = [requireMeta]

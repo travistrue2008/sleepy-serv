@@ -12,14 +12,14 @@ import { boot, createServer, postSession, putSession } from '../../helpers'
 const AUTH_HEADER = { 'x-auth': 'secret' }
 const UNKNOWN_ID = '00000000-0000-0000-0000-000000000000'
 
-function requireAuth (req, _res, next) {
+function requireAuth (req, res, next) {
   console.log('requireAuth()')
 
   if (!req.headers.get('x-auth')) {
     throw new UnauthorizedError()
   }
 
-  return next()
+  return next(res)
 }
 
 test('when app-level middleware rejects the POST handshake', async () => {
@@ -63,10 +63,10 @@ test('when app-level middleware permits the POST handshake', async () => {
 test('when a client connects with app-level middleware', async () => {
   const traversed = []
 
-  const recorder = (req, _res, next) => {
+  const recorder = (req, res, next) => {
     traversed.push(`${req.method} ${req.route}`)
 
-    return next()
+    return next(res)
   }
 
   const { shutdown } = await boot(import.meta.dirname, {
