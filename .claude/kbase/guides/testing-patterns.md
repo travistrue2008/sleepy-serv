@@ -23,3 +23,19 @@ flakiness or complexity without proving anything extra — e.g. `packages/client
 client's own logic (registry, queueing, timeouts) doesn't depend on real network behavior. Real
 servers/sockets are still the right call for true end-to-end tests that specifically verify
 client↔server wire compatibility.
+
+## Isolation across the shared process
+
+The whole suite runs in one Bun process, so module singletons and globals are shared; package unit
+tests and root E2E tests that import the real client touch the same state. A unit test that mutates
+shared state and fails to restore it leaks into every file that runs afterward. Two rules:
+
+- **Mock globals with `spyOn(obj, 'method')`, never direct assignment.** `mock.restore()` only reverts
+  `spyOn` spies; a plain `crypto.randomUUID = mock()` is never undone, so the clobbered global bleeds
+  into later files.
+- **Reset module singletons in `afterEach`.** `setIdGenerator()` (client `utils.js`, see
+  [Real-time / WebSocket Layer](../architecture/websocket.md)) mutates a module-level generator; a test
+  that sets it must restore the default (`setIdGenerator(() => crypto.randomUUID())`).
+
+Symptom of either leak: unrelated E2E tests hang to their timeout because the client emits id-less
+frames the server rejects with `must have required property 'id'`.

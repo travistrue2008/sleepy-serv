@@ -1,4 +1,4 @@
-import * as uuid from 'uuid'
+import { id } from './utils'
 
 export const TYPES = {
   WELCOME: 'welcome',
@@ -11,7 +11,7 @@ export const TYPES = {
 export function createMessage (clientId, type, opts = {}) {
   return {
     ...opts,
-    id: opts.id ?? uuid.v4(),
+    id: opts.id ?? id(),
     clientId,
     type,
     timestamp: new Date().toISOString(),

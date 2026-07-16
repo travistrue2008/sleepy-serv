@@ -1,6 +1,7 @@
 import { TYPES, createMessage } from './messages'
 
 export * from './messages'
+export * from './utils'
 
 export const QUEUE = {
   NONE: 'none',

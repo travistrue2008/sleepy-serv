@@ -1,5 +1,5 @@
-import * as uuid from 'uuid'
 import SleepySocketClient, { QUEUE, TYPES } from './'
+import { id } from './utils'
 
 import {
   jest,
@@ -106,7 +106,7 @@ class MockWebSocket {
 
 function sendWelcome (clientId) {
   return {
-    id: uuid.v4(),
+    id: id(),
     clientId,
     type: TYPES.WELCOME,
     timestamp: TIMESTAMP,
@@ -193,7 +193,7 @@ function response (id, body) {
 
 function notification (event, body) {
   return {
-    id: uuid.v4(),
+    id: id(),
     clientId: CLIENT_ID,
     type: TYPES.NOTIFICATION,
     event,
@@ -855,7 +855,7 @@ describe('SleepySocketClient', () => {
       const { socket } = await connectAndOpen()
 
       const fn = () => socket.receive({
-        id: uuid.v4(),
+        id: id(),
         type: 'garbage',
         timestamp: TIMESTAMP,
       })
