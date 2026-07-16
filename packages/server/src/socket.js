@@ -20,6 +20,18 @@ const ajv = new Ajv({
 
 addFormats(ajv)
 
+const validateNotMessage = ajv.compile({
+  type: 'object',
+  properties: {
+    clientId: {
+      type: 'string',
+    },
+  },
+  not: {
+    required: ['clientId'],
+  },
+})
+
 const createSocketValidator = ajv.compile({
   type: 'object',
   properties: {
@@ -130,9 +142,19 @@ function sweepInactiveSessions (state) {
 }
 
 function validateSchema (obj, validator) {
+  const headers = obj.headers
+    ? Object.fromEntries(obj.headers)
+    : undefined
+
   const payload = {
     ...obj,
-    headers: obj.headers ? Object.fromEntries(obj.headers) : undefined,
+    headers,
+  }
+
+  if (!validateNotMessage(payload)) {
+    const errors = validateNotMessage.errors.map(item => formatError('', item))
+
+    throw new UnprocessableContentError(errors)
   }
 
   if (!validator(payload)) {

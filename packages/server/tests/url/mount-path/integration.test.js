@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
-import { FMT, Context } from '../../_helpers'
+import { FMT, Context } from '../../helpers'
 
-test('when adding a mount path', async () => {
+test('when adding a mount path (REST)', async () => {
   const ctx = await Context.create(import.meta.dirname, {
     mountPath: '/test-mount-path',
   })
@@ -14,7 +14,7 @@ test('when adding a mount path', async () => {
   expect(res.body).toBe('Hello world')
 })
 
-test('when adding a mount path to a socket request', async () => {
+test('when adding a mount path (ws)', async () => {
   const ctx = await Context.create(import.meta.dirname, {
     mountPath: '/test-mount-path',
   })

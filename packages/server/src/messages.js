@@ -13,8 +13,8 @@ export const TYPES = {
 }
 
 export const TYPES_RECEIVED = [
-  TYPES.REQUEST,
   TYPES.HEARTBEAT,
+  TYPES.REQUEST,
 ]
 
 const ajv = new Ajv({
@@ -61,9 +61,7 @@ const validateHeartbeat = ajv.compile({
       const: TYPES.HEARTBEAT,
     },
   },
-  required: [
-    'type',
-  ],
+  required: SCHEMA_BASE.required,
 })
 
 const validateRequest = ajv.compile({

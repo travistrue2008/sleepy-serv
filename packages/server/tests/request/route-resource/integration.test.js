@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { FMT, Context } from '../../helpers'
 
-test('when meta file does not export middleware (REST)', async () => {
+test('when making a resource-level request (REST)', async () => {
   const ctx = await Context.create(import.meta.dirname)
   const res = await ctx.makeRequest('/users', FMT.TEXT)
 
@@ -11,7 +11,7 @@ test('when meta file does not export middleware (REST)', async () => {
   expect(res.body).toBe('Hello world')
 })
 
-test('when meta file does not export middleware (ws)', async () => {
+test('when making a resource-level request (ws)', async () => {
   const ctx = await Context.create(import.meta.dirname)
   const res = await ctx.sendMessage('GET', '/users')
 

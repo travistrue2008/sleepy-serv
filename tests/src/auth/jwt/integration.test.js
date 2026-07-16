@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { TYPES } from 'sleepy-socket'
+import { UnauthorizedError } from '../../../../packages/server/src/errors'
 
 import {
   makeRequest,
@@ -22,7 +23,7 @@ describe('REST', () => {
 
     await server.stop(true)
 
-    expect(res.status).toBe(401)
+    expect(res.status).toBe(UnauthorizedError.status)
     expect(res.body).toStrictEqual({ message: 'Missing bearer token' })
   })
 
@@ -37,7 +38,7 @@ describe('REST', () => {
 
     await server.stop(true)
 
-    expect(res.status).toBe(401)
+    expect(res.status).toBe(UnauthorizedError.status)
     expect(res.body).toStrictEqual({ message: 'Invalid token' })
   })
 
@@ -90,7 +91,7 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: client.clientId,
       type: TYPES.RESPONSE,
-      status: 401,
+      status: UnauthorizedError.status,
       timestamp: res.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -120,7 +121,7 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: client.clientId,
       type: TYPES.RESPONSE,
-      status: 401,
+      status: UnauthorizedError.status,
       timestamp: res.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
