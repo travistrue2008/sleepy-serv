@@ -230,6 +230,19 @@ export async function createSocketClient (app, opts = {}) {
     })
   })
 
+  async function sendRaw (payload) {
+    return new Promise(resolve => {
+      const handler = event => {
+        resolve(JSON.parse(event.data))
+
+        socket.removeEventListener('message', handler)
+      }
+
+      socket.addEventListener('message', handler)
+      socket.send(JSON.stringify(payload))
+    })
+  }
+
   async function sendMessage (type, payload) {
     return new Promise(resolve => {
       const handler = event => {
@@ -240,13 +253,13 @@ export async function createSocketClient (app, opts = {}) {
 
       socket.addEventListener('message', handler)
 
-      socket.send(JSON.stringify({
+      sendRaw({
         ...payload,
         id: crypto.randomUUID(),
         clientId: data.clientId,
         type,
         timestamp: new Date().toISOString(),
-      }))
+      }).then(resolve)
     })
   }
 
@@ -289,6 +302,9 @@ export async function createSocketClient (app, opts = {}) {
     },
     post (route, opts = {}) {
       return sendRequest('POST', route, opts)
+    },
+    sendRaw (payload) {
+      return sendRaw(payload)
     },
   }
 }
