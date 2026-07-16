@@ -34,7 +34,7 @@ An unexpected drop (any close the app did not initiate, decided by the `#closing
 
 ## Identity model (session + ticket)
 
-`clientId` now survives reconnects, so it is the session identifier (a slice of spec §6). Two server-wide stores live in the `buildSocketHandlers` closure:
+`clientId` now survives reconnects, so it is the session identifier (a slice of spec §6). Two server-wide stores live on the socket state (`buildSocketState`), shared across `buildSocketServer` / `buildSocketHandlers` / `buildSocketCommands`:
 
 - `sessions`: `clientId -> { token, expiresAt }`. `expiresAt` is unset while a connection is live. On an **involuntary** close (reaper flag, or a non-1000 code) it is stamped `now + reclaimTtl`, opening a reclaim window. On a **willing** close (code 1000, not reaped) the session is deleted, so the identity is terminal. `open` mints a fresh `token` on every connection (rotating on reclaim) and delivers it in the `welcome` frame; a reclaiming connection supersedes any still-live socket for that `clientId`.
 - `tickets`: `ticket -> { clientId, expiresAt }`, short-lived and single-use.
