@@ -4,7 +4,20 @@
       "Bash(bun --version)",
       "Bash(bun test *)",
       "Bash(bunx eslint *)",
-      "Bash(bunx tsc *)"
+      "Bash(bunx tsc *)",
+      "mcp__codegraph__*"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "codegraph prompt-hook"
+          }
+        ]
+      }
     ]
   }
 }
