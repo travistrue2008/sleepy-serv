@@ -99,14 +99,11 @@ As mentioned earlier, method definition files can also export an array of functi
 ```js
 export default [
   async (req, res, next) => {
-    /* pass the parsed body forward as the next middleware's `res` */
-    return next({
-      ...res,
-      body: await req.json(),
-    })
+    /* transform `res` into the parsed body for the next middleware */
+    return next(await req.json())
   },
   (req, res) => { /* notice that the last function doesn't take `next` */
-    console.log('JSON body:', res.body)
+    console.log('JSON body:', res)
 
     return new Response('Hello world')
   },
@@ -296,7 +293,7 @@ At the time of this writing, `meta.js` only exports middleware functions, but it
 
 ### parseJson(req, res, next)
 
-This middleware parses the request's `body` property as a JSON string, and forwards the parsed value to the next middleware as `next({ ...res, body })`. It throws a `BadRequestError` if parsing fails, and forwards `res` unchanged when there is no `content-type`. Additional body parsers can be written in the future to accommodate other body encoding schemes (such as XML or protobuf).
+This middleware parses the request's body as a JSON string and forwards the parsed value as the next middleware's `res` via `next(body)`. It throws a `BadRequestError` if parsing fails, and forwards `res` unchanged (`next(res)`) when there is no `content-type`. Additional body parsers can be written in the future to accommodate other body encoding schemes (such as XML or protobuf).
 
 Example usage:
 
@@ -306,7 +303,7 @@ import { middleware } from 'sleepy-serv'
 export default [
   middleware.parseJson,
   (req, res) => {
-    console.log('Parsed JSON:', res.body)
+    console.log('Parsed JSON:', res)
 
     return new Response('JSON received')
   },
@@ -321,7 +318,7 @@ The `schemas` object can contain these optional properties:
 - `headers`: takes a string formatter schema to evaluate `req.headers`
 - `params`: takes a string formatter schema to evaluate `req.params`
 - `query`: takes a string formatter schema to evaluate `req.query`
-- `body`: takes a JSON validation schema to evaluate `res.body`
+- `body`: takes a JSON validation schema to evaluate `res` (the body value passed in via `next`)
 
 Example usage:
 
@@ -398,7 +395,7 @@ middleware.setValidationFormats({
 })
 ```
 
-Calling `setValidationFormats()` extends the possible values that can be passed to the `value` property when evaulating strings in either the string formatter schema, or the `res.body`'s JSON schema.
+Calling `setValidationFormats()` extends the possible values that can be passed to the `value` property when evaulating strings in either the string formatter schema, or the body's JSON schema.
 
 ## `createApp()` Options
 

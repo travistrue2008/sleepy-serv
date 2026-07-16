@@ -10,7 +10,7 @@ In `parseJson` the `try` wraps **only** `await req.json()`, and the `return next
 
 ## Same chain, both transports
 
-The chain is transport-agnostic: an HTTP request and a WebSocket **request** frame for the same `route` + `method` dispatch through the *same* chain, so one guard (e.g. a Bearer-token check) covers both with no transport-specific code. Middleware pass data forward by writing to `res`; on the reserved `/ws` handshake routes that same `res` is returned to the client as the handshake `data` field (cached as `client.connectionData`), which is how a handshake guard hands the client auth credentials or connection context. A worked JWT example lives at `tests/src/auth/jwt`. See [WebSocket Layer](./websocket.md) and [Request Flow](./request-flow.md).
+The chain is transport-agnostic: an HTTP request and a WebSocket **request** frame for the same `route` + `method` dispatch through the *same* chain, so one guard (e.g. a Bearer-token check) covers both with no transport-specific code. Middleware pass data forward through `next(data)`: whatever is passed becomes the next middleware's `res` (calling `next()` with no argument yields `undefined`, so forward with `next(res)`). No shared mutable object; the first middleware starts from `{}`. On the reserved `/ws` handshake routes the value the terminal receives is returned to the client as the handshake `data` field (cached as `client.connectionData`), which is how a handshake guard hands the client auth credentials or connection context. A worked JWT example lives at `tests/src/auth/jwt`. See [WebSocket Layer](./websocket.md) and [Request Flow](./request-flow.md).
 
 ## Gotcha: two unrelated `meta.js`
 
