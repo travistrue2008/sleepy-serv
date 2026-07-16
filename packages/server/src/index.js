@@ -21,6 +21,7 @@ import {
 } from './errors'
 
 export * from './errors'
+export const middleware = _middleware
 
 const ALLOWED_FILES_META = ['meta.js', 'meta.ts']
 
@@ -43,8 +44,6 @@ const ALLOWED_FILES_METHODS = [
 if (process.stdin.isTTY) {
   process.stdin.setRawMode(true)
 }
-
-export const middleware = _middleware
 
 const rl = readline.createInterface({
   input: stdin,

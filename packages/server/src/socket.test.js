@@ -210,7 +210,6 @@ describe('buildSocketState()', () => {
   })
 })
 
-
 describe('buildSocketServer()', () => {
   const state = buildSocketState({
     ws: {
@@ -765,6 +764,7 @@ describe('buildSocketServer()', () => {
 
 describe('buildSocketHandlers()', () => {
   const REQ_RAW = {}
+  const RES_HANDLER = { ok: true }
 
   const state = buildSocketState()
   const handlers = buildSocketHandlers(state)
@@ -775,7 +775,7 @@ describe('buildSocketHandlers()', () => {
   describe('GET', () => {
     test('when invoked via WebSocket message', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({})
+      const ticketRes = createTicket({}, {})
       const ticketBody = await ticketRes.json()
 
       const fn = () => createSocket({
@@ -805,7 +805,7 @@ describe('buildSocketHandlers()', () => {
           upgrade,
         },
         raw: REQ_RAW,
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -824,7 +824,7 @@ describe('buildSocketHandlers()', () => {
           upgrade,
         },
         raw: REQ_RAW,
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -835,7 +835,7 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when "req.server" is missing', async () => {
-      const ticketRes = createTicket({})
+      const ticketRes = createTicket({}, {})
       const ticketBody = await ticketRes.json()
 
       const fn = () => createSocket({
@@ -843,7 +843,7 @@ describe('buildSocketHandlers()', () => {
           ticket: ticketBody.ticket,
         },
         raw: REQ_RAW,
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -854,7 +854,7 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when "req.server.upgrade" is missing', async () => {
-      const ticketRes = createTicket({})
+      const ticketRes = createTicket({}, {})
       const ticketBody = await ticketRes.json()
 
       const fn = () => createSocket({
@@ -863,7 +863,7 @@ describe('buildSocketHandlers()', () => {
         },
         server: {},
         raw: REQ_RAW,
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -875,7 +875,7 @@ describe('buildSocketHandlers()', () => {
 
     test('when "req.raw" is missing', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({})
+      const ticketRes = createTicket({}, {})
       const ticketBody = await ticketRes.json()
 
       const fn = () => createSocket({
@@ -885,7 +885,7 @@ describe('buildSocketHandlers()', () => {
         server: {
           upgrade,
         },
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -908,14 +908,14 @@ describe('buildSocketHandlers()', () => {
         raw: {
           type: 'object',
         },
-      })
+      }, {})
 
-      expect(fn).toThrow(NotFoundError)
+      expect(fn).toThrow(new NotFoundError())
     })
 
     test('when the same ticket is redeemed twice', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({})
+      const ticketRes = createTicket({}, {})
       const ticketBody = await ticketRes.json()
 
       const fn = () => createSocket({
@@ -926,11 +926,11 @@ describe('buildSocketHandlers()', () => {
           upgrade,
         },
         raw: REQ_RAW,
-      })
+      }, {})
 
       fn() /* call first time */
 
-      expect(fn).toThrow(NotFoundError)
+      expect(fn).toThrow(new NotFoundError())
 
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
@@ -940,7 +940,7 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when the ticket has expired', async () => {
-      const ticketRes = createTicket({})
+      const ticketRes = createTicket({}, {})
       const ticketBody = await ticketRes.json()
 
       const fn = () => createSocket({
@@ -951,16 +951,16 @@ describe('buildSocketHandlers()', () => {
           upgrade: () => true,
         },
         raw: REQ_RAW,
-      })
+      }, {})
 
       jest.advanceTimersByTime(10_001)
 
-      expect(fn).toThrow(NotFoundError)
+      expect(fn).toThrow(new NotFoundError())
     })
 
     test('when the upgrade is refused', async () => {
       const upgrade = mock(() => false)
-      const ticketRes = createTicket({})
+      const ticketRes = createTicket({}, {})
       const ticketBody = await ticketRes.json()
 
       const fn = () => createSocket({
@@ -971,9 +971,9 @@ describe('buildSocketHandlers()', () => {
           upgrade,
         },
         raw: REQ_RAW,
-      })
+      }, {})
 
-      expect(fn).toThrow(NotFoundError)
+      expect(fn).toThrow(new NotFoundError())
 
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
@@ -984,10 +984,10 @@ describe('buildSocketHandlers()', () => {
 
     test('when the ticket is valid', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({})
+      const ticketRes = createTicket({}, {})
       const ticketBody = await ticketRes.json()
 
-      createSocket({
+      const res = createSocket({
         query: {
           ticket: ticketBody.ticket,
         },
@@ -995,7 +995,53 @@ describe('buildSocketHandlers()', () => {
           upgrade,
         },
         raw: REQ_RAW,
+      }, {})
+
+
+      expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
+        data: {
+          clientId: UUIDs[0],
+        },
       })
+
+      expect(res.status).toBe(200)
+    })
+
+    test('when "res" is not of type "object"', async () => {
+      const upgrade = mock(() => true)
+      const ticketRes = createTicket({}, {})
+      const ticketBody = await ticketRes.json()
+
+      const fn = () => createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
+      }, 'asdf')
+
+      expect(fn).toThrow(new TypeError('Endpoint "res" must be an object'))
+      expect(upgrade).not.toHaveBeenCalledWith()
+    })
+
+    test('when "res" is NULL', async () => {
+      const upgrade = mock(() => true)
+      const ticketRes = createTicket({}, {})
+      const ticketBody = await ticketRes.json()
+
+      const res = createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
+      }, null)
+
+      expect(res.status).toBe(200)
 
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
@@ -1003,13 +1049,127 @@ describe('buildSocketHandlers()', () => {
         },
       })
     })
+
+    test('when "res" is an empty object', async () => {
+      const upgrade = mock(() => true)
+      const ticketRes = createTicket({}, {})
+      const ticketBody = await ticketRes.json()
+
+      const res = createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
+      }, {})
+
+      expect(res.status).toBe(200)
+
+      expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
+        data: {
+          clientId: UUIDs[0],
+        },
+      })
+    })
+
+    test('when "res.data" is an empty object', async () => {
+      const upgrade = mock(() => true)
+      const ticketRes = createTicket({}, {})
+      const ticketBody = await ticketRes.json()
+
+      const middlewareRes = {
+        data: {},
+      }
+
+      const res = createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
+      }, middlewareRes)
+
+      expect(res.status).toBe(200)
+
+      expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
+        data: {
+          clientId: UUIDs[0],
+        },
+      })
+    })
+
+    test('when "res.data" is an object with content', async () => {
+      const upgrade = mock(() => true)
+      const ticketRes = createTicket({}, {})
+      const ticketBody = await ticketRes.json()
+
+      const middlewareRes = {
+        data: {
+          ok: true,
+        },
+      }
+
+      const res = createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
+      }, middlewareRes)
+
+      expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
+        data: {
+          clientId: UUIDs[0],
+          ok: true,
+        },
+      })
+
+      expect(res.status).toBe(200)
+    })
+
+    test('when "res" has other top-level properties', async () => {
+      const upgrade = mock(() => true)
+      const ticketRes = createTicket({}, {})
+      const ticketBody = await ticketRes.json()
+
+      const middlewareRes = {
+        headers: new Headers({
+          authorization: 'Bearer abc',
+        }),
+      }
+
+      const res = createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
+      }, middlewareRes)
+
+      expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
+        ...middlewareRes,
+        data: {
+          clientId: UUIDs[0],
+        },
+      })
+
+      expect(res.status).toBe(200)
+    })
   })
 
   describe('POST', () => {
     test('when invoked via WebSocket message', () => {
       const fn = () => createTicket({
         clientId: crypto.randomUUID(),
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -1020,12 +1180,24 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when called, it mints a fresh clientId and ticket', async () => {
-      const res = createTicket({})
+      const res = createTicket({}, {})
       const result = await res.json()
 
       expect(result).toStrictEqual({
         clientId: UUIDs[0],
         ticket: BASE64_24,
+        data: {},
+      })
+    })
+
+    test('when "res" has content', async () => {
+      const res = createTicket({}, RES_HANDLER)
+      const result = await res.json()
+
+      expect(result).toStrictEqual({
+        clientId: UUIDs[0],
+        ticket: BASE64_24,
+        data: RES_HANDLER,
       })
     })
   })
@@ -1040,7 +1212,7 @@ describe('buildSocketHandlers()', () => {
         headers: new Headers({
           authorization: 'Bearer abc',
         }),
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -1055,7 +1227,7 @@ describe('buildSocketHandlers()', () => {
         headers: new Headers({
           authorization: 'Bearer abc',
         }),
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -1071,7 +1243,7 @@ describe('buildSocketHandlers()', () => {
         headers: new Headers({
           authorization: 'Bearer abc',
         }),
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -1087,7 +1259,7 @@ describe('buildSocketHandlers()', () => {
           clientId: UUIDs[0],
         },
         headers: new Headers({}),
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -1105,7 +1277,7 @@ describe('buildSocketHandlers()', () => {
         headers: new Headers({
           authorization: 'abc',
         }),
-      })
+      }, {})
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -1123,7 +1295,7 @@ describe('buildSocketHandlers()', () => {
         headers: new Headers({
           authorization: 'Bearer abc',
         }),
-      })
+      }, {})
 
       expect(fn).toThrow(new NotFoundError())
     })
@@ -1141,12 +1313,12 @@ describe('buildSocketHandlers()', () => {
         headers: new Headers({
           authorization: `Bearer abc`,
         }),
-      })
+      }, {})
 
       expect(fn).toThrow(UnauthorizedError)
     })
 
-    test('when client is closes unexpectedly (expired)', () => {
+    test('when the socket is closed unexpectedly (expired)', () => {
       const server = buildSocketServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
@@ -1161,12 +1333,12 @@ describe('buildSocketHandlers()', () => {
         headers: new Headers({
           authorization: `Bearer ${BASE64_32}`,
         }),
-      })
+      }, {})
 
       expect(fn).toThrow(new NotFoundError())
     })
 
-    test('when client is closes unexpectedly and (fresh)', async () => {
+    test('when the socket is closed unexpectedly and (fresh)', async () => {
       const server = buildSocketServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
@@ -1180,7 +1352,7 @@ describe('buildSocketHandlers()', () => {
         headers: new Headers({
           authorization: `Bearer ${BASE64_32}`,
         }),
-      })
+      }, {})
 
       const body = await result.json()
 
@@ -1189,6 +1361,60 @@ describe('buildSocketHandlers()', () => {
       expect(body).toStrictEqual({
         clientId: CLIENT_ID,
         ticket: BASE64_24,
+        data: {},
+      })
+    })
+
+    test('when the socket is still open', async () => {
+      const server = buildSocketServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+
+      const res = updateTicket({
+        params: {
+          clientId: CLIENT_ID,
+        },
+        headers: new Headers({
+          authorization: `Bearer ${BASE64_32}`,
+        }),
+      }, {})
+
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+
+      expect(body).toStrictEqual({
+        clientId: CLIENT_ID,
+        ticket: BASE64_24,
+        data: {},
+      })
+    })
+
+    test('when "res" has content', async () => {
+      const server = buildSocketServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+      server.close(ws, 1006)
+
+      const result = updateTicket({
+        params: {
+          clientId: CLIENT_ID,
+        },
+        headers: new Headers({
+          authorization: `Bearer ${BASE64_32}`,
+        }),
+      }, RES_HANDLER)
+
+      const body = await result.json()
+
+      expect(result.status).toBe(200)
+
+      expect(body).toStrictEqual({
+        clientId: CLIENT_ID,
+        ticket: BASE64_24,
+        data: RES_HANDLER,
       })
     })
   })

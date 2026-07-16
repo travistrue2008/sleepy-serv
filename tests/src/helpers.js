@@ -10,6 +10,13 @@ import { createApp } from 'sleepy-serv'
   timeout); all other opts pass through to createApp.
  */
 
+async function deserializeBody (res, opts) {
+  const methodName = opts.type ?? 'json'
+  const body = await res[methodName]()
+
+  return body
+}
+
 export async function postSession (port, headers = {}) {
   const response = await fetch(`http://localhost:${port}/ws`, {
     method: 'POST',
@@ -69,6 +76,23 @@ export function waitFor (predicate, opts = {}) {
 
     check()
   })
+}
+
+export async function makeRequest (port, method, route, opts = {}) {
+  const query = new URLSearchParams(opts.query ?? {}).toString()
+  const suffix = query ? `?${query}` : ''
+  const url = `http://localhost:${port}${route}${suffix}`
+
+  const res = await fetch(url, {
+    method,
+    headers: opts.headers ?? new Headers(),
+    body: opts.body ?? undefined /* no-op for clarity */,
+  })
+
+  return {
+    status: res.status,
+    body: await deserializeBody(res, opts),
+  }
 }
 
 export async function createServer (dirname, opts = {}) {

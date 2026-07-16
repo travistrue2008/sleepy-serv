@@ -376,20 +376,23 @@ export function buildSocketHandlers (state) {
     {
       method: 'GET',
       path: '/ws',
-      handler (req) {
+      handler (req, res) {
         validateSchema(req, createSocketValidator)
 
-        const clientId = redeemTicket(req.query.ticket)
+        if (typeof res !== 'object') {
+          throw new TypeError('Endpoint "res" must be an object')
+        }
 
-        if (!clientId) {
+        const ctx = res ? { ...res } : {}
+
+        ctx.data = ctx.data ?? {}
+        ctx.data.clientId = redeemTicket(req.query.ticket)
+
+        if (!ctx.data.clientId) {
           throw new NotFoundError()
         }
 
-        const useSocket = req.server.upgrade(req.raw, {
-          data: {
-            clientId,
-          },
-        })
+        const useSocket = req.server.upgrade(req.raw, ctx)
 
         if (!useSocket) {
           throw new NotFoundError()
@@ -401,7 +404,7 @@ export function buildSocketHandlers (state) {
     {
       method: 'POST',
       path: '/ws',
-      handler (req) {
+      handler (req, res) {
         validateSchema(req, createTicketValidator)
 
         const clientId = crypto.randomUUID()
@@ -409,13 +412,14 @@ export function buildSocketHandlers (state) {
         return Response.json({
           clientId,
           ticket: bindTicket(clientId),
+          data: res,
         })
       },
     },
     {
       method: 'PUT',
       path: '/ws/:clientId',
-      handler (req) {
+      handler (req, res) {
         validateSchema(req, updateTicketValidator)
 
         const authHeader = req.headers.get('authorization')
@@ -437,6 +441,7 @@ export function buildSocketHandlers (state) {
         return Response.json({
           clientId: req.params.clientId,
           ticket: bindTicket(req.params.clientId),
+          data: res,
         })
       },
     },

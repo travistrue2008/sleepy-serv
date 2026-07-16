@@ -22,8 +22,8 @@ const TOKEN = 'test-token'
 class MockWebSocket {
   static last = null
 
-  url = null
   readyState = 0
+  url = null
   sent = []
 
   #listeners = {
@@ -140,6 +140,9 @@ function mockTicketFetch () {
     json: async () => ({
       ticket: TICKET,
       clientId: CLIENT_ID,
+      data: {
+        token: 'Bearer abc',
+      },
     }),
   }))
 }
@@ -283,23 +286,31 @@ describe('SleepySocketClient', () => {
       )
     })
 
-    test('when connecting initially, it posts to /ws with no body',
-      async () => {
-        const { socket } = await connectAndOpen()
-        const [url, options] = globalThis.fetch.mock.calls[0]
-
-        expect(options.method).toBe('POST')
-        expect(url).toBe('http://localhost:3000/ws')
-        expect(options.body).toBeUndefined()
-        expect(socket.url).toContain('/ws?ticket=')
-      })
-
     test('when successful', async () => {
-      const { client } = await connectAndOpen()
+      const { client, socket } = await connectAndOpen()
 
+      expect(client.isConnected).toBe(true)
       expect(client.queueType).toBe(QUEUE.NONE)
       expect(client.secure).toBe(false)
       expect(client.timeout).toBe(30_000)
+      expect(client.heartbeatInterval).toBe(30_000)
+      expect(client.serverTimeout).toBe(120_000)
+      expect(client.clientId).toBe(CLIENT_ID)
+      expect(client.token).toBe(TOKEN)
+      expect(client.socket).toBe(socket)
+
+      expect(client.connectionData).toStrictEqual({
+        token: 'Bearer abc',
+      })
+
+      expect(socket.url).toContain('/ws?ticket=')
+
+      expect(globalThis.fetch).toHaveBeenCalledOnce()
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/ws',
+        { method: 'POST' },
+      )
     })
 
     test('when the welcome frame arrives', async () => {
@@ -402,286 +413,281 @@ describe('SleepySocketClient', () => {
   })
 
   describe('liveness', () => {
-    test('when no serverTimeout is set, it defaults to 120_000',
-      async () => {
-        const { client } = await connectAndOpen()
+    test('when no serverTimeout is set', async () => {
+      const { client } = await connectAndOpen()
 
-        expect(client.serverTimeout).toBe(SERVER_TIMEOUT)
+      expect(client.serverTimeout).toBe(SERVER_TIMEOUT)
+    })
+
+    test('when "opts.serverTimeout" is set', async () => {
+      const { client } = await connectAndOpen({
+        serverTimeout: 5_000,
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when "opts.serverTimeout" is set, it overrides the default',
-      async () => {
-        const { client } = await connectAndOpen({
-          serverTimeout: 5_000,
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      expect(client.serverTimeout).toBe(5_000)
 
-        expect(client.serverTimeout).toBe(5_000)
+      jest.advanceTimersByTime(5_000)
 
-        jest.advanceTimersByTime(5_000)
+      expect(client.isConnected).toBe(false)
+    })
 
-        expect(client.isConnected).toBe(false)
+    test('when an inbound frame arrives', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+
+      socket.receive(response('unmatched', null))
+
+      jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+
+      expect(client.isConnected).toBe(true)
+    })
+
+    test('when the server goes silent', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when an inbound frame arrives, the liveness reaper resets',
-      async () => {
-        const { client, socket } = await connectAndOpen()
+      jest.advanceTimersByTime(SERVER_TIMEOUT)
 
-        jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+      expect(client.isConnected).toBe(false)
 
-        socket.receive(response('unmatched', null))
+      await reconnect()
 
-        jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+      expect(MockWebSocket.last).not.toBe(socket)
+    })
 
-        expect(client.isConnected).toBe(true)
-      })
+    test('when the client is closed', async () => {
+      const { client } = await connectAndOpen()
 
-    test('when the server goes silent, the reaper closes and reconnects',
-      async () => {
-        const { client, socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      await client.close()
 
-        jest.advanceTimersByTime(SERVER_TIMEOUT)
+      jest.advanceTimersByTime(HEARTBEAT_INTERVAL * 6)
 
-        expect(client.isConnected).toBe(false)
-
-        await reconnect()
-
-        expect(MockWebSocket.last).not.toBe(socket)
-      })
-
-    test('when the client is closed, the liveness reaper is cleared',
-      async () => {
-        const { client } = await connectAndOpen()
-
-        await client.close()
-
-        jest.advanceTimersByTime(HEARTBEAT_INTERVAL * 6)
-
-        expect(client.isConnected).toBe(false)
-      })
+      expect(client.isConnected).toBe(false)
+    })
   })
 
   describe('reconnect', () => {
-    test('when the socket drops unexpectedly, the client reconnects',
-      async () => {
-        const { socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-          },
-        })
-
-        socket.drop()
-
-        const next = await reconnect()
-
-        expect(next).not.toBe(socket)
+    test('when the socket drops unexpectedly', async () => {
+      const { socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when a clean close was not app-initiated, it still reconnects',
-      async () => {
-        const { socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      socket.drop()
 
-        socket.close()
+      const next = await reconnect()
 
-        const next = await reconnect()
+      expect(next).not.toBe(socket)
+    })
 
-        expect(next).not.toBe(socket)
+    test('when a clean close was not app-initiated', async () => {
+      const { socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when the app closes the client, it does not reconnect',
-      async () => {
-        const { client, socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      socket.close()
 
-        await client.close()
+      const next = await reconnect()
 
-        jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
+      expect(next).not.toBe(socket)
+    })
 
-        await settle()
-
-        expect(MockWebSocket.last).toBe(socket)
+    test('when the app closes the client', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when an app-initiated close reports 1006, it does not reconnect',
-      async () => {
-        const { client, socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      await client.close()
 
-        await client.close()
+      jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
 
-        socket.drop()
+      await settle()
 
-        jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
+      expect(MockWebSocket.last).toBe(socket)
+    })
 
-        await settle()
-
-        expect(MockWebSocket.last).toBe(socket)
+    test('when an app-initiated close reports 1006', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when reconnecting, isConnected is false until reconnected',
-      async () => {
-        const { client, socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      await client.close()
 
-        socket.drop()
+      socket.drop()
 
-        expect(client.isConnected).toBe(false)
+      jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
 
-        await reconnect()
+      await settle()
 
-        expect(client.isConnected).toBe(true)
+      expect(MockWebSocket.last).toBe(socket)
+    })
+
+    test('when reconnecting', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when reconnecting, it puts to /ws/:clientId with a bearer token',
-      async () => {
-        const { socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
+      socket.drop()
+
+      const postDropStatus = client.isConnected
+
+      await reconnect()
+
+      expect(postDropStatus).toBe(false)
+      expect(client.isConnected).toBe(true)
+      expect(client.queueType).toBe(QUEUE.NONE)
+      expect(client.secure).toBe(false)
+      expect(client.timeout).toBe(30_000)
+      expect(client.heartbeatInterval).toBe(30_000)
+      expect(client.serverTimeout).toBe(120_000)
+      expect(client.clientId).toBe(CLIENT_ID)
+      expect(client.token).toBe(TOKEN)
+      expect(client.socket).not.toBe(socket)
+
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+
+      expect(globalThis.fetch).toHaveBeenNthCalledWith(
+        1,
+        `http://localhost:3000/ws`,
+        { method: 'POST' },
+      )
+
+      expect(globalThis.fetch).toHaveBeenNthCalledWith(
+        2,
+        `http://localhost:3000/ws/${CLIENT_ID}`,
+        {
+          method: 'PUT',
+          headers: {
+            authorization: `Bearer ${TOKEN}`,
           },
-        })
+        },
+      )
+    })
 
-        socket.drop()
-
-        await reconnect()
-
-        const [url, options] = globalThis.fetch.mock.calls[1]
-
-        expect(options.method).toBe('PUT')
-        expect(url).toBe(`http://localhost:3000/ws/${CLIENT_ID}`)
-        expect(options.headers.authorization).toBe(`Bearer ${TOKEN}`)
+    test('when the PUT reclaim fails', async () => {
+      const { socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when the PUT reclaim fails, it falls back to POST',
-      async () => {
-        const { socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      globalThis.fetch = mock(async (_url, options) => ({
+        ok: options.method === 'POST',
+        json: async () => ({
+          ticket: TICKET,
+          clientId: OTHER_CLIENT_ID,
+        }),
+      }))
 
-        globalThis.fetch = mock(async (_url, options) => ({
-          ok: options.method === 'POST',
-          json: async () => ({
-            ticket: TICKET,
-            clientId: OTHER_CLIENT_ID,
-          }),
-        }))
+      socket.drop()
 
-        socket.drop()
+      jest.advanceTimersByTime(500)
 
-        jest.advanceTimersByTime(500)
+      await settle()
+      await settle()
 
-        await settle()
-        await settle()
+      MockWebSocket.last.open()
+      MockWebSocket.last.receive(sendWelcome(OTHER_CLIENT_ID))
 
-        MockWebSocket.last.open()
-        MockWebSocket.last.receive(sendWelcome(OTHER_CLIENT_ID))
+      await settle()
 
-        await settle()
+      const methods = globalThis.fetch.mock.calls.map(
+        ([, opts]) => opts.method,
+      )
 
-        const methods = globalThis.fetch.mock.calls
-          .map(([, opts]) => opts.method)
+      expect(methods).toStrictEqual(['PUT', 'POST'])
+    })
 
-        expect(methods).toStrictEqual(['PUT', 'POST'])
+    test('when the welcome returns the same clientId', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when the welcome returns the same clientId, identity is retained',
-      async () => {
-        const { client, socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      socket.drop()
 
-        socket.drop()
+      await reconnect()
 
-        await reconnect()
+      expect(client.clientId).toBe(CLIENT_ID)
+    })
 
-        expect(client.clientId).toBe(CLIENT_ID)
+    test('when the welcome returns a new clientId', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when the welcome returns a new clientId, the client adopts it',
-      async () => {
-        const { client, socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      socket.drop()
 
-        socket.drop()
+      await reconnect(500, OTHER_CLIENT_ID)
 
-        await reconnect(500, OTHER_CLIENT_ID)
+      expect(client.clientId).toBe(OTHER_CLIENT_ID)
+    })
 
-        expect(client.clientId).toBe(OTHER_CLIENT_ID)
+    test('when a reconnect welcome never arrives', async () => {
+      const { socket } = await connectAndOpen({
+        timeout: 10_000,
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when a reconnect welcome never arrives, it retries',
-      async () => {
-        const { socket } = await connectAndOpen({
-          timeout: 10_000,
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      socket.drop()
 
-        socket.drop()
+      jest.advanceTimersByTime(500)
 
-        jest.advanceTimersByTime(500)
+      await settle()
 
-        await settle()
+      MockWebSocket.last.open()
 
-        MockWebSocket.last.open()
+      const attempted = MockWebSocket.last
 
-        const attempted = MockWebSocket.last
+      jest.advanceTimersByTime(10_000)
 
-        jest.advanceTimersByTime(10_000)
+      await settle()
 
-        await settle()
+      jest.advanceTimersByTime(1_000)
 
-        jest.advanceTimersByTime(1_000)
+      await settle()
 
-        await settle()
+      expect(MockWebSocket.last).not.toBe(attempted)
+    })
 
-        expect(MockWebSocket.last).not.toBe(attempted)
+    test('when the client is closed mid-reconnect', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
       })
 
-    test('when the client is closed mid-reconnect, it does not reconnect',
-      async () => {
-        const { client, socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-          },
-        })
+      socket.drop()
 
-        socket.drop()
+      await client.close()
 
-        await client.close()
+      jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
 
-        jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
+      await settle()
 
-        await settle()
-
-        expect(MockWebSocket.last).toBe(socket)
-      })
+      expect(MockWebSocket.last).toBe(socket)
+    })
   })
 
   describe('backoff', () => {
@@ -710,40 +716,39 @@ describe('SleepySocketClient', () => {
       expect(globalThis.fetch.mock.calls.length).toBe(before + 1)
     })
 
-    test('when an attempt fails, the next delay grows by the factor',
-      async () => {
-        const { socket } = await connectAndOpen({
-          reconnect: {
-            random: () => 0,
-            minDelay: 500,
-            factor: 2,
-          },
-        })
-
-        globalThis.fetch = mock(async () => {
-          throw new Error('Down')
-        })
-
-        socket.drop()
-
-        jest.advanceTimersByTime(500)
-
-        await settle()
-
-        const after = globalThis.fetch.mock.calls.length
-
-        jest.advanceTimersByTime(999)
-
-        await settle()
-
-        expect(globalThis.fetch.mock.calls.length).toBe(after)
-
-        jest.advanceTimersByTime(1)
-
-        await settle()
-
-        expect(globalThis.fetch.mock.calls.length).toBe(after + 1)
+    test('when an attempt fails', async () => {
+      const { socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+          minDelay: 500,
+          factor: 2,
+        },
       })
+
+      globalThis.fetch = mock(async () => {
+        throw new Error('Down')
+      })
+
+      socket.drop()
+
+      jest.advanceTimersByTime(500)
+
+      await settle()
+
+      const after = globalThis.fetch.mock.calls.length
+
+      jest.advanceTimersByTime(999)
+
+      await settle()
+
+      expect(globalThis.fetch.mock.calls.length).toBe(after)
+
+      jest.advanceTimersByTime(1)
+
+      await settle()
+
+      expect(globalThis.fetch.mock.calls.length).toBe(after + 1)
+    })
 
     test('when the backoff exceeds maxDelay, it is capped', async () => {
       const { socket } = await connectAndOpen({
@@ -805,71 +810,44 @@ describe('SleepySocketClient', () => {
   })
 
   describe('notification', () => {
-    test('when a handler is removed with off(), it stops receiving',
-      async () => {
-        const { client, socket } = await connectAndOpen()
-        const received = []
-        const handler = message => received.push(message)
+    test('when a notification arrives', async () => {
+      const { client, socket } = await connectAndOpen()
+      const message = notification('state_changed', { score: 1 })
+      const received = []
 
-        client.on('notification', handler)
-        client.off('notification', handler)
-        socket.receive(notification('state_changed', { score: 1 }))
+      client.on('notification', message => received.push(message))
+      socket.receive(message)
 
-        expect(received).toStrictEqual([])
-      })
+      expect(received).toStrictEqual([message])
+    })
 
-    test('when a notification arrives, subscribers receive the message',
-      async () => {
-        const { client, socket } = await connectAndOpen()
-        const received = []
-        const frame = notification('state_changed', { score: 1 })
+    test('when a handler is removed with off()', async () => {
+      const { client, socket } = await connectAndOpen()
+      const handler = message => received.push(message)
+      const received = []
 
-        client.on('notification', message => received.push(message))
-        socket.receive(frame)
+      const notifications = [
+        notification('state_changed', { score: 1 }),
+        notification('state_changed', { score: 2 }),
+      ]
 
-        expect(received).toStrictEqual([frame])
-      })
+      client.on('notification', handler)
+      socket.receive(notifications[0])
+      client.off('notification', handler)
+      socket.receive(notifications[1])
 
-    test('when a notification arrives, pending requests are untouched',
-      async () => {
-        const { client, socket } = await connectAndOpen()
+      expect(received).toStrictEqual([notifications[0]])
+    })
 
-        const promise = client.send({
-          method: 'GET',
-          route: '/',
-        })
+    test('when a notification arrives before timeout', async () => {
+      const { client, socket } = await connectAndOpen()
 
-        const sent = JSON.parse(socket.sent[0])
+      jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+      socket.receive(notification('state_changed', { score: 1 }))
+      jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
 
-        socket.receive(notification('state_changed', { score: 1 }))
-        socket.receive(response(sent.id, { userId: '123' }))
-
-        const res = await promise
-
-        expect(res).toStrictEqual({
-          id: sent.id,
-          type: TYPES.RESPONSE,
-          status: 200,
-          timestamp: TIMESTAMP,
-          headers: {},
-          body: {
-            userId: '123',
-          },
-        })
-      })
-
-    test('when a notification arrives, the liveness reaper resets',
-      async () => {
-        const { client, socket } = await connectAndOpen()
-
-        jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
-
-        socket.receive(notification('state_changed', { score: 1 }))
-
-        jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
-
-        expect(client.isConnected).toBe(true)
-      })
+      expect(client.isConnected).toBe(true)
+    })
   })
 
   describe('#handleMessage()', () => {

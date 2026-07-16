@@ -28,6 +28,7 @@ export default class SleepySocketClient {
   #heartbeatTimer = null
   #reconnectTimer = null
   #reconnectConfig = null
+  #connectionData = null
   #listeners = new Map()
   #dispatchedMessages = []
 
@@ -65,6 +66,10 @@ export default class SleepySocketClient {
 
   get socket () {
     return this.#socket
+  }
+
+  get connectionData () {
+    return this.#connectionData
   }
 
   static async connect (host, port, opts = {}) {
@@ -148,8 +153,9 @@ export default class SleepySocketClient {
     return `${protocol}://${authority}/ws?ticket=${ticket}`
   }
 
-  #openSocket (ticketData, succeed, fail) {
-    this.#socket = new WebSocket(this.#socketUrl(ticketData.ticket))
+  #openSocket (res, succeed, fail) {
+    this.#socket = new WebSocket(this.#socketUrl(res.ticket))
+    this.#connectionData = res.data
 
     const onError = () => fail('Connection failed.')
 
