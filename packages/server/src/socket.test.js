@@ -26,6 +26,7 @@ import {
   MethodNotAllowedError,
   UnprocessableContentError,
   InternalServerError,
+  ServiceUnavailableError,
 } from './errors'
 
 const ID = crypto.randomUUID()
@@ -99,11 +100,12 @@ describe('buildSocketState()', () => {
     expect(result).toStrictEqual({
       disconnectThreshold: 120000,
       heartbeatInterval: 30000,
+      maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 10000,
-      sessions: new Map(),
+      activeSessions: new Map(),
+      inactiveSessions: new Map(),
       tickets: new Map(),
-      sockets: new Map(),
     })
   })
 
@@ -113,11 +115,12 @@ describe('buildSocketState()', () => {
     expect(result).toStrictEqual({
       disconnectThreshold: 120000,
       heartbeatInterval: 30000,
+      maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 10000,
-      sessions: new Map(),
+      activeSessions: new Map(),
+      inactiveSessions: new Map(),
       tickets: new Map(),
-      sockets: new Map(),
     })
   })
 
@@ -129,29 +132,12 @@ describe('buildSocketState()', () => {
     expect(result).toStrictEqual({
       disconnectThreshold: 120000,
       heartbeatInterval: 30000,
+      maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 10000,
-      sessions: new Map(),
+      activeSessions: new Map(),
+      inactiveSessions: new Map(),
       tickets: new Map(),
-      sockets: new Map(),
-    })
-  })
-
-  test('when "opts.ws.heartbeatInterval" is provided', () => {
-    const result = buildSocketState({
-      ws: {
-        disconnectThreshold: 100,
-      },
-    })
-
-    expect(result).toStrictEqual({
-      disconnectThreshold: 100,
-      heartbeatInterval: 30000,
-      reclaimTtl: 300000,
-      ticketTtl: 10000,
-      sessions: new Map(),
-      tickets: new Map(),
-      sockets: new Map(),
     })
   })
 
@@ -165,11 +151,50 @@ describe('buildSocketState()', () => {
     expect(result).toStrictEqual({
       disconnectThreshold: 120000,
       heartbeatInterval: 100,
+      maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 10000,
-      sessions: new Map(),
+      activeSessions: new Map(),
+      inactiveSessions: new Map(),
       tickets: new Map(),
-      sockets: new Map(),
+    })
+  })
+
+  test('when "opts.ws.heartbeatInterval" is provided', () => {
+    const result = buildSocketState({
+      ws: {
+        disconnectThreshold: 100,
+      },
+    })
+
+    expect(result).toStrictEqual({
+      disconnectThreshold: 100,
+      heartbeatInterval: 30000,
+      maxTickets: 100000,
+      reclaimTtl: 300000,
+      ticketTtl: 10000,
+      activeSessions: new Map(),
+      inactiveSessions: new Map(),
+      tickets: new Map(),
+    })
+  })
+
+  test('when "opts.ws.maxTickets" is provided', () => {
+    const result = buildSocketState({
+      ws: {
+        maxTickets: 5,
+      },
+    })
+
+    expect(result).toStrictEqual({
+      disconnectThreshold: 120000,
+      heartbeatInterval: 30000,
+      maxTickets: 5,
+      reclaimTtl: 300000,
+      ticketTtl: 10000,
+      activeSessions: new Map(),
+      inactiveSessions: new Map(),
+      tickets: new Map(),
     })
   })
 
@@ -183,11 +208,12 @@ describe('buildSocketState()', () => {
     expect(result).toStrictEqual({
       disconnectThreshold: 120000,
       heartbeatInterval: 30000,
+      maxTickets: 100000,
       reclaimTtl: 100,
       ticketTtl: 10000,
-      sessions: new Map(),
+      activeSessions: new Map(),
+      inactiveSessions: new Map(),
       tickets: new Map(),
-      sockets: new Map(),
     })
   })
 
@@ -201,11 +227,12 @@ describe('buildSocketState()', () => {
     expect(result).toStrictEqual({
       disconnectThreshold: 120000,
       heartbeatInterval: 30000,
+      maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 100,
-      sessions: new Map(),
+      activeSessions: new Map(),
+      inactiveSessions: new Map(),
       tickets: new Map(),
-      sockets: new Map(),
     })
   })
 })
@@ -637,11 +664,46 @@ describe('buildSocketServer()', () => {
 
       expect(ws.close).toHaveBeenCalledOnce()
     })
+
+    test('when an expired inactive session is present', () => {
+      const state = buildSocketState()
+      const server = buildSocketServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      state.inactiveSessions.set('stale', {
+        token: 'a',
+        expiresAt: Date.now() - 1,
+      })
+
+      state.inactiveSessions.set('fresh', {
+        token: 'b',
+        expiresAt: Date.now() + 10_000,
+      })
+
+      server.open(ws)
+
+      expect(state.inactiveSessions.has('stale')).toBe(false)
+      expect(state.inactiveSessions.has('fresh')).toBe(true)
+    })
   })
 
   describe('close()', () => {
     const handlers = buildSocketHandlers(state)
     const updateTicket = handlers[2].handler
+
+    test('when the socket is no longer registered', () => {
+      const state = buildSocketState()
+      const server = buildSocketServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+      server.close(ws, 1000)
+
+      const fn = () => server.close(ws, 1006)
+
+      expect(fn).not.toThrow()
+      expect(state.inactiveSessions.has(CLIENT_ID)).toBe(false)
+    })
 
     test('when the socket was superseded', async () => {
       const oldSocket = buildSocket(CLIENT_ID)
@@ -1179,6 +1241,31 @@ describe('buildSocketHandlers()', () => {
       ]))
     })
 
+    test('when the ticket cap is reached', () => {
+      const state = buildSocketState({
+        ws: {
+          maxTickets: 2,
+        },
+      })
+
+      const handlers = buildSocketHandlers(state)
+      const createTicket = handlers[1].handler
+
+      state.tickets.set('a', {
+        clientId: 'x',
+        expiresAt: Date.now() + 10_000,
+      })
+
+      state.tickets.set('b', {
+        clientId: 'y',
+        expiresAt: Date.now() + 10_000,
+      })
+
+      const fn = () => createTicket({}, {})
+
+      expect(fn).toThrow(ServiceUnavailableError)
+    })
+
     test('when called, it mints a fresh clientId and ticket', async () => {
       const res = createTicket({}, {})
       const result = await res.json()
@@ -1199,6 +1286,22 @@ describe('buildSocketHandlers()', () => {
         ticket: BASE64_24,
         data: RES_HANDLER,
       })
+    })
+
+    test('when expired tickets exist, it sweeps them on mint', () => {
+      state.tickets.set('expired-a', {
+        clientId: 'x',
+        expiresAt: Date.now() - 1,
+      })
+
+      state.tickets.set('expired-b', {
+        clientId: 'y',
+        expiresAt: Date.now() - 1,
+      })
+
+      createTicket({}, {})
+
+      expect(state.tickets.size).toBe(1)
     })
   })
 

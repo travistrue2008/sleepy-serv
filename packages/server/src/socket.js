@@ -9,8 +9,9 @@ import {
   NotFoundError,
   UnauthorizedError,
   MethodNotAllowedError,
-  InternalServerError,
   UnprocessableContentError,
+  InternalServerError,
+  ServiceUnavailableError,
 } from './errors'
 
 const ajv = new Ajv({
@@ -120,6 +121,14 @@ function parseMessage (raw) {
   }
 }
 
+function sweepInactiveSessions (state) {
+  for (const [key, session] of state.inactiveSessions) {
+    if (!isSessionActive(session)) {
+      state.inactiveSessions.delete(key)
+    }
+  }
+}
+
 function validateSchema (obj, validator) {
   const payload = {
     ...obj,
@@ -210,21 +219,22 @@ export function buildSocketState (opts = {}) {
   return {
     disconnectThreshold: opts.ws?.disconnectThreshold ?? 120_000,
     heartbeatInterval: opts.ws?.heartbeatInterval ?? 30_000,
+    maxTickets: opts.ws?.maxTickets ?? 100_000,
     reclaimTtl: opts.ws?.reclaimTtl ?? 300_000,
     ticketTtl: opts.ws?.ticketTtl ?? 10_000,
-    sessions: new Map(),
     tickets: new Map(),
-    sockets: new Map(),
+    activeSessions: new Map(),
+    inactiveSessions: new Map(),
   }
 }
 
 export function buildSocketServer (routes, state) {
   const {
-    heartbeatInterval,
     disconnectThreshold,
+    heartbeatInterval,
     reclaimTtl,
-    sessions,
-    sockets,
+    activeSessions,
+    inactiveSessions,
   } = state
 
   function armReaper (ws) {
@@ -239,27 +249,37 @@ export function buildSocketServer (routes, state) {
 
   return {
     open (ws) {
-      const { clientId } = ws.data
+      sweepInactiveSessions(state)
+
       const token = randomToken(32)
-      const existingWs = sockets.get(clientId)
+      const existingSession = activeSessions.get(ws.data.clientId)
 
-      if (existingWs && existingWs !== ws) {
-        existingWs.data.superseded = true
+      if (existingSession) {
+        existingSession.ws.data.superseded = true
 
-        existingWs.close()
+        existingSession.ws.close()
       }
 
-      sessions.set(clientId, { token })
-      sockets.set(clientId, ws)
+      inactiveSessions.delete(ws.data.clientId)
+
+      activeSessions.set(ws.data.clientId, {
+        token,
+        ws,
+      })
+
       armReaper(ws)
 
-      const welcomeMessage = createMessage(clientId, TYPES.WELCOME, {
-        headers: {},
-        body: {
-          heartbeatInterval,
-          token,
+      const welcomeMessage = createMessage(
+        ws.data.clientId,
+        TYPES.WELCOME,
+        {
+          headers: {},
+          body: {
+            heartbeatInterval,
+            token,
+          },
         },
-      })
+      )
 
       ws.send(JSON.stringify(welcomeMessage))
     },
@@ -270,22 +290,19 @@ export function buildSocketServer (routes, state) {
         return
       }
 
-      const existingWs = sockets.get(ws.data.clientId)
+      const existingSession = activeSessions.get(ws.data.clientId)
 
-      if (existingWs === ws) {
-        sockets.delete(ws.data.clientId)
-      }
-
-      if (code === 1000 && !ws.data.reaped) {
-        sessions.delete(ws.data.clientId)
-
+      if (!existingSession || existingSession.ws !== ws) {
         return
       }
 
-      const session = sessions.get(ws.data.clientId)
+      activeSessions.delete(ws.data.clientId)
 
-      if (session) {
-        session.expiresAt = Date.now() + reclaimTtl
+      if (code !== 1000 || ws.data.reaped) {
+        inactiveSessions.set(ws.data.clientId, {
+          token: existingSession.token,
+          expiresAt: Date.now() + reclaimTtl,
+        })
       }
     },
     async message (ws, raw) {
@@ -342,9 +359,27 @@ export function buildSocketServer (routes, state) {
 }
 
 export function buildSocketHandlers (state) {
-  const { ticketTtl, tickets, sessions } = state
+  const {
+    maxTickets,
+    ticketTtl,
+    tickets,
+    activeSessions,
+    inactiveSessions,
+  } = state
 
   function bindTicket (clientId) {
+    for (const [key, entry] of tickets) {
+      if (entry.expiresAt > Date.now()) {
+        break
+      }
+
+      tickets.delete(key)
+    }
+
+    if (tickets.size >= maxTickets) {
+      throw new ServiceUnavailableError()
+    }
+
     const ticket = randomToken(24)
     const expiresAt = Date.now() + ticketTtl
 
@@ -424,13 +459,20 @@ export function buildSocketHandlers (state) {
 
         const authHeader = req.headers.get('authorization')
         const token = authHeader.slice('Bearer '.length)
-        const session = sessions.get(req.params.clientId)
 
-        if (session && !isSessionActive(session)) {
-          sessions.delete(req.params.clientId)
+        let session = activeSessions.get(req.params.clientId)
+
+        if (!session) {
+          const inactive = inactiveSessions.get(req.params.clientId)
+
+          if (inactive && !isSessionActive(inactive)) {
+            inactiveSessions.delete(req.params.clientId)
+          } else {
+            session = inactive
+          }
         }
 
-        if (!session || !isSessionActive(session)) {
+        if (!session) {
           throw new NotFoundError()
         }
 
@@ -450,9 +492,9 @@ export function buildSocketHandlers (state) {
 
 export function buildSocketCommands (state) {
   function sendToClient (clientId, event, body) {
-    const ws = state.sockets.get(clientId)
+    const session = state.activeSessions.get(clientId)
 
-    if (!ws) {
+    if (!session) {
       throw new ReferenceError(`No live socket for client: ${clientId}`)
     }
 
@@ -462,7 +504,7 @@ export function buildSocketCommands (state) {
       body,
     })
 
-    ws.send(JSON.stringify(message))
+    session.ws.send(JSON.stringify(message))
   }
 
   return {
@@ -470,7 +512,7 @@ export function buildSocketCommands (state) {
       sendToClient(clientId, event, body)
     },
     broadcast (event, body) {
-      for (const clientId of state.sockets.keys()) {
+      for (const clientId of state.activeSessions.keys()) {
         sendToClient(clientId, event, body)
       }
     },

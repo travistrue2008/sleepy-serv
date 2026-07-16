@@ -10,7 +10,7 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 - [Request Flow](./architecture/request-flow.md) — route build pipeline; the `res` accumulator model.
 - [Middleware](./architecture/middleware.md) — resolution order, built-ins, the two-`meta.js` gotcha.
 - [Errors](./architecture/errors.md) — how errors map to HTTP status.
-- [Real-time / WebSocket Layer](./architecture/websocket.md) — `/ws` upgrade, message model, welcome handshake, heartbeat/presence.
+- [Real-time / WebSocket Layer](./architecture/websocket.md) — `/ws` upgrade, message model, welcome handshake, heartbeat/presence, the active/inactive session model, and handshake resource bounding.
 - [Testing](./architecture/testing.md) — test styles (unit / integration / E2E).
 
 ## Guides
