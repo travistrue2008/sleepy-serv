@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
-import { Context } from '../../../helpers'
+import { createApp } from '../../../../src'
 
 test('when an unsupported file is found in the /api directory', async () => {
-  const fn = () => Context.create(import.meta.dirname, {
+  const fn = () => createApp(0, import.meta.dirname, {
     whitelist: ['**/*.util.js'],
   })
 

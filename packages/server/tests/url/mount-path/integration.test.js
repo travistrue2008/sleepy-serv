@@ -1,28 +1,34 @@
 import { test, expect } from 'bun:test'
-import { FMT, Context } from '../../helpers'
+import { createApp } from '../../../src'
+import { FMT, createRequestor, createSocketClient } from '../../helpers'
 
 test('when adding a mount path (REST)', async () => {
-  const ctx = await Context.create(import.meta.dirname, {
+  const app = await createApp(0, import.meta.dirname, {
     mountPath: '/test-mount-path',
   })
 
-  const res = await ctx.makeRequest('/test-mount-path/users', FMT.TEXT)
+  const req = createRequestor(app)
+  const res = await req.get('/test-mount-path/users', FMT.TEXT)
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
   expect(res.status).toBe(200)
   expect(res.body).toBe('Hello world')
 })
 
 test('when adding a mount path (ws)', async () => {
-  const ctx = await Context.create(import.meta.dirname, {
+  const app = await createApp(0, import.meta.dirname, {
     mountPath: '/test-mount-path',
   })
 
-  const res = await ctx.sendMessage('GET', '/test-mount-path/users')
+  const ws = await createSocketClient(app, {
+    mountPath: '/test-mount-path',
+  })
 
-  await ctx.shutdown()
+  const msg = await ws.get('/test-mount-path/users')
 
-  expect(res.status).toBe(200)
-  expect(res.body).toBe('Hello world')
+  await app.server.stop(true)
+
+  expect(msg.status).toBe(200)
+  expect(msg.body).toBe('Hello world')
 })

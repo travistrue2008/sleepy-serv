@@ -1,5 +1,5 @@
 import { test, expect, mock } from 'bun:test'
-import { Context } from '../../helpers'
+import { createApp } from '../../../src'
 
 const HOSTNAME = 'test.sleepy-serv.com'
 
@@ -10,11 +10,11 @@ test('when adding a hostname', async () => {
     stop: mock(),
   })
 
-  const ctx = await Context.create(import.meta.dirname, {
+  const app = await createApp(0, import.meta.dirname, {
     hostname: HOSTNAME,
   })
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
   expect(Bun.serve).toHaveBeenCalledWith(
     expect.objectContaining({

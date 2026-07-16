@@ -1,22 +1,25 @@
 import { test, expect } from 'bun:test'
-import { FMT, Context } from '../../helpers'
+import { createApp } from '../../../src'
+import { FMT, createRequestor, createSocketClient } from '../../helpers'
 
 test('when meta file does not export middleware (REST)', async () => {
-  const ctx = await Context.create(import.meta.dirname)
-  const res = await ctx.makeRequest('/users', FMT.TEXT)
+  const app = await createApp(0, import.meta.dirname)
+  const req = createRequestor(app)
+  const res = await req.get('/users', FMT.TEXT)
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
   expect(res.status).toBe(200)
   expect(res.body).toBe('Hello world')
 })
 
 test('when meta file does not export middleware (ws)', async () => {
-  const ctx = await Context.create(import.meta.dirname)
-  const res = await ctx.sendMessage('GET', '/users')
+  const app = await createApp(0, import.meta.dirname)
+  const ws = await createSocketClient(app)
+  const msg = await ws.get('/users')
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
-  expect(res.status).toBe(200)
-  expect(res.body).toBe('Hello world')
+  expect(msg.status).toBe(200)
+  expect(msg.body).toBe('Hello world')
 })

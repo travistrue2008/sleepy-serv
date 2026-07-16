@@ -1,12 +1,14 @@
 import { test, expect } from 'bun:test'
-import { FMT, Context } from '../../../helpers'
-import { UnprocessableContentError } from '../../../../src'
+import { createApp } from '../../../../src'
+import { UnprocessableContentError } from '../../../../src/errors'
+import { FMT, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when a RequestError sub-type is thrown (REST)', async () => {
-  const ctx = await Context.create(import.meta.dirname)
-  const res = await ctx.makeRequest('/', FMT.JSON)
+  const app = await createApp(0, import.meta.dirname)
+  const req = createRequestor(app)
+  const res = await req.get('/', FMT.JSON)
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
   expect(res.status).toBe(UnprocessableContentError.status)
 
@@ -19,14 +21,15 @@ test('when a RequestError sub-type is thrown (REST)', async () => {
 })
 
 test('when a RequestError sub-type is thrown (ws)', async () => {
-  const ctx = await Context.create(import.meta.dirname)
-  const res = await ctx.sendMessage('GET', '/')
+  const app = await createApp(0, import.meta.dirname)
+  const ws = await createSocketClient(app)
+  const msg = await ws.get('/')
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
-  expect(res.status).toBe(UnprocessableContentError.status)
+  expect(msg.status).toBe(UnprocessableContentError.status)
 
-  expect(res.body).toStrictEqual([
+  expect(msg.body).toStrictEqual([
     {
       path: 'body',
       message: `must have required property 'firstName'`,

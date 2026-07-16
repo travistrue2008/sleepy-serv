@@ -1,23 +1,26 @@
 import { test, expect } from 'bun:test'
-import { FMT, Context } from '../../../helpers'
-import { InternalServerError } from '../../../../src'
+import { createApp } from '../../../../src'
+import { InternalServerError } from '../../../../src/errors'
+import { FMT, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when endpoint does not return a "Response" object (REST)', async () => {
-  const ctx = await Context.create(import.meta.dirname)
-  const res = await ctx.makeRequest('/', FMT.TEXT)
+  const app = await createApp(0, import.meta.dirname)
+  const req = createRequestor(app)
+  const res = await req.get('/', FMT.TEXT)
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
   expect(res.status).toBe(InternalServerError.status)
   expect(res.body).toBe('Handler does not return a Response object')
 })
 
 test('when endpoint does not return a "Response" object (ws)', async () => {
-  const ctx = await Context.create(import.meta.dirname)
-  const res = await ctx.sendMessage('GET', '/')
+  const app = await createApp(0, import.meta.dirname)
+  const ws = await createSocketClient(app)
+  const msg = await ws.get('/')
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
-  expect(res.status).toBe(InternalServerError.status)
-  expect(res.body).toBe('Handler does not return a Response object')
+  expect(msg.status).toBe(InternalServerError.status)
+  expect(msg.body).toBe('Handler does not return a Response object')
 })

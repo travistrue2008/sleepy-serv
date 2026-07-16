@@ -1,23 +1,26 @@
 import { test, expect } from 'bun:test'
-import { FMT, Context } from '../../../helpers'
-import { InternalServerError } from '../../../../src'
+import { createApp } from '../../../../src'
+import { InternalServerError } from '../../../../src/errors'
+import { FMT, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when a generic error is thrown (REST)', async () => {
-  const ctx = await Context.create(import.meta.dirname)
-  const res = await ctx.makeRequest('/', FMT.TEXT)
+  const app = await createApp(0, import.meta.dirname)
+  const req = createRequestor(app)
+  const res = await req.get('/', FMT.TEXT)
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
   expect(res.status).toBe(InternalServerError.status)
   expect(res.body).toBe('Bad')
 })
 
 test('when a generic error is thrown (ws)', async () => {
-  const ctx = await Context.create(import.meta.dirname)
-  const res = await ctx.sendMessage('GET', '/')
+  const app = await createApp(0, import.meta.dirname)
+  const ws = await createSocketClient(app)
+  const msg = await ws.get('/')
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
-  expect(res.status).toBe(InternalServerError.status)
-  expect(res.body).toBe('Bad')
+  expect(msg.status).toBe(InternalServerError.status)
+  expect(msg.body).toBe('Bad')
 })

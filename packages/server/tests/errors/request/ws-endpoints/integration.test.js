@@ -1,12 +1,12 @@
 import { describe, test, expect } from 'bun:test'
+import { createApp } from '../../../../src'
 import { FMT, createRequestor, createSocketClient } from '../../../helpers'
 
 import {
   NotFoundError,
   UnauthorizedError,
   UnprocessableContentError,
-  createApp,
-} from '../../../../src'
+} from '../../../../src/errors'
 
 const CLIENT_ID_INVALID = 'client-invalid'
 const TICKET_INVALID = 'ticket-invalid'

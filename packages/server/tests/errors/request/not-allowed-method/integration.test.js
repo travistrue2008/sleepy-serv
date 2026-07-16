@@ -1,23 +1,26 @@
 import { test, expect } from 'bun:test'
-import { FMT, Context } from '../../../helpers'
+import { createApp } from '../../../../src'
 import { MethodNotAllowedError } from '../../../../src/errors'
+import { FMT, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when requested method on resource does not exist (REST)', async () => {
-  const ctx = await Context.create(import.meta.dirname)
-  const res = await ctx.makeRequest('/users', FMT.JSON, { method: 'GET' })
+  const app = await createApp(0, import.meta.dirname)
+  const req = createRequestor(app)
+  const res = await req.get('/users', FMT.JSON)
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
   expect(res.status).toBe(MethodNotAllowedError.status)
   expect(res.body).toBe(null)
 })
 
 test('when requested method on resource does not exist (ws)', async () => {
-  const ctx = await Context.create(import.meta.dirname)
-  const res = await ctx.sendMessage('GET', '/users')
+  const app = await createApp(0, import.meta.dirname)
+  const ws = await createSocketClient(app)
+  const msg = await ws.get('/users')
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
-  expect(res.status).toBe(MethodNotAllowedError.status)
-  expect(res.body).toBe(null)
+  expect(msg.status).toBe(MethodNotAllowedError.status)
+  expect(msg.body).toBe(null)
 })

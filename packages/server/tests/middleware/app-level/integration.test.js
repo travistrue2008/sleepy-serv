@@ -1,8 +1,9 @@
 import { test, expect } from 'bun:test'
-import { FMT, Context } from '../../helpers'
+import { createApp } from '../../../src'
+import { FMT, createRequestor, createSocketClient } from '../../helpers'
 
 test('when app-level middleware is defined (REST)', async () => {
-  const ctx = await Context.create(import.meta.dirname, {
+  const app = await createApp(0, import.meta.dirname, {
     middleware: [
       (_req, res, next) => next({
         ...res,
@@ -11,16 +12,17 @@ test('when app-level middleware is defined (REST)', async () => {
     ],
   })
 
-  const res = await ctx.makeRequest('/users', FMT.TEXT)
+  const req = createRequestor(app)
+  const res = await req.get('/users', FMT.TEXT)
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
   expect(res.status).toBe(200)
   expect(res.body).toBe('root')
 })
 
 test('when app-level middleware is defined (ws)', async () => {
-  const ctx = await Context.create(import.meta.dirname, {
+  const app = await createApp(0, import.meta.dirname, {
     middleware: [
       (_req, res, next) => next({
         ...res,
@@ -29,10 +31,11 @@ test('when app-level middleware is defined (ws)', async () => {
     ],
   })
 
-  const res = await ctx.sendMessage('GET', '/users')
+  const ws = await createSocketClient(app)
+  const msg = await ws.get('/users')
 
-  await ctx.shutdown()
+  await app.server.stop(true)
 
-  expect(res.status).toBe(200)
-  expect(res.body).toBe('root')
+  expect(msg.status).toBe(200)
+  expect(msg.body).toBe('root')
 })
