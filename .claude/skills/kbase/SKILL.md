@@ -1,6 +1,7 @@
 ---
 name: kbase
 description: Reviews the current chat session context and automatically updates or documents new knowledge in `.claude/kbase/`.
+allowed-tools: Edit(.claude/kbase/**) Write(.claude/kbase/**)
 ---
 
 # Knowledge Base Indexer
