@@ -50,6 +50,31 @@ The secret `token` never travels in a URL: only in the `PUT /ws/:clientId` `Auth
 
 The `clientId` is the public identifier: it is the `PUT` path parameter used to locate the session for reclaim, and it is echoed in `welcome`, but it is never consumed for request routing, correlation, or presence. Player/user IDs (the rest of spec §6) remain unbuilt (see [sleepy-socket Protocol](../ideas/sleepy-socket.md)).
 
+### Identifier naming (`id` vs `clientId`)
+
+Three identifiers coexist, and two of them are spelled in ways that invite a wrong edit:
+
+- envelope `id` — the **per-message** id, used for correlation (see [Client correlation](#client-correlation)).
+- envelope `clientId` — the **session** identifier as it appears **on the wire**: the `welcome`/`request`/`response` frames, the AJV schemas, `ws.data`, and the `/ws/:clientId` route.
+- `client.id` — the `SleepySocketClient` class's public getter for that same session identifier (private field `#id`).
+
+The class getter was renamed from `clientId` to `id` on 2026-07-16 to kill the stutter at the call site (`client.clientId`, and especially `clientId: client.clientId` when building a frame). The rename was deliberately **scoped to the class API only**: the wire protocol keeps `clientId` everywhere, so the change is non-breaking and no version bump was owed. The two names therefore meet at exactly one seam, in `#openSocket`'s welcome handler:
+
+```js
+this.#id = message.clientId   // LHS: class API. RHS: wire key.
+```
+
+That asymmetry is the point, not an oversight. It is also why a blanket `clientId` -> `id` replace is wrong: `id` is **already taken** in the envelope as the message id, so a global replace conflates the per-message id with the session id. Any future rename here must target `client.clientId` reads and the `#id` field specifically.
+
+Worth being precise about how such a replace fails, because it is mostly **loud**, not silent:
+
+- **Destructures** (`const { id, clientId, method, route } = message`, four of them in `socket.js`) become `const { id, id, … }`, a `SyntaxError: "id" has already been declared`. This fails at parse, so it is the first thing anyone would hit.
+- **`createMessage`** (both `messages.js` files) is the subtle case, and the trap is **shadowing**, not the key collision: renaming the `clientId` param to `id` shadows the module-level `id()` generator imported from `utils.js` (see [Client message ids](#client-message-ids)). If the caller omits `opts.id`, `opts.id ?? id()` calls a string and throws `TypeError: id is not a function`. If the caller **supplies** `opts.id` (the ack/response paths, e.g. `createMessage(clientId, TYPES.HEARTBEAT, { id })`), `??` short-circuits, no error fires, and the duplicate key `{ id: opts.id, id }` resolves last-wins so the **session id silently overwrites the message id**. That is the only genuinely silent path, and it would corrupt correlation, since `#dispatchedMessages` matches on `id`.
+
+So the realistic failure is a parse error, not silent corruption. The rule stands, but the reason is that the rename is *wrong*, not that it is undetectable.
+
+For the same reason, `createSocketClient` in `packages/server/tests/helpers.js` still exposes a `clientId` getter: it is a hand-rolled test double over a raw `WebSocket`, not a `SleepySocketClient`, so it was out of scope (see [Testing](./testing.md)).
+
 ## Resource bounding (sweeps + cap)
 
 The stores accumulate abandoned entries: a minted-but-never-redeemed ticket is only removed on redemption, and a reaped session that is never reclaimed is retained for its whole `reclaimTtl` with nothing scheduled to delete it. Reclamation happens **at acquisition time** (sweep when a new resource of the same kind is requested) rather than on a standing background timer, which would add a tuning knob and drift under large operations. Sweeps stay **synchronous and inline**: a single-threaded runtime cannot offload the work to a microtask (same thread, the stall is only deferred), and synchronous sweeps cannot overlap, so there is no concurrent-sweep hazard to guard against.
