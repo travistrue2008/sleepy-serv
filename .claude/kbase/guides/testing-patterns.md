@@ -1,5 +1,7 @@
 # Testing Patterns
 
+For test styles, the boot model, and the server integration helpers, see [Testing](../architecture/testing.md).
+
 ## Time
 
 - `test-setup.js` (repo root, preloaded via `bunfig.toml`) wraps tests in
