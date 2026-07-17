@@ -227,7 +227,9 @@ describe('SleepySocketClient', () => {
         queue: 'nope',
       })
 
-      await expect(promise).rejects.toThrow(RangeError)
+      await expect(promise).rejects.toThrow(
+        new RangeError('Invalid queue type: nope'),
+      )
     })
 
     test('when the ticket request fails', async () => {
@@ -343,6 +345,14 @@ describe('SleepySocketClient', () => {
       })
 
       expect(client.timeout).toBe(60_000)
+    })
+
+    test('when "opts.mountPath" is set', async () => {
+      const { client } = await connectAndOpen({
+        mountPath: '/test-mount-path',
+      })
+
+      expect(client.mountPath).toBe('/test-mount-path')
     })
   })
 
@@ -860,7 +870,7 @@ describe('SleepySocketClient', () => {
         timestamp: TIMESTAMP,
       })
 
-      expect(fn).toThrow(RangeError)
+      expect(fn).toThrow(new RangeError('Unknown message type: "garbage"'))
     })
   })
 

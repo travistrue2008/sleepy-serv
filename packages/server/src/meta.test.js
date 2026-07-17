@@ -248,9 +248,11 @@ describe('setValueByPath()', () => {
     const schema = gen()
     const fn = () => setValueByPath(schema, ['f', 'g'], 42)
 
-    expect(fn).toThrow(new Error(
-      `undefined is not an object (evaluating 'subObj[key] = value')`,
-    ))
+    expect(fn).toThrow(
+      new Error(
+        `undefined is not an object (evaluating 'subObj[key] = value')`,
+      ),
+    )
   })
 })
 

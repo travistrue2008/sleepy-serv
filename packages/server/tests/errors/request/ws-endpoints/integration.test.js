@@ -18,11 +18,9 @@ describe('POST', () => {
     const req = createRequestor(app)
     const res = await req.post('/ws', FMT.JSON)
 
-    console.log('url:', app.server.url)
-
     await app.server.stop(true)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(201)
 
     expect(res.body).toStrictEqual({
       clientId: expect.any(String),
@@ -287,11 +285,12 @@ describe('GET', () => {
   test('when providing a "ticket" querystring (REST)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-
-    const { ticket } = await req.post('/ws', FMT.JSON)
+    const ticketRes = await req.post('/ws', FMT.JSON)
 
     const res = await req.get('/ws', FMT.JSON, {
-      query: { ticket },
+      query: {
+        ticket: ticketRes.body.ticket,
+      },
     })
 
     await app.server.stop(true)
@@ -303,9 +302,15 @@ describe('GET', () => {
 
   test('when providing a "ticket" querystring (ws)', async () => {
     const app = await createApp(0, import.meta.dirname)
+    const req = createRequestor(app)
     const ws = await createSocketClient(app)
-    const { ticket } = await ws.post('/ws', FMT.JSON, { method: 'POST' })
-    const msg = await ws.get('/ws', { query: { ticket } })
+    const ticketRes = await req.post('/ws', FMT.JSON)
+
+    const msg = await ws.get('/ws', {
+      query: {
+        ticket: ticketRes.body.ticket,
+      },
+    })
 
     await app.server.stop(true)
 

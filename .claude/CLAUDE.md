@@ -4,7 +4,6 @@
 
 - Install `bun` v1.2.3, if not already
 - Install `codegraph` globally, if not already: `bun add -g @colbymchenry/codegraph`, then `codegraph install`.
-- Link packages for E2E tests
 
 ## Commands
 
@@ -15,7 +14,6 @@ bun install                   # CI uses --frozen-lockfile; installs for all work
 bun test                      # run all tests (Bun's built-in runner)
 bun test path/to/file.test.js # run a single test file
 bun test -t "substring"       # run tests matching a name
-bun run link                  # link packages for E2E tests
 bunx eslint .                 # lint
 ```
 

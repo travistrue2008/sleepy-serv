@@ -470,7 +470,7 @@ export function buildSocketHandlers (state) {
           clientId,
           ticket: bindTicket(clientId),
           data: res,
-        })
+        }, { status: 201 })
       },
     },
     {

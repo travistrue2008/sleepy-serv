@@ -6,11 +6,12 @@
     "packages/client"
   ],
   "scripts": {
-    "link": "./tests/link.sh",
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
     "eslint": "9.20.1",
-    "jose": "^6.2.3"
+    "jose": "^6.2.3",
+    "sleepy-serv": "workspace:*",
+    "sleepy-socket": "workspace:*"
   }
 }

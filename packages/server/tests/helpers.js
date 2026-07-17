@@ -66,7 +66,7 @@ export async function createSocketClient (app, opts = {}) {
       if (message.type !== TYPES.WELCOME) {
         return reject(
           new TypeError(
-            `Expected ${TYPES.WELCOME} message, but got: '${message.type}'`,
+            `Expected ${TYPES.WELCOME} message, but got: "${message.type}"`,
           ),
         )
       }

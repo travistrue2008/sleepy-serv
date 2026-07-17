@@ -103,9 +103,9 @@ describe('buildSocketState()', () => {
       maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 10000,
+      tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
-      tickets: new Map(),
     })
   })
 
@@ -118,9 +118,9 @@ describe('buildSocketState()', () => {
       maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 10000,
+      tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
-      tickets: new Map(),
     })
   })
 
@@ -135,9 +135,9 @@ describe('buildSocketState()', () => {
       maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 10000,
+      tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
-      tickets: new Map(),
     })
   })
 
@@ -154,9 +154,9 @@ describe('buildSocketState()', () => {
       maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 10000,
+      tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
-      tickets: new Map(),
     })
   })
 
@@ -173,9 +173,9 @@ describe('buildSocketState()', () => {
       maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 10000,
+      tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
-      tickets: new Map(),
     })
   })
 
@@ -192,9 +192,9 @@ describe('buildSocketState()', () => {
       maxTickets: 5,
       reclaimTtl: 300000,
       ticketTtl: 10000,
+      tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
-      tickets: new Map(),
     })
   })
 
@@ -211,9 +211,9 @@ describe('buildSocketState()', () => {
       maxTickets: 100000,
       reclaimTtl: 100,
       ticketTtl: 10000,
+      tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
-      tickets: new Map(),
     })
   })
 
@@ -230,9 +230,9 @@ describe('buildSocketState()', () => {
       maxTickets: 100000,
       reclaimTtl: 300000,
       ticketTtl: 100,
+      tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
-      tickets: new Map(),
     })
   })
 })
@@ -578,27 +578,7 @@ describe('buildSocketServer()', () => {
         timestamp: TIMESTAMP,
         headers: {},
         body: {
-          token: BASE64_32,
           heartbeatInterval: 20_000,
-        },
-      })
-    })
-
-    test('when the welcome carries a fresh token', () => {
-      const state = buildSocketState()
-      const server = buildSocketServer([], state)
-      const ws = buildSocket(CLIENT_ID)
-
-      server.open(ws)
-
-      expect(ws.welcome).toStrictEqual({
-        id: ws.welcome.id,
-        clientId: CLIENT_ID,
-        type: TYPES.WELCOME,
-        timestamp: TIMESTAMP,
-        headers: {},
-        body: {
-          heartbeatInterval: 30_000,
           token: BASE64_32,
         },
       })
@@ -802,7 +782,7 @@ describe('buildSocketServer()', () => {
       server.close(ws, 1006)
       jest.advanceTimersByTime(101)
 
-      expect(fn).toThrow(NotFoundError)
+      expect(fn).toThrow(new NotFoundError())
     })
 
     test('when a willing close occurs', () => {
@@ -822,7 +802,7 @@ describe('buildSocketServer()', () => {
 
       server.close(ws, 1000)
 
-      expect(fn).toThrow(NotFoundError)
+      expect(fn).toThrow(new NotFoundError())
     })
   })
 })
@@ -1266,12 +1246,14 @@ describe('buildSocketHandlers()', () => {
 
       const fn = () => createTicket({}, {})
 
-      expect(fn).toThrow(ServiceUnavailableError)
+      expect(fn).toThrow(new ServiceUnavailableError())
     })
 
     test('when called, it mints a fresh clientId and ticket', async () => {
       const res = createTicket({}, {})
       const result = await res.json()
+
+      expect(res.status).toBe(201)
 
       expect(result).toStrictEqual({
         clientId: UUIDs[0],
@@ -1295,14 +1277,17 @@ describe('buildSocketHandlers()', () => {
         expiresAt: Date.now() - 100,
       })
 
-      createTicket({}, {})
+      const res = createTicket({}, {})
 
+      expect(res.status).toBe(201)
       expect(state.tickets.size).toBe(1)
     })
 
     test('when "res" has content', async () => {
       const res = createTicket({}, RES_HANDLER)
       const result = await res.json()
+
+      expect(res.status).toBe(201)
 
       expect(result).toStrictEqual({
         clientId: UUIDs[0],
@@ -1425,7 +1410,7 @@ describe('buildSocketHandlers()', () => {
         }),
       }, {})
 
-      expect(fn).toThrow(UnauthorizedError)
+      expect(fn).toThrow(new UnauthorizedError())
     })
 
     test('when the socket is closed unexpectedly (expired)', () => {
@@ -1541,7 +1526,9 @@ describe('buildSocketCommands()', () => {
         ok: true,
       })
 
-      expect(fn).toThrow(ReferenceError)
+      expect(fn).toThrow(
+        new ReferenceError(`No live socket for client: ${CLIENT_ID}`),
+      )
     })
 
     test('when the client has a live socket', () => {

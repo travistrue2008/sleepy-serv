@@ -1,3 +1,4 @@
+import path from 'path'
 import { TYPES, createMessage } from './messages'
 
 export * from './messages'
@@ -20,6 +21,7 @@ export default class SleepySocketClient {
   #timeout = 30_000
   #serverTimeout = 120_000
   #heartbeatInterval = 30_000
+  #mountPath = ''
   #host = null
   #port = null
   #token = null
@@ -65,6 +67,10 @@ export default class SleepySocketClient {
     return this.#token
   }
 
+  get mountPath () {
+    return this.#mountPath
+  }
+
   get socket () {
     return this.#socket
   }
@@ -88,6 +94,7 @@ export default class SleepySocketClient {
     client.#secure = opts.secure ?? false
     client.#timeout = opts.timeout ?? 30_000
     client.#serverTimeout = opts.serverTimeout ?? 120_000
+    client.#mountPath = opts.mountPath ?? ''
 
     if (opts.reconnect !== false) {
       client.#reconnectConfig = {
@@ -107,7 +114,7 @@ export default class SleepySocketClient {
   #baseUrl () {
     const protocol = this.#secure ? 'https' : 'http'
 
-    return `${protocol}://${this.#host}:${this.#port}`
+    return `${protocol}://${this.#host}:${this.#port}${this.#mountPath}`
   }
 
   async #createTicket () {
@@ -149,7 +156,7 @@ export default class SleepySocketClient {
 
   #socketUrl (ticket) {
     const protocol = this.#secure ? 'wss' : 'ws'
-    const authority = `${this.#host}:${this.#port}`
+    const authority = `${this.#host}:${this.#port}${this.#mountPath}`
 
     return `${protocol}://${authority}/ws?ticket=${ticket}`
   }
@@ -347,7 +354,7 @@ export default class SleepySocketClient {
         return this.#handleNotification(data)
 
       default:
-        throw new RangeError(`Unknown message type: ${data.type}`)
+        throw new RangeError(`Unknown message type: "${data.type}"`)
     }
   }
 
@@ -444,9 +451,13 @@ export default class SleepySocketClient {
       throw new Error('Socket is closed')
     }
 
+    const route = path.join(this.#mountPath, data.route)
+    const query = data.query ?? {}
+
     const message = createMessage(this.#clientId, TYPES.REQUEST, {
       ...data,
-      query: data.query ?? {},
+      route,
+      query,
     })
 
     return new Promise((resolve, reject) => {
