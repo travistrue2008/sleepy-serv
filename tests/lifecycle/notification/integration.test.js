@@ -18,7 +18,7 @@ test('when the server broadcasts', async () => {
 
   expect(received[0]).toStrictEqual({
     id: received[0].id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.NOTIFICATION,
     event: 'state_changed',
     timestamp: received[0].timestamp,
@@ -34,7 +34,7 @@ test('when the server sends to a clientId', async () => {
   const client = await SleepySocketClient.connect(host, app.server.port)
 
   client.on('notification', message => received.push(message))
-  app.commands.send(client.clientId, 'player_joined', { name: 'x' })
+  app.commands.send(client.id, 'player_joined', { name: 'x' })
 
   await waitFor(() => received.length > 0)
   await client.close()
@@ -42,7 +42,7 @@ test('when the server sends to a clientId', async () => {
 
   expect(received[0]).toStrictEqual({
     id: received[0].id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.NOTIFICATION,
     event: 'player_joined',
     timestamp: received[0].timestamp,

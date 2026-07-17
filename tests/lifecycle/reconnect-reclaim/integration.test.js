@@ -9,7 +9,7 @@ test('when reclaiming with a valid token', async () => {
   const client = await SleepySocketClient.connect(host, app.server.port)
   const req = createRequestor(app)
 
-  const res = await req.put(`/ws/${client.clientId}`, FMT.JSON, {
+  const res = await req.put(`/ws/${client.id}`, FMT.JSON, {
     headers: new Headers({
       authorization: `Bearer ${client.token}`,
     }),
@@ -18,7 +18,7 @@ test('when reclaiming with a valid token', async () => {
   await client.close()
   await app.server.stop(true)
 
-  expect(client.clientId).toBe(res.body.clientId)
+  expect(client.id).toBe(res.body.clientId)
 })
 
 test('when the token is wrong', async () => {
@@ -29,7 +29,7 @@ test('when the token is wrong', async () => {
   const client = await SleepySocketClient.connect(host, app.server.port)
   const req = createRequestor(app)
 
-  const res = await req.put(`/ws/${client.clientId}`, FMT.JSON, {
+  const res = await req.put(`/ws/${client.id}`, FMT.JSON, {
     headers: new Headers({
       authorization: `Bearer ${TOKEN_INVALID}`,
     }),

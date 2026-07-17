@@ -17,7 +17,7 @@ test('when making a GET request on the root route', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.RESPONSE,
     status: 200,
     timestamp: res.timestamp,

@@ -17,7 +17,7 @@ test('when the client connects', async () => {
   await client.close()
   await app.server.stop(true)
 
-  expect(client.clientId).toBeTruthy()
+  expect(client.id).toBeTruthy()
   expect(client.heartbeatInterval).toBe(HEARTBEAT_INTERVAL)
 })
 
@@ -36,7 +36,7 @@ test('when a request carries the cached clientId', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.RESPONSE,
     status: 200,
     timestamp: res.timestamp,

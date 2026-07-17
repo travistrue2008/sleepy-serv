@@ -13,7 +13,7 @@ export const QUEUE = {
 const RECONNECT_JITTER = 0.5
 
 export default class SleepySocketClient {
-  #clientId = null
+  #id = null
   #queueType = QUEUE.NONE
   #ready = false
   #closing = false
@@ -34,6 +34,10 @@ export default class SleepySocketClient {
   #connectionData = null
   #listeners = new Map()
   #dispatchedMessages = []
+
+  get id () {
+    return this.#id
+  }
 
   get isConnected () {
     return this.#ready
@@ -57,10 +61,6 @@ export default class SleepySocketClient {
 
   get serverTimeout () {
     return this.#serverTimeout
-  }
-
-  get clientId () {
-    return this.#clientId
   }
 
   get token () {
@@ -126,7 +126,7 @@ export default class SleepySocketClient {
   }
 
   async #reclaimTicket () {
-    const url = `${this.#baseUrl()}/ws/${this.#clientId}`
+    const url = `${this.#baseUrl()}/ws/${this.#id}`
 
     const response = await fetch(url, {
       method: 'PUT',
@@ -143,7 +143,7 @@ export default class SleepySocketClient {
   }
 
   async #requestTicket () {
-    if (this.#clientId && this.#token) {
+    if (this.#id && this.#token) {
       const reclaimed = await this.#reclaimTicket()
 
       if (reclaimed) {
@@ -178,7 +178,7 @@ export default class SleepySocketClient {
         return
       }
 
-      this.#clientId = message.clientId
+      this.#id = message.clientId
       this.#token = message.body.token
       this.#heartbeatInterval = message.body.heartbeatInterval
 
@@ -278,7 +278,7 @@ export default class SleepySocketClient {
 
   #startHeartbeat () {
     this.#heartbeatTimer = setInterval(() => {
-      const message = createMessage(this.#clientId, TYPES.HEARTBEAT)
+      const message = createMessage(this.#id, TYPES.HEARTBEAT)
 
       this.#socket.send(JSON.stringify(message))
     }, this.#heartbeatInterval)
@@ -454,7 +454,7 @@ export default class SleepySocketClient {
     const route = path.join(this.#mountPath, data.route)
     const query = data.query ?? {}
 
-    const message = createMessage(this.#clientId, TYPES.REQUEST, {
+    const message = createMessage(this.#id, TYPES.REQUEST, {
       ...data,
       route,
       query,

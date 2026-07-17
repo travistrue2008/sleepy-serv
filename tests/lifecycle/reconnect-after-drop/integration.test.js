@@ -22,7 +22,7 @@ test('when the socket drops AND the client reconnects', async () => {
     },
   })
 
-  const clientId = client.clientId
+  const id = client.id
   const oldSocket = client.socket
 
   client.socket.close(4000)
@@ -44,7 +44,7 @@ test('when the socket drops AND the client reconnects', async () => {
   await client.close()
   await app.server.stop(true)
 
-  expect(client.clientId).toBe(clientId)
+  expect(client.id).toBe(id)
   expect(res.status).toBe(200)
   expect(res.body).toStrictEqual({ ok: true })
 })

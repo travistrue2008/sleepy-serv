@@ -29,7 +29,7 @@ test('when meta middleware writes to res (ws)', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.RESPONSE,
     status: 200,
     timestamp: res.timestamp,

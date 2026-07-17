@@ -11,7 +11,7 @@ test('when a willingly-closed clientId is reclaimed', async () => {
 
   await client.close()
 
-  const res = await req.put(`/ws/${client.clientId}`, FMT.JSON, {
+  const res = await req.put(`/ws/${client.id}`, FMT.JSON, {
     headers: new Headers({
       authorization: `Bearer ${client.token}`,
     }),

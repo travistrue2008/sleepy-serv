@@ -22,7 +22,7 @@ test('when the handler throws a generic Error', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.RESPONSE,
     status: InternalServerError.status,
     timestamp: res.timestamp,
@@ -46,7 +46,7 @@ test('when the handler throws a RequestError subclass', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.RESPONSE,
     status: ConflictError.status,
     timestamp: res.timestamp,

@@ -13,7 +13,7 @@ test('when the request envelope fails schema validation', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.RESPONSE,
     timestamp: res.timestamp,
     status: UnprocessableContentError.status,

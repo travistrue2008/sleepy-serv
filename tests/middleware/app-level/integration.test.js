@@ -48,7 +48,7 @@ test('when root middleware errors (ws)', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.RESPONSE,
     status: InternalServerError.status,
     timestamp: res.timestamp,
@@ -91,7 +91,7 @@ test('when root middleware is invoked (ws)', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.RESPONSE,
     status: 200,
     timestamp: res.timestamp,

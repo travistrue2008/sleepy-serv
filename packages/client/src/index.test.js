@@ -297,7 +297,7 @@ describe('SleepySocketClient', () => {
       expect(client.timeout).toBe(30_000)
       expect(client.heartbeatInterval).toBe(30_000)
       expect(client.serverTimeout).toBe(120_000)
-      expect(client.clientId).toBe(CLIENT_ID)
+      expect(client.id).toBe(CLIENT_ID)
       expect(client.token).toBe(TOKEN)
       expect(client.socket).toBe(socket)
 
@@ -318,7 +318,7 @@ describe('SleepySocketClient', () => {
     test('when the welcome frame arrives', async () => {
       const { client } = await connectAndOpen()
 
-      expect(client.clientId).toBe(CLIENT_ID)
+      expect(client.id).toBe(CLIENT_ID)
       expect(client.heartbeatInterval).toBe(HEARTBEAT_INTERVAL)
     })
 
@@ -566,7 +566,7 @@ describe('SleepySocketClient', () => {
       expect(client.timeout).toBe(30_000)
       expect(client.heartbeatInterval).toBe(30_000)
       expect(client.serverTimeout).toBe(120_000)
-      expect(client.clientId).toBe(CLIENT_ID)
+      expect(client.id).toBe(CLIENT_ID)
       expect(client.token).toBe(TOKEN)
       expect(client.socket).not.toBe(socket)
 
@@ -635,7 +635,7 @@ describe('SleepySocketClient', () => {
 
       await reconnect()
 
-      expect(client.clientId).toBe(CLIENT_ID)
+      expect(client.id).toBe(CLIENT_ID)
     })
 
     test('when the welcome returns a new clientId', async () => {
@@ -649,7 +649,7 @@ describe('SleepySocketClient', () => {
 
       await reconnect(500, OTHER_CLIENT_ID)
 
-      expect(client.clientId).toBe(OTHER_CLIENT_ID)
+      expect(client.id).toBe(OTHER_CLIENT_ID)
     })
 
     test('when a reconnect welcome never arrives', async () => {

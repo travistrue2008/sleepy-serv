@@ -32,7 +32,7 @@ test('when a heartbeat is sent', async () => {
 
   expect(heartbeatMessage).toStrictEqual({
     id: heartbeatMessage.id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.HEARTBEAT,
     timestamp: heartbeatMessage.timestamp,
     headers: {},
@@ -41,7 +41,7 @@ test('when a heartbeat is sent', async () => {
 
   expect(ack).toStrictEqual({
     id: ack.id,
-    clientId: client.clientId,
+    clientId: client.id,
     type: TYPES.HEARTBEAT,
     timestamp: ack.timestamp,
   })

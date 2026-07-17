@@ -49,7 +49,7 @@ describe('PUT', () => {
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
-    const res = await req.put(`/ws/${client.clientId}?err=lvl_1`, FMT.TEXT)
+    const res = await req.put(`/ws/${client.id}?err=lvl_1`, FMT.TEXT)
 
     await client.close()
     await app.server.stop(true)
@@ -63,7 +63,7 @@ describe('PUT', () => {
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
-    const res = await req.put(`/ws/${client.clientId}?err=lvl_2`, FMT.TEXT)
+    const res = await req.put(`/ws/${client.id}?err=lvl_2`, FMT.TEXT)
 
     await client.close()
     await app.server.stop(true)
@@ -77,7 +77,7 @@ describe('PUT', () => {
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
-    const res = await req.put(`/ws/${client.clientId}?err=lvl_3`, FMT.TEXT)
+    const res = await req.put(`/ws/${client.id}?err=lvl_3`, FMT.TEXT)
 
     await client.close()
     await app.server.stop(true)
@@ -92,7 +92,7 @@ describe('PUT', () => {
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
 
-    const res = await req.put(`/ws/${client.clientId}`, FMT.JSON, {
+    const res = await req.put(`/ws/${client.id}`, FMT.JSON, {
       headers: new Headers({
         authorization: `Bearer ${client.token}`,
       }),
