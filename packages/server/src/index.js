@@ -3,8 +3,6 @@ import path from 'path'
 import querystring from 'querystring'
 import readline from 'node:readline'
 
-import * as _middleware from './middleware'
-
 import { stdin, stdout } from 'node:process'
 import { toSegments, executeMiddlewareChain } from './utils'
 
@@ -21,7 +19,12 @@ import {
 } from './errors'
 
 export * from './errors'
-export const middleware = _middleware
+
+export {
+  parseJsonBody,
+  setValidationFormats,
+  validateSchemas,
+} from './middleware'
 
 const ALLOWED_FILES_META = ['meta.js', 'meta.ts']
 

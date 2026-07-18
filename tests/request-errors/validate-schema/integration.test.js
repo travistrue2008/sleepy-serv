@@ -2,7 +2,7 @@ import { test, expect } from 'bun:test'
 import { createApp, UnprocessableContentError } from 'sleepy-serv'
 import SleepySocketClient, { TYPES } from 'sleepy-socket'
 
-test('when app-level validateSchema middleware rejects a request', async () => {
+test('when app-level validateSchemas rejects a request', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const client = await SleepySocketClient.connect(host, app.server.port)

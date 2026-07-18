@@ -9,18 +9,20 @@ import {
   UnprocessableContentError,
 } from './errors'
 
-const SCHEMA_EMPTY = {
-  type: ['null', 'object'],
-  properties: {},
+let _schemasCompiled = false
+let _customFormats = null
+
+async function parseBody (req) {
+  try {
+    const result = await req.json()
+
+    return result
+  } catch {
+    throw new BadRequestError('Invalid JSON')
+  }
 }
 
-let _customFormats = {}
-
 function buildFormatterSchema (schema) {
-  if (!schema) {
-    return SCHEMA_EMPTY
-  }
-
   const properties = Object
     .entries(schema)
     .map(([key, config]) => [
@@ -41,69 +43,91 @@ function buildFormatterSchema (schema) {
   }
 }
 
-async function parseBody (req) {
-  try {
-    const result = await req.json()
+function compileSchemas (schemas) {
+  return Object
+    .entries(schemas)
+    .reduce((accum, [key, schema]) => {
+      const formattedSchema = key !== 'body'
+        ? buildFormatterSchema(schema)
+        : schema
 
-    return result
-  } catch {
-    throw new BadRequestError('Invalid JSON')
-  }
+      return [
+        ...accum,
+        [key, formattedSchema],
+      ]
+    }, [])
+    .map(([key, schema]) => {
+      const ajv = new Ajv({
+        allErrors: true,
+        removeAdditional: 'all',
+      })
+
+      addFormats(ajv)
+
+      Object
+        .entries(_customFormats ?? [])
+        .forEach(([k, v]) => ajv.addFormat(k, v))
+
+      const validator = ajv.compile(schema)
+
+      return [key, validator]
+    })
 }
 
-export async function parseJson (req, res, next) {
-  const contentType = req.headers.get('content-type')
+export function parseJsonBody () {
+  return async (req, res, next) => {
+    const contentType = req.headers.get('content-type')
 
-  if (!contentType) {
-    return next(res)
+    if (!contentType) {
+      return next(res)
+    }
+
+    if (!contentType.startsWith('application/json')) {
+      throw new UnsupportedMediaTypeError('content-type')
+    }
+
+    const body = await parseBody(req)
+
+    return next(body)
   }
-
-  if (!contentType.startsWith('application/json')) {
-    throw new UnsupportedMediaTypeError('content-type')
-  }
-
-  const body = await parseBody(req)
-
-  return next(body)
 }
 
 export function setValidationFormats (formats) {
+  if (_customFormats) {
+    console.warn('setValidationFormats() - already initialized')
+  }
+
+  if (_schemasCompiled) {
+    console.warn('setValidationFormats() - called after compilation')
+  }
+
   _customFormats = formats
 }
 
-export function validateSchema (schemas) {
-  return function (req, res, next) {
-    const formattedSchemas = {
-      headers: buildFormatterSchema(schemas.headers),
-      params: buildFormatterSchema(schemas.params),
-      query: buildFormatterSchema(schemas.query),
-      body: schemas.body || SCHEMA_EMPTY,
-    }
+/* only for testing purposes */
 
-    const ajv = new Ajv({
-      allErrors: true,
-      removeAdditional: 'all',
-    })
+export function resetValidationFormatsState () {
+  _customFormats = null
+  _schemasCompiled = false
+}
 
-    addFormats(ajv)
+export function validateSchemas (schemas) {
+  const entries = compileSchemas(schemas)
 
-    Object
-      .entries(_customFormats)
-      .forEach(([k, v]) => ajv.addFormat(k, v))
+  _schemasCompiled = true
 
-    const errors = Object
-      .entries(formattedSchemas)
-      .reduce((accum, [key, schema]) => {
-        const data = key === 'body' ? res : req[key]
-        const valid = schema ? ajv.validate(schema, data) : true
+  return (req, res, next) => {
+    const errors = entries.reduce((accum, [key, validator]) => {
+      const data = key === 'body' ? res : req[key]
+      const valid = validator(data)
 
-        return !valid
-          ? [
-            ...accum,
-            ...ajv.errors.map(item => formatError(key, item)),
-          ]
-          : accum
-      }, [])
+      return !valid
+        ? [
+          ...accum,
+          ...validator.errors.map(item => formatError(key, item)),
+        ]
+        : accum
+    }, [])
 
     if (errors.length > 0) {
       throw new UnprocessableContentError(errors)

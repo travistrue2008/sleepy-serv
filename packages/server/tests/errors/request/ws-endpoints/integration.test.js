@@ -103,7 +103,7 @@ describe('PUT', () => {
     await app.server.stop(true)
 
     expect(res.status).toBe(NotFoundError.status)
-    expect(res.body).toStrictEqual(null)
+    expect(res.body).toBe(null)
   })
 
   test('when the "clientId" param is invalid (ws)', async () => {
@@ -142,7 +142,7 @@ describe('PUT', () => {
     await app.server.stop(true)
 
     expect(res.status).toBe(UnauthorizedError.status)
-    expect(res.body).toStrictEqual(null)
+    expect(res.body).toBe(null)
   })
 
   test('when the "token" header is incorrect (ws)', async () => {
@@ -261,7 +261,7 @@ describe('GET', () => {
 
     expect(res.status).toBe(NotFoundError.status)
 
-    expect(res.body).toStrictEqual(null)
+    expect(res.body).toBe(null)
   })
 
   test('when invalid "ticket" querystring (ws)', async () => {
@@ -297,7 +297,7 @@ describe('GET', () => {
 
     expect(res.status).toBe(NotFoundError.status)
 
-    expect(res.body).toStrictEqual(null)
+    expect(res.body).toBe(null)
   })
 
   test('when providing a "ticket" querystring (ws)', async () => {

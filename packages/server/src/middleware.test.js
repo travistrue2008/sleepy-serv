@@ -1,9 +1,18 @@
-import { describe, test, expect, mock } from 'bun:test'
+import {
+  mock,
+  spyOn,
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+} from 'bun:test'
 
 import {
-  parseJson,
+  parseJsonBody,
   setValidationFormats,
-  validateSchema,
+  validateSchemas,
+  resetValidationFormatsState,
 } from './middleware'
 
 import {
@@ -12,7 +21,9 @@ import {
   UnprocessableContentError,
 } from './errors'
 
-describe('parseJson()', () => {
+describe('parseJsonBody()', () => {
+  const parser = parseJsonBody()
+
   test('when NO "content-type" is provided', async () => {
     const req = {
       method: 'POST',
@@ -22,7 +33,7 @@ describe('parseJson()', () => {
 
     const next = mock()
 
-    await parseJson(req, null, next)
+    await parser(req, null, next)
 
     expect(req.json).not.toBeCalled()
     expect(next).toHaveBeenCalledWith(null)
@@ -38,7 +49,7 @@ describe('parseJson()', () => {
     }
 
     const next = mock()
-    const fn = () => parseJson(req, null, next)
+    const fn = () => parser(req, null, next)
 
     await expect(fn).toThrow(new UnsupportedMediaTypeError('content-type'))
 
@@ -56,7 +67,7 @@ describe('parseJson()', () => {
     }
 
     const next = mock()
-    const fn = () => parseJson(req, null, next)
+    const fn = () => parser(req, null, next)
 
     await expect(fn).toThrow(new BadRequestError('Invalid JSON'))
 
@@ -79,7 +90,7 @@ describe('parseJson()', () => {
 
     const next = mock()
 
-    await parseJson(req, null, next)
+    await parser(req, null, next)
 
     expect(req.json).toBeCalledWith()
     expect(next).toHaveBeenCalledWith(BODY)
@@ -100,7 +111,7 @@ describe('parseJson()', () => {
 
     const next = mock()
 
-    await parseJson(req, null, next)
+    await parser(req, null, next)
 
     expect(req.json).toHaveBeenCalledOnce()
     expect(next).toHaveBeenCalledWith(BODY)
@@ -108,12 +119,43 @@ describe('parseJson()', () => {
 })
 
 describe('setValidationFormats()', () => {
+  beforeEach(() => {
+    resetValidationFormatsState()
+    spyOn(console, 'warn')
+  })
+
+  afterEach(() => {
+    mock.restore()
+  })
+
+  test('when invoked multiple times', () => {
+    setValidationFormats({})
+    setValidationFormats({})
+
+    expect(console.warn).toHaveBeenCalledOnce()
+
+    expect(console.warn).toHaveBeenCalledWith(
+      'setValidationFormats() - already initialized',
+    )
+  })
+
+  test('when invoked after validateSchemas() is called', () => {
+    validateSchemas({})
+    setValidationFormats({})
+
+    expect(console.warn).toHaveBeenCalledOnce()
+
+    expect(console.warn).toHaveBeenCalledWith(
+      'setValidationFormats() - called after compilation',
+    )
+  })
+
   test('when invoked', () => {
     setValidationFormats({
       phone: /^\d{10}$/,
     })
 
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       body: {
         properties: {
           phone: {
@@ -137,7 +179,7 @@ describe('setValidationFormats()', () => {
   })
 })
 
-describe('validateSchema()', () => {
+describe('validateSchemas()', () => {
   const UUID = '00000000-0000-0000-0000-000000000001'
 
   const PATTERN_UUID =
@@ -176,33 +218,38 @@ describe('validateSchema()', () => {
   }
 
   test('when NO schemas are provided', () => {
-    const middleware = validateSchema({})
-    const next = mock()
+    const middleware = validateSchemas({})
 
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {},
       query: {},
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith(null)
+    expect(next).toHaveBeenCalledWith(res)
   })
 
   test('when headers FAIL validation (format)', () => {
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       headers: SCHEMA_FORMAT,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {
         userId: '123',
       },
       params: {},
       query: {},
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -214,39 +261,45 @@ describe('validateSchema()', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
-  test('when headers PASS validation (format)', () => {
-    const middleware = validateSchema({
+  test('when headers PASSES validation (format)', () => {
+    const middleware = validateSchemas({
       headers: SCHEMA_FORMAT,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {
         userId: UUID,
       },
       params: {},
       query: {},
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+
+    const fn = () => middleware(req, res, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith(null)
+    expect(next).toHaveBeenCalledWith(res)
   })
 
   test('when headers FAIL validation (pattern)', () => {
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       headers: SCHEMA_PATTERN,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {
         userId: '123',
       },
       params: {},
       query: {},
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+
+    const fn = () => middleware(req, res, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -258,39 +311,43 @@ describe('validateSchema()', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
-  test('when headers PASS validation (pattern)', () => {
-    const middleware = validateSchema({
+  test('when headers PASSES validation (pattern)', () => {
+    const middleware = validateSchemas({
       headers: SCHEMA_PATTERN,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {
         userId: UUID,
       },
       params: {},
       query: {},
-    }, null, next)
+    }
+
+    const res = {a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith(null)
+    expect(next).toHaveBeenCalledWith(res)
   })
 
   test('when params FAIL validation (format)', () => {
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       params: SCHEMA_FORMAT,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {
         userId: '123',
       },
       query: {},
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -302,40 +359,44 @@ describe('validateSchema()', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
-  test('when params PASS validation (format)', () => {
-    const middleware = validateSchema({
+  test('when params PASSES validation (format)', () => {
+    const middleware = validateSchemas({
       params: SCHEMA_FORMAT,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {
         userId: UUID,
       },
       query: {},
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).not.toThrow()
 
-    expect(next).toHaveBeenCalledWith(null)
+    expect(next).toHaveBeenCalledWith(res)
   })
 
   test('when params FAIL validation (pattern)', () => {
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       params: SCHEMA_PATTERN,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {
         userId: '123',
       },
       query: {},
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -347,40 +408,44 @@ describe('validateSchema()', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
-  test('when params PASS validation (pattern)', () => {
-    const middleware = validateSchema({
+  test('when params PASSES validation (pattern)', () => {
+    const middleware = validateSchemas({
       params: SCHEMA_PATTERN,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {
         userId: UUID,
       },
       query: {},
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).not.toThrow()
 
-    expect(next).toHaveBeenCalledWith(null)
+    expect(next).toHaveBeenCalledWith(res)
   })
 
   test('when query FAIL validation (format)', () => {
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       query: SCHEMA_FORMAT,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {},
       query: {
         userId: '123',
       },
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -392,39 +457,43 @@ describe('validateSchema()', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
-  test('when query PASS validation (format)', () => {
-    const middleware = validateSchema({
+  test('when query PASSES validation (format)', () => {
+    const middleware = validateSchemas({
       query: SCHEMA_FORMAT,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {},
       query: {
         userId: UUID,
       },
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).not.toThrow()
-    expect(next).toHaveBeenCalledWith(null)
+    expect(next).toHaveBeenCalledWith(res)
   })
 
   test('when query FAIL validation (pattern)', () => {
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       query: SCHEMA_PATTERN,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {},
       query: {
         userId: '123',
       },
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -436,37 +505,41 @@ describe('validateSchema()', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
-  test('when query PASS validation (pattern)', () => {
-    const middleware = validateSchema({
+  test('when query PASSES validation (pattern)', () => {
+    const middleware = validateSchemas({
       query: SCHEMA_PATTERN,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {},
       query: {
         userId: UUID,
       },
-    }, null, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).not.toThrow()
     expect(next).toHaveBeenCalledOnce()
   })
 
   test('when body FAILS validation', () => {
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       body: SCHEMA_BODY,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {},
       query: {},
-    }, {}, next)
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
@@ -487,22 +560,25 @@ describe('validateSchema()', () => {
   })
 
   test('when body PASSES validation', () => {
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       body: SCHEMA_BODY,
     })
 
-    const next = mock()
-
-    const fn = () => middleware({
+    const req = {
       headers: {},
       params: {},
       query: {},
-    }, {
+    }
+
+    const res = {
       firstName: 'Tony',
       lastName: 'Stark',
       middleName: 'Edward',
       dob: '2000-01-01',
-    }, next)
+    }
+
+    const next = mock()
+    const fn = () => middleware(req, res, next)
 
     expect(fn).not.toThrow()
 
@@ -527,7 +603,7 @@ describe('validateSchema()', () => {
       middleName: 'Else',
     }
 
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       body: {
         type: 'object',
         properties: {
@@ -563,7 +639,7 @@ describe('validateSchema()', () => {
       },
     }
 
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       body: {
         type: 'object',
         properties: {
@@ -603,7 +679,7 @@ describe('validateSchema()', () => {
       dob: null,
     }
 
-    const middleware = validateSchema({
+    const middleware = validateSchemas({
       body: {
         type: 'object',
         properties: {
@@ -618,6 +694,7 @@ describe('validateSchema()', () => {
     const next = mock()
 
     middleware(req, res, next)
+
     expect(res).toStrictEqual({ dob: null })
     expect(next).toHaveBeenCalledWith(res)
   })

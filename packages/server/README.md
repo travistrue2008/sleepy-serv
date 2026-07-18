@@ -291,17 +291,17 @@ At the time of this writing, `meta.js` only exports middleware functions, but it
 
 `sleepy-serv` also comes built-in with a few useful middleware functions that are commonly used.
 
-### parseJson(req, res, next)
+### parseJsonBody()
 
-This middleware parses the request's body as a JSON string and forwards the parsed value as the next middleware's `res` via `next(body)`. It throws a `BadRequestError` if parsing fails, and forwards `res` unchanged (`next(res)`) when there is no `content-type`. Additional body parsers can be written in the future to accommodate other body encoding schemes (such as XML or protobuf).
+This function returns a middleware that parses the request's body as a JSON string and forwards the parsed value as the next middleware's `res` via `next(body)`. The returned middleware throws a `BadRequestError` if parsing fails, and forwards `res` unchanged (`next(res)`) when there is no `content-type`. Additional body parsers can be written in the future to accommodate other body encoding schemes (such as XML or protobuf).
 
 Example usage:
 
 ```js
-import { middleware } from 'sleepy-serv'
+import { parseJsonBody } from 'sleepy-serv'
 
 export default [
-  middleware.parseJson,
+  parseJsonBody(),
   (req, res) => {
     console.log('Parsed JSON:', res)
 
@@ -310,7 +310,7 @@ export default [
 ]
 ```
 
-### validateSchema(schemas)
+### validateSchemas(schemas)
 
 This function returns a middleware function that validates request data against provided schemas. The returned middleware function has the signature `(req, res, next)` and forwards `res` via `next(res)` after successful validation.
 
@@ -320,14 +320,16 @@ The `schemas` object can contain these optional properties:
 - `query`: takes a string formatter schema to evaluate `req.query`
 - `body`: takes a JSON validation schema to evaluate `res` (the body value passed in via `next`)
 
+Only the keys you pass are validated. Any key you omit is skipped entirely, and `res` is forwarded unchanged via `next(res)`; there is no implicit default schema for a missing `body`.
+
 Example usage:
 
 ```js
-import { middleware } from 'sleepy-serv'
+import { parseJsonBody, validateSchemas } from 'sleepy-serv'
 
 export default [
-  middleware.parseJson,
-  middleware.validateSchema({
+  parseJsonBody(),
+  validateSchemas({
     params: {
       userId: { type: 'format', value: 'uuid' }
     },
@@ -389,7 +391,9 @@ This determines how to evaulate the string based on the `type` parameter. If `ty
 Custom formats can also be provided by using the `setValidationFormats()` during app initialization. Here's an example:
 
 ```javascript
-middleware.setValidationFormats({
+import { setValidationFormats } from 'sleepy-serv'
+
+setValidationFormats({
   phone: /^\d{10}$/, /* 10-digit, numeric string */
   postalCode: /^\d{5}$/, /* 5-digit, numeric string */
 })
@@ -404,11 +408,11 @@ Calling `setValidationFormats()` extends the possible values that can be passed 
 You can define app-level middleware that will be applied to all routes:
 
 ```js
-import { middleware } from 'sleepy-serv'
+import { parseJsonBody } from 'sleepy-serv'
 
 const app = await createApp(PORT, import.meta.dirname, {
   middleware: [
-    middleware.parseJson,
+    parseJsonBody(),
     (req, res, next) => {
       console.log(`${req.method} ${req.url}`)
       return next()
@@ -418,6 +422,8 @@ const app = await createApp(PORT, import.meta.dirname, {
 ```
 
 App-level middleware is executed before any directory-level or route-level middleware.
+
+Note that the reserved `/ws` handshake routes are folded into these same chains, so app-level middleware runs against them too. A catch-all validator (for example a `validateSchemas` that requires a JSON body or a specific header on every request) will therefore also run against the body-less `/ws` handshake requests and reject them. Scope such validators below the reserved paths rather than applying them app-wide.
 
 ### `hostname`
 
