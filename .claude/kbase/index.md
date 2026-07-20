@@ -1,25 +1,29 @@
 # Docs Index
 
-Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLAUDE.md](./CLAUDE.md) for how this base is maintained.
+Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLAUDE.md](../CLAUDE.md) for how this base is maintained.
 
 ## Architecture
 
-- [Overview](./architecture/overview.md) — what `sleepy-serv` is; engine location and public API.
-- [Layout](./architecture/layout.md) — Bun workspace and repo structure.
-- [Routing](./architecture/routing.md) — directory-to-route convention, 404 vs 405, the `/api` whitelist gotcha.
-- [Request Flow](./architecture/request-flow.md) — route build pipeline; the `res` accumulator model.
-- [Middleware](./architecture/middleware.md) — resolution order, built-ins, the two-`meta.js` gotcha.
-- [Errors](./architecture/errors.md) — how errors map to HTTP status.
-- [Real-time / WebSocket Layer](./architecture/websocket.md) — `/ws` upgrade, message model, welcome handshake, heartbeat/presence, the active/inactive session model, handshake resource bounding, and identifier naming (`id` vs `clientId`).
-- [Testing](./architecture/testing.md) — test styles (unit / integration / E2E).
+- [Overview](./architecture/overview.md): what `sleepy-serv` is; engine location and public API.
+- [Layout](./architecture/layout.md): Bun workspace and repo structure.
+- [Routing](./architecture/routing.md): directory-to-route convention, 404 vs 405, the `/api` whitelist gotcha.
+- [Request Flow](./architecture/request-flow.md): route build pipeline; the `res` accumulator model.
+- [Middleware](./architecture/middleware.md): resolution order, built-ins, the two-`meta.js` gotcha.
+- [Errors](./architecture/errors.md): how errors map to HTTP status.
+- [Real-time / WebSocket Layer](./architecture/websocket.md): `/ws` upgrade, message model, welcome handshake, heartbeat/presence, the active/inactive session model, client bundling constraints, handshake resource bounding, and identifier naming (`id` vs `clientId`).
+- [Testing](./architecture/testing.md): test styles (unit / integration / E2E).
+
+## Operations
+
+- [Publishing and Releases](./operations/publishing.md): `workflow_dispatch` release model, OIDC trusted publishing, the irreversible-step-last ordering rule, registry pre-flight, and the ruleset vs branch-protection trap.
 
 ## Guides
 
-- [Testing Patterns](./guides/testing-patterns.md) — fake timers and mocking over real infra.
+- [Testing Patterns](./guides/testing-patterns.md): fake timers and mocking over real infra.
 
 ## Style
 
-- [Linting](./style/linting.md) — `eslint.config.mjs` rationale and per-rule decisions.
+- [Linting](./style/linting.md): `eslint.config.mjs` rationale and per-rule decisions.
 
 ## Ideas
 
@@ -27,4 +31,4 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 
 ## Roadmap
 
-- [Roadmap](./ROADMAP.md) — feature checklist and test-case catalog.
+- [Roadmap](./ROADMAP.md): feature checklist and test-case catalog.

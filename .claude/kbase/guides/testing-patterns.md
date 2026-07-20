@@ -20,7 +20,7 @@ For test styles, the boot model, and the server integration helpers, see [Testin
 ## Mocking over real infra, when reasonable
 
 Prefer a hand-built mock over standing up real infrastructure when the real thing would add
-flakiness or complexity without proving anything extra — e.g. `packages/client/src/index.test.js` mocks the
+flakiness or complexity without proving anything extra, e.g. `packages/client/src/index.test.js` mocks the
 `WebSocket` global (`MockWebSocket`) rather than booting a real `Bun.serve()` WS server, since the
 client's own logic (registry, queueing, timeouts) doesn't depend on real network behavior. Real
 servers/sockets are still the right call for true end-to-end tests that specifically verify

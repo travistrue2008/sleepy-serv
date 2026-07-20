@@ -2,9 +2,9 @@
 
 **Order:** app-level (`createApp` opts) → directory-level (`meta.js` `export const middleware`, root→leaf) → route-level (the handler array). Directory middleware applies by **path-prefix matching**, sorted shortest-first.
 
-**Built-in** (`packages/server/src/middleware.js`): `parseJsonBody()`; `validateSchemas(schemas)` (AJV); `setValidationFormats(formats)`. All three are **top-level named exports** (`import { parseJsonBody, validateSchemas, setValidationFormats } from 'sleepy-serv'`) surfaced via `export * from './middleware'` in `index.js` — there is no longer a `middleware` namespace object. `parseJsonBody()` and `validateSchemas(schemas)` are **factories**: each returns the actual `(req, res, next)` middleware, so a chain entry is `parseJsonBody()` (called), not a bare reference.
+**Built-in** (`packages/server/src/middleware.js`): `parseJsonBody()`; `validateSchemas(schemas)` (AJV); `setValidationFormats(formats)`. All three are **top-level named exports** (`import { parseJsonBody, validateSchemas, setValidationFormats } from 'sleepy-serv'`) surfaced via `export * from './middleware'` in `index.js`; there is no longer a `middleware` namespace object. `parseJsonBody()` and `validateSchemas(schemas)` are **factories**: each returns the actual `(req, res, next)` middleware, so a chain entry is `parseJsonBody()` (called), not a bare reference.
 
-`validateSchemas` validates **only the keys present in `schemas`** (`headers`/`params`/`query`/`body`), iterating `Object.entries(schemas)`. An omitted key is not validated at all — there is no implicit default `body` schema, so `validateSchemas({})` forwards `res` unchanged.
+`validateSchemas` validates **only the keys present in `schemas`** (`headers`/`params`/`query`/`body`), iterating `Object.entries(schemas)`. An omitted key is not validated at all; there is no implicit default `body` schema, so `validateSchemas({})` forwards `res` unchanged.
 
 ## Gotcha: the JSON-parse try/catch is deliberately narrow
 
@@ -20,6 +20,6 @@ App-level middleware (`opts.middleware`) also runs against the built-in `/ws` ha
 
 ## Gotcha: two unrelated `meta.js`
 
-`packages/server/src/meta.js` is a generic tree/object utility module — **unrelated** to route `meta.js` files (the ones that `export const middleware`). Don't conflate them.
+`packages/server/src/meta.js` is a generic tree/object utility module, **unrelated** to route `meta.js` files (the ones that `export const middleware`). Don't conflate them.
 
 See also: [Request Flow](./request-flow.md), [Errors](./errors.md).
