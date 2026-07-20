@@ -6,6 +6,10 @@ coverageReporter = ["text", "lcov"]
 coveragePathIgnorePatterns = [
   ".claude/**",
   ".github/**",
-  "lib/tests/**",
-  "examples/**",
+  "packages/client/tests/**",
+  "packages/server/tests/**",
+  "tests/**",
+  'test-setup.js',
 ]
+
+preload = ["./test-setup.js"]

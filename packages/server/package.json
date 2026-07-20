@@ -1,0 +1,25 @@
+{
+  "name": "sleepy-serv",
+  "description": "A more opinionated web server for building REST-ful applications",
+  "author": "Travis J True",
+  "version": "0.5.0",
+  "exports": "./src/index.js",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/travistrue2008/sleepy-serv.git",
+    "directory": "packages/server"
+  },
+  "keywords": [
+    "rest",
+    "serv",
+    "sleepy",
+    "web server",
+    "www"
+  ],
+  "scripts": {},
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}

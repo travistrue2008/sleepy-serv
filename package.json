@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "name": "sleepy-serv-monorepo",
+  "workspaces": [
+    "packages/server",
+    "packages/client"
+  ],
+  "scripts": {
+    "lint:fix": "eslint . --fix"
+  },
+  "devDependencies": {
+    "eslint": "9.20.1",
+    "jose": "^6.2.3",
+    "sleepy-serv": "workspace:*",
+    "sleepy-socket": "workspace:*"
+  }
+}

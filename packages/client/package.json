@@ -1,0 +1,23 @@
+{
+  "name": "sleepy-socket",
+  "description": "A dependency-free WebSocket client for sleepy-serv",
+  "author": "Travis J True",
+  "version": "0.5.0",
+  "exports": "./src/index.js",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/travistrue2008/sleepy-serv.git",
+    "directory": "packages/client"
+  },
+  "keywords": [
+    "client",
+    "rest",
+    "serv",
+    "sleepy-serv",
+    "websocket",
+    "www"
+  ],
+  "scripts": {},
+  "dependencies": {}
+}

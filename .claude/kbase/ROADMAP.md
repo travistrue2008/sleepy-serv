@@ -1,0 +1,49 @@
+# Roadmap
+
+- [X] Add tests
+- [X] Integrate with GitHub Actions for CI
+- [x] Separate the library from the example app
+- [x] Convert over to `bun`
+- [x] Path prefix (default: `/api`)
+- [x] Graceful shutdown (Ctrl+D)
+- [ ] Add the `ctx` object
+- [ ] Support path param validation (`meta.js`)
+- [ ] Support static directories
+- [ ] Support CORS
+- [X] Support WebSocket
+  - [x] `/ws` upgrade with a per-connection `clientId`
+  - [x] File-route request/response frames over the socket (shared middleware chains)
+  - [x] Message validation (`request` type; `id` + `clientId` required as uuids)
+  - [x] Heartbeat / presence (`opts.ws.heartbeatInterval` + `disconnectThreshold`, welcome frame, server-side reaping)
+  - [x] Formal envelopes (`response` + `notification`)
+  - [x] Client-resilience (heartbeat ack → half-open detection → reconnect)
+  - [x] Identity model (session + token reclaim)
+- [ ] Support Body Parsing
+  - [ ] Raw
+  - [ ] Binary
+  - [X] JSON
+  - [ ] XML
+  - [ ] Protobuf
+- [x] Middleware
+  - [x] App-level middleware
+  - [x] Meta-level middleware
+  - [x] Module-level middleware
+  - [x] Add JSON schema validation
+- [x] Narrow down router to only look for the following files:
+    - `head.js`
+    - `get.js`
+    - `post.js`
+    - `put.js`
+    - `patch.js`
+    - `delete.js`
+- [x] Error Handling
+  - [x] Respond with a 404 if the requested path doesn't exist
+  - [x] Respond with a 405 if the requested path exists, but the requested method doesn't for that path
+- [ ] CLI
+  - [ ] Develop a CLI that can create new projects
+  - [ ] CLI command that can create a new project from an OpenAPI spec
+  - [ ] CLI command that can export an OpenAPI spec from an existing project
+- [X] Route Config Validation
+  - [x] Throw an error if a method file doesn't contain an export
+  - [x] Leaf-most directories must contain at least one method file
+  - [x] Only `meta.js` or method files can exist in the `/api` directory

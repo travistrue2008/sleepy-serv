@@ -13,15 +13,18 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ vars.BUN_VERSION }}
+
       - name: Checkout Code
         uses: actions/checkout@v4
+
       - name: Cache Dependencies
         uses: actions/cache@v3
         with:
-          path: lib/node_modules
-          key: node-modules-${{ hashFiles('lib/bun.lock') }}
+          path: node_modules
+          key: node-modules-${{ hashFiles('bun.lock') }}
+
       - name: Install Dependencies
         run: bun install --frozen-lockfile
-        working-directory: lib
+
       - name: Test
         run: bun test
