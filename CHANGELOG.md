@@ -8,6 +8,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- MIT license. Both packages now declare `"license": "MIT"` and ship a `LICENSE`
+  file in their published tarballs.
+
 ## [0.6.1] - 2026-07-20
 
 - Fixed publish GHA bug

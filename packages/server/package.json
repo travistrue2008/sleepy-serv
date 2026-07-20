@@ -2,6 +2,7 @@
   "name": "sleepy-serv",
   "description": "A more opinionated web server for building REST-ful applications",
   "author": "Travis J True",
+  "license": "MIT",
   "version": "0.6.1",
   "exports": "./src/index.js",
   "type": "module",
