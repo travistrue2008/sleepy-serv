@@ -39,10 +39,21 @@ jobs:
             exit 1
           fi
 
+      # The "Required Checks" ruleset on main blocks direct pushes, and grants
+      # bypass to this GitHub App rather than to GITHUB_TOKEN. Pushing the
+      # release commit therefore has to be authenticated as the App.
+      - name: Authenticate with GitHub App
+        id: app-token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ secrets.GH_APP_ID }}
+          application_private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -104,6 +115,22 @@ jobs:
           git add packages/server/package.json packages/client/package.json CHANGELOG.md
           git commit -m "Release ${{ steps.version.outputs.version }}"
 
+      - name: Pack packages
+        if: ${{ inputs.dry_run }}
+        run: |
+          bunx npm@11 publish ./packages/server --dry-run
+          bunx npm@11 publish ./packages/client --dry-run
+
+      # Deliberately ahead of the publish steps. Pushing is reversible and npm
+      # publishing is not, so a rejected push must not be able to strand npm
+      # ahead of the repository. That is exactly how 0.6.0 failed.
+      - name: Push commit and tag
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git tag "${{ steps.version.outputs.version }}"
+          git push origin HEAD:main
+          git push origin "${{ steps.version.outputs.version }}"
+
       - name: Publish server package
         if: ${{ !inputs.dry_run }}
         working-directory: packages/server
@@ -113,19 +140,6 @@ jobs:
         if: ${{ !inputs.dry_run }}
         working-directory: packages/client
         run: bunx npm@11 publish
-
-      - name: Pack packages
-        if: ${{ inputs.dry_run }}
-        run: |
-          bunx npm@11 publish ./packages/server --dry-run
-          bunx npm@11 publish ./packages/client --dry-run
-
-      - name: Push commit and tag
-        if: ${{ !inputs.dry_run }}
-        run: |
-          git tag "${{ steps.version.outputs.version }}"
-          git push origin HEAD:main
-          git push origin "${{ steps.version.outputs.version }}"
 
       - name: Create GitHub Release
         if: ${{ !inputs.dry_run }}
