@@ -368,10 +368,7 @@ describe('SleepySocketClient', () => {
     test('when successful', async () => {
       const { client } = await connectAndOpen()
 
-      const fn = () => client.send({
-        method: 'GET',
-        route: '/',
-      })
+      const fn = () => client.get('/')
 
       expect(client.isConnected).toBe(true)
 
@@ -874,14 +871,131 @@ describe('SleepySocketClient', () => {
     })
   })
 
-  describe('send()', () => {
+  describe('head()', () => {
+    test('when called', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      client.head('/users')
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent).toStrictEqual({
+        id: sent.id,
+        clientId: sent.clientId,
+        type: TYPES.REQUEST,
+        method: 'HEAD',
+        route: '/users',
+        timestamp: TIMESTAMP,
+        query: {},
+        headers: {},
+        body: null,
+      })
+    })
+  })
+
+  describe('post()', () => {
+    test('when called', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      client.post('/users')
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent).toStrictEqual({
+        id: sent.id,
+        clientId: sent.clientId,
+        type: TYPES.REQUEST,
+        method: 'POST',
+        route: '/users',
+        timestamp: TIMESTAMP,
+        query: {},
+        headers: {},
+        body: null,
+      })
+    })
+  })
+
+  describe('put()', () => {
+    test('when called', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      client.put('/users/123')
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent).toStrictEqual({
+        id: sent.id,
+        clientId: sent.clientId,
+        type: TYPES.REQUEST,
+        method: 'PUT',
+        route: '/users/123',
+        timestamp: TIMESTAMP,
+        query: {},
+        headers: {},
+        body: null,
+      })
+    })
+  })
+
+  describe('patch()', () => {
+    test('when called', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      client.patch('/users/123')
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent).toStrictEqual({
+        id: sent.id,
+        clientId: sent.clientId,
+        type: TYPES.REQUEST,
+        method: 'PATCH',
+        route: '/users/123',
+        timestamp: TIMESTAMP,
+        query: {},
+        headers: {},
+        body: null,
+      })
+    })
+  })
+
+  describe('delete()', () => {
+    test('when called', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      client.delete('/users/123')
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent).toStrictEqual({
+        id: sent.id,
+        clientId: sent.clientId,
+        type: TYPES.REQUEST,
+        method: 'DELETE',
+        route: '/users/123',
+        timestamp: TIMESTAMP,
+        query: {},
+        headers: {},
+        body: null,
+      })
+    })
+  })
+
+  describe('get()', () => {
+    test('when opts.headers is not a Headers instance', async () => {
+      const { client } = await connectAndOpen()
+
+      const fn = () => client.get('/', { headers: {} })
+
+      await expect(fn).toThrow(
+        new TypeError('opts.headers must be a Headers instance'),
+      )
+    })
+
     test('when timeout occurs', async () => {
       const { client, socket } = await connectAndOpen()
 
-      const promise = client.send({
-        method: 'GET',
-        route: '/',
-      })
+      const promise = client.get('/')
 
       const sent = JSON.parse(socket.sent[0])
 
@@ -909,10 +1023,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      const promise = client.send({
-        method: 'GET',
-        route: '/',
-      })
+      const promise = client.get('/')
 
       socket.drop()
 
@@ -922,10 +1033,7 @@ describe('SleepySocketClient', () => {
     test('when malformed response comes back (missing ID)', async () => {
       const { client, socket } = await connectAndOpen()
 
-      const promise = client.send({
-        method: 'GET',
-        route: '/',
-      })
+      const promise = client.get('/')
 
       const sent = JSON.parse(socket.sent[0])
 
@@ -957,10 +1065,7 @@ describe('SleepySocketClient', () => {
     test('when successful', async () => {
       const { client, socket } = await connectAndOpen()
 
-      const promise = client.send({
-        method: 'GET',
-        route: '/',
-      })
+      const promise = client.get('/')
 
       const sent = JSON.parse(socket.sent[0])
 
@@ -990,24 +1095,114 @@ describe('SleepySocketClient', () => {
       })
     })
 
+    test('when opts.query is provided', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      client.get('/', {
+        query: {
+          page: '2',
+        },
+      })
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent.query).toStrictEqual({
+        page: '2',
+      })
+    })
+
+    test('when opts.headers carries multiple entries', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      client.get('/', {
+        headers: new Headers({
+          authorization: 'Bearer xyz',
+          'x-request-id': 'abc',
+        }),
+      })
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent.headers).toStrictEqual({
+        authorization: 'Bearer xyz',
+        'x-request-id': 'abc',
+      })
+    })
+
+    test('when opts.body is an object', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      client.get('/', {
+        body: {
+          userId: '123',
+        },
+      })
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent).toStrictEqual({
+        id: sent.id,
+        clientId: sent.clientId,
+        type: TYPES.REQUEST,
+        method: 'GET',
+        route: '/',
+        timestamp: TIMESTAMP,
+        query: {},
+        headers: {
+          'content-type': 'application/json;charset=utf-8',
+        },
+        body: {
+          userId: '123',
+        },
+      })
+    })
+
+    test('when opts.headers already sets content-type', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      client.get('/', {
+        headers: new Headers({
+          'content-type': 'text/plain',
+        }),
+        body: {
+          userId: '123',
+        },
+      })
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent.headers).toStrictEqual({
+        'content-type': 'text/plain',
+      })
+    })
+
+    test('when opts.body is a primitive', async () => {
+      const { client, socket } = await connectAndOpen()
+
+      client.get('/', { body: 42 })
+
+      const sent = JSON.parse(socket.sent[0])
+
+      expect(sent).toStrictEqual({
+        id: sent.id,
+        clientId: sent.clientId,
+        type: TYPES.REQUEST,
+        method: 'GET',
+        route: '/',
+        timestamp: TIMESTAMP,
+        query: {},
+        headers: {},
+        body: 42,
+      })
+    })
+
     test('when calls respond out-of-order (queue = NONE)', async () => {
       const { client, socket } = await connectAndOpen({ queue: QUEUE.NONE })
       const order = []
 
-      const p1 = client.send({
-        method: 'GET',
-        route: '/a',
-      }).then(() => order.push(1))
-
-      const p2 = client.send({
-        method: 'GET',
-        route: '/b',
-      }).then(() => order.push(2))
-
-      const p3 = client.send({
-        method: 'GET',
-        route: '/c',
-      }).then(() => order.push(3))
+      const p1 = client.get('/a').then(() => order.push(1))
+      const p2 = client.get('/b').then(() => order.push(2))
+      const p3 = client.get('/c').then(() => order.push(3))
 
       const [id1, id2, id3] = socket.sent.map(raw => JSON.parse(raw).id)
 
@@ -1027,20 +1222,9 @@ describe('SleepySocketClient', () => {
 
       const order = []
 
-      const p1 = client.send({
-        method: 'GET',
-        route: '/a',
-      }).then(() => order.push(1))
-
-      const p2 = client.send({
-        method: 'GET',
-        route: '/b',
-      }).then(() => order.push(2))
-
-      const p3 = client.send({
-        method: 'GET',
-        route: '/c',
-      }).then(() => order.push(3))
+      const p1 = client.get('/a').then(() => order.push(1))
+      const p2 = client.get('/b').then(() => order.push(2))
+      const p3 = client.get('/c').then(() => order.push(3))
 
       const [id1, id2, id3] = socket.sent.map(raw => JSON.parse(raw).id)
 
@@ -1060,20 +1244,9 @@ describe('SleepySocketClient', () => {
 
       const order = []
 
-      const p1 = client.send({
-        method: 'GET',
-        route: '/a',
-      }).then(() => order.push(1))
-
-      const p2 = client.send({
-        method: 'GET',
-        route: '/b',
-      }).then(() => order.push(2))
-
-      const p3 = client.send({
-        method: 'GET',
-        route: '/c',
-      }).then(() => order.push(3))
+      const p1 = client.get('/a').then(() => order.push(1))
+      const p2 = client.get('/b').then(() => order.push(2))
+      const p3 = client.get('/c').then(() => order.push(3))
 
       const [id1, id2, id3] = socket.sent.map(raw => JSON.parse(raw).id)
 

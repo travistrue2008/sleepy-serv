@@ -6,21 +6,9 @@ async function makeRequests (client) {
   const results = []
 
   await Promise.all([
-    client.send({
-      method: 'GET',
-      route: '/',
-      query: { delay: 300 },
-    }).then(() => results.push(1)),
-    client.send({
-      method: 'GET',
-      route: '/',
-      query: { delay: 100 },
-    }).then(() => results.push(2)),
-    client.send({
-      method: 'GET',
-      route: '/',
-      query: { delay: 200 },
-    }).then(() => results.push(3)),
+    client.get('/', { query: { delay: 300 } }).then(() => results.push(1)),
+    client.get('/', { query: { delay: 100 } }).then(() => results.push(2)),
+    client.get('/', { query: { delay: 200 } }).then(() => results.push(3)),
   ])
 
   return results

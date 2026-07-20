@@ -35,9 +35,7 @@ describe('WebSocket', () => {
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
 
-    const res = await client.send({
-      method: 'POST',
-      route: '/echo',
+    const res = await client.post('/echo', {
       body: {
         count: 3,
         name: 'ada',

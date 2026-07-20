@@ -10,10 +10,7 @@ test('when the server never replies', async () => {
     timeout: 100,
   })
 
-  const promise = client.send({
-    method: 'GET',
-    route: '/hang',
-  })
+  const promise = client.get('/hang')
 
   await expect(promise).rejects.toThrow(new Error('Request timed out.'))
 

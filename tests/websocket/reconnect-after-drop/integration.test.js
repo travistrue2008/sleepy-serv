@@ -36,10 +36,7 @@ test('when the socket drops AND the client reconnects', async () => {
 
   await waitFor(() => client.isConnected && client.socket !== oldSocket)
 
-  const res = await client.send({
-    method: 'GET',
-    route: '/ok',
-  })
+  const res = await client.get('/ok')
 
   await client.close()
   await app.server.stop(true)

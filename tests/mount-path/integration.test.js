@@ -36,10 +36,7 @@ describe('WebSocket', () => {
       mountPath: MOUNT_PATH,
     })
 
-    const res = await client.send({
-      method: 'GET',
-      route: '/',
-    })
+    const res = await client.get('/')
 
     await client.close()
     await app.server.stop(true)

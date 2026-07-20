@@ -15,19 +15,13 @@ test('when a reply arrives for an already-timed-out request', async () => {
     timeout: 100,
   })
 
-  const promise = client.send({
-    method: 'GET',
-    route: '/slow-reply',
-  })
+  const promise = client.get('/slow-reply')
 
   await expect(promise).rejects.toThrow(new Error('Request timed out.'))
 
   await Bun.sleep(300)
 
-  const res = await client.send({
-    method: 'GET',
-    route: '/ok',
-  })
+  const res = await client.get('/ok')
 
   await client.close()
   await app.server.stop(true)

@@ -27,12 +27,10 @@ describe('WebSocket', () => {
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
 
-    const res = await client.send({
-      method: 'GET',
-      route: '/whoami',
-      headers: {
+    const res = await client.get('/whoami', {
+      headers: new Headers({
         authorization: 'Bearer xyz',
-      },
+      }),
     })
 
     await client.close()

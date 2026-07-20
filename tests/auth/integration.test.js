@@ -74,11 +74,7 @@ describe('WebSocket', () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
-
-    const res = await client.send({
-      method: 'GET',
-      route: '/protected',
-    })
+    const res = await client.get('/protected')
 
     await client.close()
     await app.server.stop(true)
@@ -103,12 +99,10 @@ describe('WebSocket', () => {
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
 
-    const res = await client.send({
-      method: 'GET',
-      route: '/protected',
-      headers: {
+    const res = await client.get('/protected', {
+      headers: new Headers({
         authorization: 'Bearer not-a-real-token',
-      },
+      }),
     })
 
     await client.close()
@@ -135,12 +129,10 @@ describe('WebSocket', () => {
     const client = await SleepySocketClient.connect(host, app.server.port)
     const { token } = client.connectionData
 
-    const res = await client.send({
-      method: 'GET',
-      route: '/protected',
-      headers: {
+    const res = await client.get('/protected', {
+      headers: new Headers({
         authorization: `Bearer ${token}`,
-      },
+      }),
     })
 
     await client.close()
@@ -165,11 +157,7 @@ describe('WebSocket', () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
-
-    const res = await client.send({
-      method: 'GET',
-      route: '/public',
-    })
+    const res = await client.get('/public')
 
     await client.close()
     await app.server.stop(true)

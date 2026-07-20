@@ -32,9 +32,7 @@ describe('WebSocket', () => {
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
 
-    const res = await client.send({
-      method: 'GET',
-      route: '/search',
+    const res = await client.get('/search', {
       query: {
         page: '2',
         term: 'hello',

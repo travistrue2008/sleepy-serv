@@ -90,12 +90,10 @@ describe('WebSocket', () => {
       const host = app.server.url.hostname
       const client = await SleepySocketClient.connect(host, app.server.port)
 
-      const res = await client.send({
-        method: 'PUT',
-        route: `/users/${USER_ID}`,
-        headers: {
+      const res = await client.put(`/users/${USER_ID}`, {
+        headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
-        },
+        }),
         body: {
           ...BODY_VALID,
           email: undefined,
@@ -128,12 +126,10 @@ describe('WebSocket', () => {
       const host = app.server.url.hostname
       const client = await SleepySocketClient.connect(host, app.server.port)
 
-      const res = await client.send({
-        method: 'PUT',
-        route: `/users/${USER_ID}`,
-        headers: {
+      const res = await client.put(`/users/${USER_ID}`, {
+        headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
-        },
+        }),
         body: {
           ...BODY_VALID,
           email: 'asdf',
@@ -166,12 +162,10 @@ describe('WebSocket', () => {
       const host = app.server.url.hostname
       const client = await SleepySocketClient.connect(host, app.server.port)
 
-      const res = await client.send({
-        method: 'PUT',
-        route: `/users/${USER_ID}`,
-        headers: {
+      const res = await client.put(`/users/${USER_ID}`, {
+        headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
-        },
+        }),
         body: BODY_VALID,
       })
 

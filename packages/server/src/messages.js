@@ -94,7 +94,14 @@ const validateRequest = ajv.compile({
       type: 'object',
     },
     body: {
-      type: ['null', 'object', 'array'],
+      type: [
+        'boolean',
+        'number',
+        'string',
+        'object',
+        'array',
+        'null',
+      ],
     },
   },
   required: [

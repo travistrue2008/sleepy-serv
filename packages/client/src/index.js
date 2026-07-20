@@ -11,6 +11,7 @@ export const QUEUE = {
 }
 
 const RECONNECT_JITTER = 0.5
+const JSON_CONTENT_TYPE = 'application/json;charset=utf-8'
 
 export default class SleepySocketClient {
   #id = null
@@ -290,6 +291,70 @@ export default class SleepySocketClient {
     this.#heartbeatTimer = null
   }
 
+  #normalizeRequestOpts (opts) {
+    if (opts.headers !== undefined && !(opts.headers instanceof Headers)) {
+      throw new TypeError('opts.headers must be a Headers instance')
+    }
+
+    const headers = opts.headers ?? new Headers()
+    const query = opts.query ?? {}
+    const body = opts.body ?? null
+
+    const isJsonBody = body !== null && typeof body === 'object'
+
+    if (isJsonBody && !headers.has('content-type')) {
+      headers.set('content-type', JSON_CONTENT_TYPE)
+    }
+
+    return {
+      headers,
+      query,
+      body,
+    }
+  }
+
+  #sendRequest (method, route, opts = {}) {
+    if (!this.#ready) {
+      throw new Error('Socket is closed')
+    }
+
+    const { headers, query, body } = this.#normalizeRequestOpts(opts)
+    const fullRoute = path.join(this.#mountPath, route)
+
+    const message = createMessage(this.#id, TYPES.REQUEST, {
+      method,
+      query,
+      body,
+      route: fullRoute,
+      headers: Object.fromEntries(headers),
+    })
+
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        const index = this.#dispatchedMessages.findIndex(item =>
+          item.id === message.id,
+        )
+
+        if (index !== -1) {
+          this.#dispatchedMessages.splice(index, 1)
+        }
+
+        reject(new Error('Request timed out.'))
+      }, this.#timeout)
+
+      this.#dispatchedMessages.push({
+        id: message.id,
+        resolve,
+        reject,
+        timer,
+        ready: false,
+        response: null,
+      })
+
+      this.#socket.send(JSON.stringify(message))
+    })
+  }
+
   #handleClose (event) {
     this.#ready = false
 
@@ -446,43 +511,27 @@ export default class SleepySocketClient {
     }
   }
 
-  async send (data) {
-    if (!this.#ready) {
-      throw new Error('Socket is closed')
-    }
+  head (route, opts = {}) {
+    return this.#sendRequest('HEAD', route, opts)
+  }
 
-    const route = path.join(this.#mountPath, data.route)
-    const query = data.query ?? {}
+  get (route, opts = {}) {
+    return this.#sendRequest('GET', route, opts)
+  }
 
-    const message = createMessage(this.#id, TYPES.REQUEST, {
-      ...data,
-      route,
-      query,
-    })
+  post (route, opts = {}) {
+    return this.#sendRequest('POST', route, opts)
+  }
 
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        const index = this.#dispatchedMessages.findIndex(item =>
-          item.id === message.id,
-        )
+  put (route, opts = {}) {
+    return this.#sendRequest('PUT', route, opts)
+  }
 
-        if (index !== -1) {
-          this.#dispatchedMessages.splice(index, 1)
-        }
+  patch (route, opts = {}) {
+    return this.#sendRequest('PATCH', route, opts)
+  }
 
-        reject(new Error('Request timed out.'))
-      }, this.#timeout)
-
-      this.#dispatchedMessages.push({
-        id: message.id,
-        resolve,
-        reject,
-        timer,
-        ready: false,
-        response: null,
-      })
-
-      this.#socket.send(JSON.stringify(message))
-    })
+  delete (route, opts = {}) {
+    return this.#sendRequest('DELETE', route, opts)
   }
 }

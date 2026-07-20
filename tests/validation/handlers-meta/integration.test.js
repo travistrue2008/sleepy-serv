@@ -88,12 +88,10 @@ describe('WebSocket', () => {
       const host = app.server.url.hostname
       const client = await SleepySocketClient.connect(host, app.server.port)
 
-      const res = await client.send({
-        method: 'POST',
-        route: '/users',
-        headers: {
+      const res = await client.post('/users', {
+        headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
-        },
+        }),
         body: {
           ...BODY_VALID,
           email: undefined,
@@ -126,12 +124,10 @@ describe('WebSocket', () => {
       const host = app.server.url.hostname
       const client = await SleepySocketClient.connect(host, app.server.port)
 
-      const res = await client.send({
-        method: 'POST',
-        route: '/users',
-        headers: {
+      const res = await client.post('/users', {
+        headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
-        },
+        }),
         body: {
           ...BODY_VALID,
           email: 'asdf',
@@ -164,12 +160,10 @@ describe('WebSocket', () => {
       const host = app.server.url.hostname
       const client = await SleepySocketClient.connect(host, app.server.port)
 
-      const res = await client.send({
-        method: 'POST',
-        route: '/users',
-        headers: {
+      const res = await client.post('/users', {
+        headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
-        },
+        }),
         body: BODY_VALID,
       })
 
