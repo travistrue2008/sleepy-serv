@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+- Fixed publish GHA bug
+
 ## [0.6.0] - 2026-07-20
 
 ### Added
