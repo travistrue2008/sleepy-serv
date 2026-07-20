@@ -5,7 +5,5 @@ tests/
 .DS_Store
 .env
 bun.lock
-bunfig.toml
-test-setup.js
 *.log.*
 *.test.*
