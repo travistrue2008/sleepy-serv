@@ -472,8 +472,3 @@ const app = await createApp(PORT, import.meta.dirname, {
   onClose: () => console.info('closing down...'),
 })
 ```
-
-## Running Tests
-
-- Use `bun`'s built-in test runner
-- Run tests from the `./server` directory

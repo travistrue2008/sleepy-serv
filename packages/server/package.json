@@ -5,6 +5,11 @@
   "version": "0.4.0",
   "exports": "./src/index.js",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/travistrue2008/sleepy-serv.git",
+    "directory": "packages/server"
+  },
   "keywords": [
     "rest",
     "serv",
