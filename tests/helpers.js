@@ -69,6 +69,12 @@ async function makeRequestMethod (app, method, route, fmt, opts = {}) {
 
 export function createRequestor (app) {
   return {
+    head (route, fmt, opts) {
+      return makeRequestMethod(app, 'HEAD', route, fmt, opts)
+    },
+    options (route, fmt, opts) {
+      return makeRequestMethod(app, 'OPTIONS', route, fmt, opts)
+    },
     get (route, fmt, opts) {
       return makeRequestMethod(app, 'GET', route, fmt, opts)
     },
@@ -77,6 +83,12 @@ export function createRequestor (app) {
     },
     post (route, fmt, opts = {}) {
       return makeRequestMethod(app, 'POST', route, fmt, opts)
+    },
+    patch (route, fmt, opts = {}) {
+      return makeRequestMethod(app, 'PATCH', route, fmt, opts)
+    },
+    delete (route, fmt, opts = {}) {
+      return makeRequestMethod(app, 'DELETE', route, fmt, opts)
     },
   }
 }

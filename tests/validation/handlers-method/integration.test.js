@@ -15,7 +15,7 @@ describe('REST', () => {
 
       const res = await req.post('/users', FMT.JSON, {
         headers: new Headers({
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         }),
         body: JSON.stringify({
           ...BODY_VALID,
@@ -41,7 +41,7 @@ describe('REST', () => {
 
       const res = await req.post('/users', FMT.JSON, {
         headers: new Headers({
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         }),
         body: JSON.stringify({
           ...BODY_VALID,
@@ -67,7 +67,7 @@ describe('REST', () => {
 
       const res = await req.post('/users', FMT.JSON, {
         headers: new Headers({
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         }),
         body: JSON.stringify(BODY_VALID),
       })
@@ -92,7 +92,7 @@ describe('WebSocket', () => {
         method: 'POST',
         route: '/users',
         headers: {
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         },
         body: {
           ...BODY_VALID,
@@ -130,7 +130,7 @@ describe('WebSocket', () => {
         method: 'POST',
         route: '/users',
         headers: {
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         },
         body: {
           ...BODY_VALID,
@@ -168,7 +168,7 @@ describe('WebSocket', () => {
         method: 'POST',
         route: '/users',
         headers: {
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         },
         body: BODY_VALID,
       })

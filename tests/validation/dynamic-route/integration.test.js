@@ -17,7 +17,7 @@ describe('REST', () => {
 
       const res = await req.put(`/users/${USER_ID}`, FMT.JSON, {
         headers: new Headers({
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         }),
         body: JSON.stringify({
           ...BODY_VALID,
@@ -43,7 +43,7 @@ describe('REST', () => {
 
       const res = await req.put(`/users/${USER_ID}`, FMT.JSON, {
         headers: new Headers({
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         }),
         body: JSON.stringify({
           ...BODY_VALID,
@@ -69,7 +69,7 @@ describe('REST', () => {
 
       const res = await req.put(`/users/${USER_ID}`, FMT.JSON, {
         headers: new Headers({
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         }),
         body: JSON.stringify(BODY_VALID),
       })
@@ -94,7 +94,7 @@ describe('WebSocket', () => {
         method: 'PUT',
         route: `/users/${USER_ID}`,
         headers: {
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         },
         body: {
           ...BODY_VALID,
@@ -132,7 +132,7 @@ describe('WebSocket', () => {
         method: 'PUT',
         route: `/users/${USER_ID}`,
         headers: {
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         },
         body: {
           ...BODY_VALID,
@@ -170,7 +170,7 @@ describe('WebSocket', () => {
         method: 'PUT',
         route: `/users/${USER_ID}`,
         headers: {
-          'content-type': 'application/json',
+          'content-type': 'application/json;charset=utf-8',
         },
         body: BODY_VALID,
       })
