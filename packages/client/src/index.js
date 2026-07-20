@@ -1,5 +1,5 @@
-import path from 'path'
 import { TYPES, createMessage } from './messages'
+import { joinRoute } from './utils'
 
 export * from './messages'
 export * from './utils'
@@ -319,7 +319,7 @@ export default class SleepySocketClient {
     }
 
     const { headers, query, body } = this.#normalizeRequestOpts(opts)
-    const fullRoute = path.join(this.#mountPath, route)
+    const fullRoute = joinRoute(this.#mountPath, route)
 
     const message = createMessage(this.#id, TYPES.REQUEST, {
       method,

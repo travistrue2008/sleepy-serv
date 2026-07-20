@@ -1,4 +1,4 @@
-import { id, setIdGenerator } from './utils'
+import { id, joinRoute, setIdGenerator } from './utils'
 
 import {
   mock,
@@ -19,6 +19,38 @@ beforeEach(() => {
 afterEach(() => {
   mock.restore()
   setIdGenerator(() => crypto.randomUUID())
+})
+
+describe('joinRoute()', () => {
+  test('when no mount path is set', () => {
+    const result = joinRoute('', '/users')
+
+    expect(result).toBe('/users')
+  })
+
+  test('when a mount path is set', () => {
+    const result = joinRoute('/test-mount-path', '/users')
+
+    expect(result).toBe('/test-mount-path/users')
+  })
+
+  test('when the route is the root path', () => {
+    const result = joinRoute('/test-mount-path', '/')
+
+    expect(result).toBe('/test-mount-path/')
+  })
+
+  test('when a segment is missing a leading slash', () => {
+    const result = joinRoute('/mount', 'users')
+
+    expect(result).toBe('/mount/users')
+  })
+
+  test('when segments contain duplicate slashes', () => {
+    const result = joinRoute('/mount//sub', '//users//123')
+
+    expect(result).toBe('/mount/sub/users/123')
+  })
 })
 
 describe('id()', () => {
