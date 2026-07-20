@@ -1,8 +1,22 @@
 name: Publish to NPM
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump type
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+        default: patch
+        required: true
+      dry_run:
+        description: Validate and pack without publishing
+        type: boolean
+        default: false
 
 jobs:
   publish:
@@ -11,25 +25,31 @@ jobs:
     environment: publish
 
     permissions:
-      contents: read
+      contents: write
       id-token: write
 
     steps:
-      - name: Authenticate with GitHub App
-        id: app-token
-        uses: peter-murray/workflow-application-token-action@v3
-        with:
-          application_id: ${{ secrets.GH_APP_ID }}
-          application_private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      # workflow_dispatch lets the caller pick any ref, and a later step pushes
+      # to main. Refuse to run from anywhere else so a feature branch cannot be
+      # released and fast-forwarded onto main by accident.
+      - name: Verify running from main
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "Releases must run from main, got ${{ github.ref }}"
+            exit 1
+          fi
 
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ vars.BUN_VERSION }}
+
+      - name: Verify changelog has entries
+        run: bun .github/scripts/changelog.js check
 
       - name: Cache Dependencies
         uses: actions/cache@v3
@@ -40,25 +60,90 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Update package.json version
-        run: |
-          bun pm version ${{ github.event.release.tag_name }} --cwd ./packages/client
-          bun pm version ${{ github.event.release.tag_name }} --cwd ./packages/server
+      - name: Test
+        run: bun test
 
-      - name: Commit package.json
-        env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Lint
+        run: bunx eslint .
+
+      # Writes to the runner's working tree only. Nothing is committed, pushed, or
+      # published until the registry pre-flight below passes.
+      - name: Compute next version
+        id: version
+        run: |
+          raw=$(bun pm version ${{ inputs.bump }} --cwd ./packages/server)
+          version=${raw#v}
+
+          bun pm version "$version" --cwd ./packages/client
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Computed version: $version"
+
+      - name: Registry pre-flight
+        run: |
+          bun .github/scripts/check-registry.js \
+            "${{ steps.version.outputs.version }}" \
+            sleepy-serv \
+            sleepy-socket
+
+      # Must run before the changelog is promoted, since promoting empties the
+      # Unreleased section that these notes come from.
+      - name: Extract release notes
+        run: bun .github/scripts/changelog.js extract > /tmp/release-notes.md
+
+      - name: Update changelog
+        run: |
+          bun .github/scripts/changelog.js promote \
+            "${{ steps.version.outputs.version }}" \
+            "$(date -u +%Y-%m-%d)"
+
+      - name: Commit version bump
         run: |
           git config user.name 'Automated Publisher'
           git config user.email 'automated-publisher[bot]@users.noreply.github.com'
-          git add packages/client/package.json packages/server/package.json
-          git commit -m "Updated package.json version to ${{ github.event.release.tag_name }}"
-          git push origin HEAD:main
+          git add packages/server/package.json packages/client/package.json CHANGELOG.md
+          git commit -m "Release ${{ steps.version.outputs.version }}"
 
       - name: Publish server package
+        if: ${{ !inputs.dry_run }}
         working-directory: packages/server
         run: bunx npm@11 publish
 
       - name: Publish client package
+        if: ${{ !inputs.dry_run }}
         working-directory: packages/client
         run: bunx npm@11 publish
+
+      - name: Pack packages
+        if: ${{ inputs.dry_run }}
+        run: |
+          bunx npm@11 publish ./packages/server --dry-run
+          bunx npm@11 publish ./packages/client --dry-run
+
+      - name: Push commit and tag
+        if: ${{ !inputs.dry_run }}
+        run: |
+          git tag "${{ steps.version.outputs.version }}"
+          git push origin HEAD:main
+          git push origin "${{ steps.version.outputs.version }}"
+
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.version.outputs.version }}" \
+            --title "${{ steps.version.outputs.version }}" \
+            --notes-file /tmp/release-notes.md \
+            --latest
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "Dry run complete."
+          echo "Nothing was published, pushed, tagged, or released."
+          echo "Version that would have shipped: ${{ steps.version.outputs.version }}"
+          echo ""
+          echo "Release notes that would have been used:"
+          echo ""
+          cat /tmp/release-notes.md
