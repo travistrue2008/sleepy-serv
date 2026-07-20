@@ -1,28 +1,32 @@
 import { describe, test, expect } from 'bun:test'
-import { createApp, NotFoundError } from 'sleepy-serv'
+import { createApp } from 'sleepy-serv'
 import { FMT, createRequestor } from '../../helpers'
 import SleepySocketClient, { TYPES } from 'sleepy-socket'
 
 describe('REST', () => {
-  test('when making a request on a non-existent route', async () => {
+  test('when request returns a JSON response', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/nope', FMT.JSON)
 
-    expect(res.status).toBe(NotFoundError.status)
-    expect(res.body).toBe(null)
+    const res = await req.get('/', FMT.JSON)
+
+    expect(res.status).toBe(200)
+
+    expect(res.body).toStrictEqual({
+      message: 'JSON-encoded message',
+    })
   })
 })
 
 describe('WebSocket', () => {
-  test('when making a request on a non-existent route', async () => {
+  test('when request returns a JSON response', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
 
     const res = await client.send({
       method: 'GET',
-      route: '/nope',
+      route: '/',
     })
 
     await client.close()
@@ -30,14 +34,16 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: res.clientId,
       type: TYPES.RESPONSE,
-      status: NotFoundError.status,
+      status: 200,
       timestamp: res.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
-      body: null,
+      body: {
+        message: 'JSON-encoded message',
+      },
     })
   })
 })

@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
-import SleepySocketClient from 'sleepy-socket'
 import { waitFor } from '../../helpers'
+import SleepySocketClient from 'sleepy-socket'
 
 /*
   Drives the resilience path over real loopback sockets: an involuntary drop
@@ -28,11 +28,11 @@ test('when the socket drops AND the client reconnects', async () => {
   client.socket.close(4000)
 
   /*
-      isConnected flips true only once the reconnect welcome is processed, so
-      this waits for a fully-established socket rather than a merely-constructed
-      one. The socket check guards the brief window right after close(4000)
-      where the old socket is still set before its close event fires.
-     */
+    isConnected flips true only once the reconnect welcome is processed, so
+    this waits for a fully-established socket rather than a merely-constructed
+    one. The socket check guards the brief window right after close(4000)
+    where the old socket is still set before its close event fires.
+   */
 
   await waitFor(() => client.isConnected && client.socket !== oldSocket)
 
