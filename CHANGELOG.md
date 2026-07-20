@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-20
+
 - Fixed publish GHA bug
 
 ## [0.6.0] - 2026-07-20
@@ -80,5 +82,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [0.4.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.3.1...0.4.0
 [0.3.1]: https://github.com/travistrue2008/sleepy-serv/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.2.1...0.3.0
-[Unreleased]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.0...HEAD
 [0.6.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.5.0...0.6.0
+[Unreleased]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.1...HEAD
+[0.6.1]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.0...0.6.1
