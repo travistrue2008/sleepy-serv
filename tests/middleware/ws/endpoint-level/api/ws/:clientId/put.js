@@ -3,5 +3,7 @@ export default function (req, _res, next) {
     throw new Error('Error from PUT middleware')
   }
 
-  return next({ PUT: true })
+  return next({
+    message: 'PUT - successful',
+  })
 }

@@ -1,4 +1,4 @@
-import { test, expect } from 'bun:test'
+import { describe, test, expect } from 'bun:test'
 import { createApp, InternalServerError } from 'sleepy-serv'
 import { FMT, createRequestor } from '../../helpers'
 import SleepySocketClient, { TYPES } from 'sleepy-socket'
@@ -11,93 +11,95 @@ function root (req, _res, next) {
   return next(['From root middleware'])
 }
 
-test('when root middleware errors (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname, {
-    middleware: [root],
+describe('REST', () => {
+  test('when root middleware errors', async () => {
+    const app = await createApp(0, import.meta.dirname, {
+      middleware: [root],
+    })
+
+    const req = createRequestor(app)
+    const res = await req.get('/?err', FMT.TEXT)
+
+    await app.server.stop(true)
+
+    expect(res.status).toBe(InternalServerError.status)
+    expect(res.body).toBe('Error from root middleware')
   })
 
-  const req = createRequestor(app)
-  const res = await req.get('/?err', FMT.TEXT)
+  test('when root middleware is invoked', async () => {
+    const app = await createApp(0, import.meta.dirname, {
+      middleware: [root],
+    })
 
-  await app.server.stop(true)
+    const req = createRequestor(app)
+    const res = await req.get('/', FMT.TEXT)
 
-  expect(res.status).toBe(InternalServerError.status)
-  expect(res.body).toBe('Error from root middleware')
-})
+    await app.server.stop(true)
 
-test('when root middleware errors (ws)', async () => {
-  const app = await createApp(0, import.meta.dirname, {
-    middleware: [root],
-  })
-
-  const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port)
-
-  const res = await client.send({
-    method: 'GET',
-    route: '/',
-    query: {
-      err: true,
-    },
-  })
-
-  await client.close()
-  await app.server.stop(true)
-
-  expect(res.status).toBe(InternalServerError.status)
-
-  expect(res).toStrictEqual({
-    id: res.id,
-    clientId: client.id,
-    type: TYPES.RESPONSE,
-    status: InternalServerError.status,
-    timestamp: res.timestamp,
-    headers: {},
-    body: 'Error from root middleware',
+    expect(res.status).toBe(200)
+    expect(res.body).toStrictEqual('GET - successful')
   })
 })
 
-test('when root middleware is invoked (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname, {
-    middleware: [root],
+describe('WebSocket', () => {
+  test('when root middleware errors', async () => {
+    const app = await createApp(0, import.meta.dirname, {
+      middleware: [root],
+    })
+
+    const host = app.server.url.hostname
+    const client = await SleepySocketClient.connect(host, app.server.port)
+
+    const res = await client.send({
+      method: 'GET',
+      route: '/',
+      query: {
+        err: true,
+      },
+    })
+
+    await client.close()
+    await app.server.stop(true)
+
+    expect(res.status).toBe(InternalServerError.status)
+
+    expect(res).toStrictEqual({
+      id: res.id,
+      clientId: client.id,
+      type: TYPES.RESPONSE,
+      status: InternalServerError.status,
+      timestamp: res.timestamp,
+      headers: {},
+      body: 'Error from root middleware',
+    })
   })
 
-  const req = createRequestor(app)
-  const res = await req.get('/', FMT.JSON)
+  test('when root middleware is invoked', async () => {
+    const app = await createApp(0, import.meta.dirname, {
+      middleware: [root],
+    })
 
-  await app.server.stop(true)
+    const host = app.server.url.hostname
+    const client = await SleepySocketClient.connect(host, app.server.port)
 
-  expect(res.status).toBe(200)
-  expect(res.body).toStrictEqual({ ok: true })
-})
+    const res = await client.send({
+      method: 'GET',
+      route: '/',
+    })
 
-test('when root middleware is invoked (ws)', async () => {
-  const app = await createApp(0, import.meta.dirname, {
-    middleware: [root],
-  })
+    await client.close()
+    await app.server.stop(true)
 
-  const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port)
+    expect(res.status).toBe(200)
 
-  const res = await client.send({
-    method: 'GET',
-    route: '/',
-  })
-
-  await client.close()
-  await app.server.stop(true)
-
-  expect(res.status).toBe(200)
-
-  expect(res).toStrictEqual({
-    id: res.id,
-    clientId: client.id,
-    type: TYPES.RESPONSE,
-    status: 200,
-    timestamp: res.timestamp,
-    headers: {
-      'content-type': 'application/json;charset=utf-8',
-    },
-    body: { ok: true },
+    expect(res).toStrictEqual({
+      id: res.id,
+      clientId: client.id,
+      type: TYPES.RESPONSE,
+      status: 200,
+      timestamp: res.timestamp,
+      headers: {},
+      body: 'GET - successful',
+    })
   })
 })

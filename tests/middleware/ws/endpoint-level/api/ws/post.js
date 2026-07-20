@@ -3,5 +3,7 @@ export default function (req, _res, next) {
     throw new Error('Error from POST middleware')
   }
 
-  return next({ POST: true })
+  return next({
+    message: 'POST - successful',
+  })
 }

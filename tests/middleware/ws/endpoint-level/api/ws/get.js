@@ -3,5 +3,7 @@ export default function (req, _res, next) {
     throw new Error('Error from GET middleware')
   }
 
-  return next({ GET: true })
+  return next({
+    message: 'GET - successful',
+  })
 }

@@ -1,4 +1,5 @@
-import { test, expect } from 'bun:test'
+import { describe, test, expect } from 'bun:test'
+import { createRequestor, FMT } from '../../helpers'
 import SleepySocketClient, { TYPES } from 'sleepy-socket'
 
 import {
@@ -7,54 +8,80 @@ import {
   InternalServerError,
 } from 'sleepy-serv'
 
-test('when the handler throws a generic Error', async () => {
-  const app = await createApp(0, import.meta.dirname)
-  const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port)
+describe('REST', () => {
+  test('when the handler throws a generic Error', async () => {
+    const app = await createApp(0, import.meta.dirname)
+    const req = createRequestor(app)
+    const res = await req.get('/boom', FMT.TEXT)
 
-  const res = await client.send({
-    method: 'GET',
-    route: '/boom',
+    await app.server.stop(true)
+
+    expect(res.status).toBe(InternalServerError.status)
+    expect(res.body).toBe('Boom')
   })
 
-  await client.close()
-  await app.server.stop(true)
+  test('when the handler throws a RequestError subclass', async () => {
+    const app = await createApp(0, import.meta.dirname)
+    const req = createRequestor(app)
+    const res = await req.get('/conflict', FMT.JSON)
 
-  expect(res).toStrictEqual({
-    id: res.id,
-    clientId: client.id,
-    type: TYPES.RESPONSE,
-    status: InternalServerError.status,
-    timestamp: res.timestamp,
-    headers: {},
-    body: 'Boom',
+    await app.server.stop(true)
+
+    expect(res.status).toBe(ConflictError.status)
+    expect(res.body).toStrictEqual({ message: 'nope' })
   })
 })
 
-test('when the handler throws a RequestError subclass', async () => {
-  const app = await createApp(0, import.meta.dirname)
-  const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port)
+describe('WebSocket', () => {
+  test('when the handler throws a generic Error', async () => {
+    const app = await createApp(0, import.meta.dirname)
+    const host = app.server.url.hostname
+    const client = await SleepySocketClient.connect(host, app.server.port)
 
-  const res = await client.send({
-    method: 'GET',
-    route: '/conflict',
+    const res = await client.send({
+      method: 'GET',
+      route: '/boom',
+    })
+
+    await client.close()
+    await app.server.stop(true)
+
+    expect(res).toStrictEqual({
+      id: res.id,
+      clientId: client.id,
+      type: TYPES.RESPONSE,
+      status: InternalServerError.status,
+      timestamp: res.timestamp,
+      headers: {},
+      body: 'Boom',
+    })
   })
 
-  await client.close()
-  await app.server.stop(true)
+  test('when the handler throws a RequestError subclass', async () => {
+    const app = await createApp(0, import.meta.dirname)
+    const host = app.server.url.hostname
+    const client = await SleepySocketClient.connect(host, app.server.port)
 
-  expect(res).toStrictEqual({
-    id: res.id,
-    clientId: client.id,
-    type: TYPES.RESPONSE,
-    status: ConflictError.status,
-    timestamp: res.timestamp,
-    headers: {
-      'content-type': 'application/json;charset=utf-8',
-    },
-    body: {
-      message: 'nope',
-    },
+    const res = await client.send({
+      method: 'GET',
+      route: '/conflict',
+    })
+
+    await client.close()
+    await app.server.stop(true)
+
+    expect(res).toStrictEqual({
+      id: res.id,
+      clientId: client.id,
+      type: TYPES.RESPONSE,
+      status: ConflictError.status,
+      timestamp: res.timestamp,
+      headers: {
+        'content-type': 'application/json;charset=utf-8',
+      },
+      body: {
+        message: 'nope',
+      },
+    })
   })
 })

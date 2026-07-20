@@ -27,7 +27,9 @@ describe('POST', () => {
     expect(res.body).toStrictEqual({
       clientId: expect.any(String),
       ticket: expect.any(String),
-      data: { POST: true },
+      data: {
+        message: 'POST - successful',
+      },
     })
   })
 })
@@ -67,7 +69,9 @@ describe('PUT', () => {
     expect(res.body).toStrictEqual({
       clientId: expect.any(String),
       ticket: expect.any(String),
-      data: { PUT: true },
+      data: {
+        message: 'PUT - successful',
+      },
     })
   })
 })
