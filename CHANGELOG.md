@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-07-20
+
 ### Added
 
 - MIT license. Both packages now declare `"license": "MIT"` and ship a `LICENSE`
@@ -88,5 +90,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [0.3.1]: https://github.com/travistrue2008/sleepy-serv/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.2.1...0.3.0
 [0.6.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.5.0...0.6.0
-[Unreleased]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.1...HEAD
 [0.6.1]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.0...0.6.1
+[Unreleased]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.2...HEAD
+[0.6.2]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.1...0.6.2
