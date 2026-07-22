@@ -46,5 +46,5 @@ unit tests (colocated `*.test.js`) and integration tests
 
 ## References
 
-- For detailed architecture regarding unit, integration, and E2E setups, see `@./claude/docs/architecture/testing.md`.
-- For guidelines on fake timers and mocking philosophy, see `@./claude/docs/guides/testing-patterns.md`.
+- For detailed architecture regarding unit, integration, and E2E setups, see `@.claude/kbase/architecture/testing.md`.
+- For guidelines on fake timers and mocking philosophy, see `@.claude/kbase/guides/testing-patterns.md`.

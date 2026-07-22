@@ -22,4 +22,4 @@ Flat config lives at root `eslint.config.mjs`. Run with `bunx eslint .` from the
 - **Function spacing:** Place a single space between a named function's identifier and its parens: `function foo ()`.
 
 ## References
-- For detailed engineering rationale, historical design choices, and known tooling gaps, see `@.claude/docs/style/linting.md`.
+- For detailed engineering rationale, historical design choices, and known tooling gaps, see `@.claude/kbase/style/linting.md`.
