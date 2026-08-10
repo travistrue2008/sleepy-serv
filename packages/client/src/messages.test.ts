@@ -6,7 +6,7 @@ const CLIENT_ID = '22222222-2222-4222-8222-222222222222'
 const STATUS = 200
 const METHOD = 'GET'
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
-const HEADERS = new Headers({ a: 1 })
+const HEADERS = new Headers({ a: '1' })
 
 describe('createMessage()', () => {
   test('when NO "opts" are provided', () => {

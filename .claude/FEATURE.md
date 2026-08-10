@@ -409,7 +409,17 @@ convert, so the real contract is not visible until then.
       that entries accumulate under `## [Unreleased]` and the release
       workflow promotes the heading and bumps versions. Bumping by hand
       here would collide with that. A CHANGELOG entry was added instead.
-- [ ] `packages/client/src/messages.test.js`
+- [x] `packages/client/src/messages.test.js`. One real content change:
+      `new Headers({ a: 1 })` passed a number where `HeadersInit`
+      requires `Record<string, string>`. Behaviour-identical either way,
+      since `Headers` coerces values to strings (verified at runtime:
+      both spellings yield `[["a","1"]]`), so this was a latent type
+      error the tests could never have caught. Probed the rest of the
+      file rather than trusting the clean pass: a bogus message type,
+      a numeric `clientId`, a numeric `opts.id`, and numeric
+      `opts.headers` are all rejected. An arbitrary extra `opts` key is
+      accepted, which is the `[key: string]: unknown` passthrough
+      working as intended, not a gap.
 - [ ] `packages/client/src/index.js`
 - [ ] `packages/client/src/index.test.js`
 
