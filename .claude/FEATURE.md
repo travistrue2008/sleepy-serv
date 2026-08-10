@@ -135,6 +135,16 @@ convert, so the real contract is not visible until then.
       `MiddlewareNext | null`. Best settled alongside the `TReq`
       tightening, since both describe the same chain contract.
 
+- [ ] **Decide whether `StatusCode` literals need pinning.** The deleted
+      `status.test.ts` held a table test asserting all 62 members against
+      their raw numbers, plus a uniqueness check. Nothing replaced it.
+      `errors.test.ts` now asserts `StatusCode.NotFound` on both the
+      expected and actual side, so a typo in `utils.ts` (say `NotFound:
+      405`) would keep every test green and ship a wrong status code.
+      Either restore the table test in `utils.test.ts` or accept that
+      the numbers are unverified; leaving it undecided is the only bad
+      option.
+
 - [ ] **Revisit error message intent.** All `message` constructor params
       are required, for parity with the original JavaScript rather than
       as a designed contract. Four sites construct without one and will
@@ -159,8 +169,12 @@ convert, so the real contract is not visible until then.
       imported it but its own test, and it was never re-exported from
       `index.js`. Recoverable from git history if ever wanted.
 - [x] ~~`packages/server/src/meta.test.js`~~ deleted with it (22 tests).
-- [x] `packages/server/src/status.ts` (new module, not a conversion)
-- [x] `packages/server/src/status.test.ts` (new, pins codes to literals)
+- [x] ~~`packages/server/src/status.ts`~~ folded into `utils.ts`. It was
+      briefly its own module, but `StatusCode` has zero dependencies and
+      `utils.ts` is already the home for dependency-free primitives, so a
+      separate module bought nothing.
+- [x] ~~`packages/server/src/status.test.ts`~~ deleted with it. See the
+      deferred item on literal verification below.
 - [x] `packages/server/src/errors.js` (getters return `StatusCode`)
 - [x] `packages/server/src/errors.test.js`
 - [x] `packages/server/src/middleware.js`
@@ -168,7 +182,7 @@ convert, so the real contract is not visible until then.
 - [x] `packages/server/src/messages.js` (`TYPES` becomes `MessageType`,
       atomic across `socket.js`, both test files, `tests/helpers.js`, and
       the `ws-message` integration test)
-- [ ] `packages/server/src/messages.test.js`
+- [x] `packages/server/src/messages.test.js`
 - [ ] `packages/server/src/socket.js`
 - [ ] `packages/server/src/socket.test.js`
 - [ ] `packages/server/src/index.js` (no unit test file)

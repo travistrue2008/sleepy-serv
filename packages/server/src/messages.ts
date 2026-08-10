@@ -5,6 +5,7 @@ import { formatError } from './utils'
 import { UnprocessableContentError } from './errors'
 
 import type { ValidateFunction } from 'ajv'
+import type { HttpMethod } from './utils'
 
 export const MessageType = {
   Request: 'request',
@@ -21,27 +22,66 @@ export const RECEIVED_MESSAGE_TYPES: string[] = [
   MessageType.Request,
 ]
 
-export type MessageOptions = {
-  id?: string
-  status?: number
-  method?: string
-  route?: string
-  headers?: Headers
-  query?: Record<string, unknown>
-  body?: unknown
-}
-
-export type Message = MessageOptions & {
+export type BaseMessage = {
   id: string
   clientId: string
   type: MessageType
   timestamp: string
 }
 
-export type IncomingMessage = {
+export type HeartbeatMessage = BaseMessage & {
+  type: typeof MessageType.Heartbeat
+}
+
+export type RequestMessage = BaseMessage & {
+  type: typeof MessageType.Request
+  method: HttpMethod
+  route: string
+  headers: Headers
+  query: Record<string, unknown>
+  body: unknown
+}
+
+export type ResponseMessage = BaseMessage & {
+  type: typeof MessageType.Response
+  status: number
+  headers: Headers
+  body: unknown
+}
+
+export type WelcomeMessage = BaseMessage & {
+  type: typeof MessageType.Welcome
+  headers: Headers
+  body: {
+    heartbeatInterval: number
+    token: string
+  }
+}
+
+export type NotificationMessage = BaseMessage & {
+  type: typeof MessageType.Notification
+  event: string
+  headers: Headers
+  body: unknown
+}
+
+export type Message =
+  | HeartbeatMessage
+  | RequestMessage
+  | ResponseMessage
+  | WelcomeMessage
+  | NotificationMessage
+
+export type RawMessage = {
   type?: string
   [key: string]: unknown
 }
+
+export type IncomingMessage = HeartbeatMessage | RequestMessage
+
+export type MessageContent<T extends MessageType = MessageType> =
+  Partial<Pick<Extract<Message, { type: T }>, 'id'>>
+    & Omit<Extract<Message, { type: T }>, keyof BaseMessage>
 
 const ajv = new Ajv({
   allErrors: true,
@@ -145,27 +185,28 @@ const TYPE_VALIDATORS: Record<string, ValidateFunction> = {
   [MessageType.Request]: validateRequest,
 }
 
-export function createMessage (
+export function createMessage<T extends MessageType> (
   clientId: string,
-  type: MessageType,
-  opts: MessageOptions = {},
-): Message {
+  type: T,
+  content: MessageContent<T>,
+): Extract<Message, { type: T }> {
+  const id = content.id ?? crypto.randomUUID()
   const timestamp = new Date().toISOString()
 
   const base = {
-    id: opts.id ?? crypto.randomUUID(),
+    id,
     clientId,
     type,
     timestamp,
   }
 
   return {
-    ...opts,
+    ...content,
     ...base,
-  }
+  } as Extract<Message, { type: T }>
 }
 
-export function validateMessage (message: IncomingMessage): void {
+export function validateMessage (message: RawMessage): void {
   if (message.type === undefined) {
     throw new UnprocessableContentError([
       {

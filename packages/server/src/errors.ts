@@ -1,4 +1,4 @@
-import { StatusCode } from './status'
+import { StatusCode } from './utils'
 
 import type { FormattedError } from './utils'
 

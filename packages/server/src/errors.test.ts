@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { StatusCode } from './status'
+import { StatusCode } from './utils'
 
 import {
   RequestError,

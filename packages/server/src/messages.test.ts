@@ -15,93 +15,198 @@ const STATUS = 200
 const METHOD = 'GET'
 const ROUTE = '/users/123'
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
-const HEADERS = new Headers({ a: 1 })
+const HEADERS = new Headers({ a: '1' })
+const EVENT = 'thing-happened'
+const QUERY = { page: '2' }
+const BODY = { a: 1 }
+
+const WELCOME_BODY = {
+  heartbeatInterval: 30000,
+  token: 'test-token',
+}
 
 describe('createMessage()', () => {
-  test('when NO "opts" are provided', () => {
-    const res = createMessage(CLIENT_ID, MessageType.Response, {
-      headers: new Headers(),
-      body: null,
+  describe(`when "type" IS "${MessageType.Request}"`, () => {
+    test('when "content.id" is NOT provided', () => {
+      const res = createMessage(CLIENT_ID, MessageType.Request, {
+        method: METHOD,
+        route: ROUTE,
+        headers: HEADERS,
+        query: QUERY,
+        body: BODY,
+      })
+
+      expect(res).toStrictEqual({
+        id: res.id,
+        clientId: CLIENT_ID,
+        type: MessageType.Request,
+        timestamp: TIMESTAMP,
+        method: METHOD,
+        route: ROUTE,
+        headers: HEADERS,
+        query: QUERY,
+        body: BODY,
+      })
     })
 
-    expect(res).toStrictEqual({
-      id: res.id,
-      clientId: CLIENT_ID,
-      type: MessageType.Response,
-      timestamp: TIMESTAMP,
-      headers: new Headers(),
-      body: null,
-    })
-  })
+    test('when "content.id" IS provided', () => {
+      const res = createMessage(CLIENT_ID, MessageType.Request, {
+        id: ID,
+        method: METHOD,
+        route: ROUTE,
+        headers: HEADERS,
+        query: QUERY,
+        body: BODY,
+      })
 
-  test('when "opts.id" is provided', () => {
-    const res = createMessage(CLIENT_ID, MessageType.Response, {
-      id: ID,
-      headers: new Headers(),
-      body: null,
-    })
-
-    expect(res).toStrictEqual({
-      id: ID,
-      clientId: CLIENT_ID,
-      type: MessageType.Response,
-      timestamp: TIMESTAMP,
-      headers: new Headers(),
-      body: null,
-    })
-  })
-
-  test('when "opts.headers" is provided', () => {
-    const res = createMessage(CLIENT_ID, MessageType.Response, {
-      headers: HEADERS,
-      body: null,
-    })
-
-    expect(res).toStrictEqual({
-      id: res.id,
-      clientId: CLIENT_ID,
-      type: MessageType.Response,
-      timestamp: TIMESTAMP,
-      headers: HEADERS,
-      body: null,
+      expect(res).toStrictEqual({
+        id: ID,
+        clientId: CLIENT_ID,
+        type: MessageType.Request,
+        timestamp: TIMESTAMP,
+        method: METHOD,
+        route: ROUTE,
+        headers: HEADERS,
+        query: QUERY,
+        body: BODY,
+      })
     })
   })
 
-  test('when "opts.body" is provided', () => {
-    const BODY = { a: 1 }
+  describe(`when "type" IS "${MessageType.Response}"`, () => {
+    test('when "content.id" is NOT provided', () => {
+      const res = createMessage(CLIENT_ID, MessageType.Response, {
+        status: STATUS,
+        headers: HEADERS,
+        body: BODY,
+      })
 
-    const res = createMessage(CLIENT_ID, MessageType.Response, {
-      headers: new Headers(),
-      body: BODY,
+      expect(res).toStrictEqual({
+        id: res.id,
+        clientId: CLIENT_ID,
+        type: MessageType.Response,
+        timestamp: TIMESTAMP,
+        status: STATUS,
+        headers: HEADERS,
+        body: BODY,
+      })
     })
 
-    expect(res).toStrictEqual({
-      id: res.id,
-      clientId: CLIENT_ID,
-      type: MessageType.Response,
-      timestamp: TIMESTAMP,
-      headers: new Headers(),
-      body: BODY,
+    test('when "content.id" IS provided', () => {
+      const res = createMessage(CLIENT_ID, MessageType.Response, {
+        id: ID,
+        status: STATUS,
+        headers: HEADERS,
+        body: BODY,
+      })
+
+      expect(res).toStrictEqual({
+        id: ID,
+        clientId: CLIENT_ID,
+        type: MessageType.Response,
+        timestamp: TIMESTAMP,
+        status: STATUS,
+        headers: HEADERS,
+        body: BODY,
+      })
     })
   })
 
-  test('when extra "opts" are provided', () => {
-    const res = createMessage(CLIENT_ID, MessageType.Response, {
-      method: METHOD,
-      status: STATUS,
-      headers: new Headers(),
-      body: null,
+  describe(`when "type" IS "${MessageType.Welcome}"`, () => {
+    test('when "content.id" is NOT provided', () => {
+      const res = createMessage(CLIENT_ID, MessageType.Welcome, {
+        headers: HEADERS,
+        body: WELCOME_BODY,
+      })
+
+      expect(res).toStrictEqual({
+        id: res.id,
+        clientId: CLIENT_ID,
+        type: MessageType.Welcome,
+        timestamp: TIMESTAMP,
+        headers: HEADERS,
+        body: WELCOME_BODY,
+      })
     })
 
-    expect(res).toStrictEqual({
-      id: res.id,
-      clientId: CLIENT_ID,
-      type: MessageType.Response,
-      timestamp: TIMESTAMP,
-      method: METHOD,
-      status: STATUS,
-      headers: new Headers(),
-      body: null,
+    test('when "content.id" IS provided', () => {
+      const res = createMessage(CLIENT_ID, MessageType.Welcome, {
+        id: ID,
+        headers: HEADERS,
+        body: WELCOME_BODY,
+      })
+
+      expect(res).toStrictEqual({
+        id: ID,
+        clientId: CLIENT_ID,
+        type: MessageType.Welcome,
+        timestamp: TIMESTAMP,
+        headers: HEADERS,
+        body: WELCOME_BODY,
+      })
+    })
+  })
+
+  describe(`when "type" IS "${MessageType.Heartbeat}"`, () => {
+    test('when "content.id" is NOT provided', () => {
+      const res = createMessage(CLIENT_ID, MessageType.Heartbeat, {})
+
+      expect(res).toStrictEqual({
+        id: res.id,
+        clientId: CLIENT_ID,
+        type: MessageType.Heartbeat,
+        timestamp: TIMESTAMP,
+      })
+    })
+
+    test('when "content.id" IS provided', () => {
+      const res = createMessage(CLIENT_ID, MessageType.Heartbeat, { id: ID })
+
+      expect(res).toStrictEqual({
+        id: ID,
+        clientId: CLIENT_ID,
+        type: MessageType.Heartbeat,
+        timestamp: TIMESTAMP,
+      })
+    })
+  })
+
+  describe(`when "type" IS "${MessageType.Notification}"`, () => {
+    test('when "content.id" is NOT provided', () => {
+      const res = createMessage(CLIENT_ID, MessageType.Notification, {
+        event: EVENT,
+        headers: HEADERS,
+        body: BODY,
+      })
+
+      expect(res).toStrictEqual({
+        id: res.id,
+        clientId: CLIENT_ID,
+        type: MessageType.Notification,
+        timestamp: TIMESTAMP,
+        event: EVENT,
+        headers: HEADERS,
+        body: BODY,
+      })
+    })
+
+    test('when "content.id" IS provided', () => {
+      const res = createMessage(CLIENT_ID, MessageType.Notification, {
+        id: ID,
+        event: EVENT,
+        headers: HEADERS,
+        body: BODY,
+      })
+
+      expect(res).toStrictEqual({
+        id: ID,
+        clientId: CLIENT_ID,
+        type: MessageType.Notification,
+        timestamp: TIMESTAMP,
+        event: EVENT,
+        headers: HEADERS,
+        body: BODY,
+      })
     })
   })
 })
