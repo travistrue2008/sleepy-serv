@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
 import { FMT, createRequestor } from '../../helpers'
-import SleepySocketClient, { TYPES } from 'sleepy-socket'
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 test('when meta middleware writes to res (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
@@ -26,7 +26,7 @@ test('when meta middleware writes to res (ws)', async () => {
   expect(res).toStrictEqual({
     id: res.id,
     clientId: client.id,
-    type: TYPES.RESPONSE,
+    type: MessageType.Response,
     status: 200,
     timestamp: res.timestamp,
     headers: {

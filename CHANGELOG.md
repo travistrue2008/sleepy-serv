@@ -8,6 +8,24 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking (`sleepy-socket`):** the exported `TYPES` object is now `MessageType`, and its
+  members are PascalCase instead of SCREAMING_SNAKE. `TYPES.WELCOME` becomes
+  `MessageType.Welcome`, and likewise for `HEARTBEAT`, `REQUEST`, `RESPONSE`, and
+  `NOTIFICATION`.
+
+  The wire values are unchanged (`'welcome'`, `'heartbeat'`, `'request'`, `'response'`,
+  `'notification'`), so this is a source-level rename only. There is no protocol change,
+  and a client and server on opposite sides of this release still interoperate.
+
+  To migrate, change `import SleepySocketClient, { TYPES } from 'sleepy-socket'` to
+  `import SleepySocketClient, { MessageType } from 'sleepy-socket'` and update the member
+  names. Anything comparing against the raw strings needs no change.
+
+  This aligns the client with `sleepy-serv`, which already exports `MessageType` with the
+  same members and the same values.
+
 ## [0.6.2] - 2026-07-20
 
 ### Added

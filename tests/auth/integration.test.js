@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { FMT, createRequestor } from '../helpers'
 import { UnauthorizedError, createApp } from 'sleepy-serv'
-import SleepySocketClient, { TYPES } from 'sleepy-socket'
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 /*
   End-to-end example of JWT auth layered on the middleware system. A single
@@ -82,7 +82,7 @@ describe('WebSocket', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnauthorizedError.status,
       timestamp: res.timestamp,
       headers: {
@@ -111,7 +111,7 @@ describe('WebSocket', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnauthorizedError.status,
       timestamp: res.timestamp,
       headers: {
@@ -141,7 +141,7 @@ describe('WebSocket', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: 200,
       timestamp: res.timestamp,
       headers: {
@@ -165,7 +165,7 @@ describe('WebSocket', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: 200,
       timestamp: res.timestamp,
       headers: {

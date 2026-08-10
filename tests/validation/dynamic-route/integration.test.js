@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp, UnprocessableContentError } from 'sleepy-serv'
 import { FMT, createRequestor } from '../../helpers'
-import SleepySocketClient, { TYPES } from 'sleepy-socket'
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 const USER_ID = '00000000-0000-0000-0000-000000000001'
 
@@ -106,7 +106,7 @@ describe('WebSocket', () => {
       expect(res).toStrictEqual({
         id: res.id,
         clientId: client.id,
-        type: TYPES.RESPONSE,
+        type: MessageType.Response,
         timestamp: res.timestamp,
         status: UnprocessableContentError.status,
         headers: {
@@ -142,7 +142,7 @@ describe('WebSocket', () => {
       expect(res).toStrictEqual({
         id: res.id,
         clientId: client.id,
-        type: TYPES.RESPONSE,
+        type: MessageType.Response,
         timestamp: res.timestamp,
         status: UnprocessableContentError.status,
         headers: {
@@ -175,7 +175,7 @@ describe('WebSocket', () => {
       expect(res).toStrictEqual({
         id: res.id,
         clientId: client.id,
-        type: TYPES.RESPONSE,
+        type: MessageType.Response,
         timestamp: res.timestamp,
         status: 201,
         headers: {},

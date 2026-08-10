@@ -1,6 +1,6 @@
 import { spyOn, test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
-import SleepySocketClient, { TYPES } from 'sleepy-socket'
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 function nextMessage (client) {
   return new Promise(resolve => {
@@ -33,7 +33,7 @@ test('when a heartbeat is sent', async () => {
   expect(heartbeatMessage).toStrictEqual({
     id: heartbeatMessage.id,
     clientId: client.id,
-    type: TYPES.HEARTBEAT,
+    type: MessageType.Heartbeat,
     timestamp: heartbeatMessage.timestamp,
     headers: {},
     body: null,
@@ -42,7 +42,7 @@ test('when a heartbeat is sent', async () => {
   expect(ack).toStrictEqual({
     id: ack.id,
     clientId: client.id,
-    type: TYPES.HEARTBEAT,
+    type: MessageType.Heartbeat,
     timestamp: ack.timestamp,
   })
 })

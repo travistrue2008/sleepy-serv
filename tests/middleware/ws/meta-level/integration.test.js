@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { InternalServerError, createApp } from 'sleepy-serv'
 import { createRequestor, FMT } from '../../../helpers'
-import SleepySocketClient, { TYPES } from 'sleepy-socket'
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 describe('POST', () => {
   test('when middleware errors (lvl 1)', async () => {
@@ -152,7 +152,7 @@ describe('GET', () => {
     expect(data).toStrictEqual({
       id: expect.any(String),
       clientId: expect.any(String),
-      type: TYPES.WELCOME,
+      type: MessageType.Welcome,
       timestamp: expect.any(String),
       headers: {},
       body: {

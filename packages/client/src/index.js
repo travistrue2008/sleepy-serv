@@ -1,4 +1,4 @@
-import { TYPES, createMessage } from './messages'
+import { MessageType, createMessage } from './messages'
 import { joinRoute } from './utils'
 
 export * from './messages'
@@ -173,7 +173,7 @@ export default class SleepySocketClient {
 
       this.#socket.removeEventListener('message', onWelcome)
 
-      if (message.type !== TYPES.WELCOME) {
+      if (message.type !== MessageType.Welcome) {
         fail('Expected a welcome message.')
 
         return
@@ -279,7 +279,7 @@ export default class SleepySocketClient {
 
   #startHeartbeat () {
     this.#heartbeatTimer = setInterval(() => {
-      const message = createMessage(this.#id, TYPES.HEARTBEAT)
+      const message = createMessage(this.#id, MessageType.Heartbeat)
 
       this.#socket.send(JSON.stringify(message))
     }, this.#heartbeatInterval)
@@ -321,7 +321,7 @@ export default class SleepySocketClient {
     const { headers, query, body } = this.#normalizeRequestOpts(opts)
     const fullRoute = joinRoute(this.#mountPath, route)
 
-    const message = createMessage(this.#id, TYPES.REQUEST, {
+    const message = createMessage(this.#id, MessageType.Request, {
       method,
       query,
       body,
@@ -409,13 +409,13 @@ export default class SleepySocketClient {
     const data = JSON.parse(event.data)
 
     switch (data.type) {
-      case TYPES.HEARTBEAT:
+      case MessageType.Heartbeat:
         return
 
-      case TYPES.RESPONSE:
+      case MessageType.Response:
         return this.#handleRequest(data)
 
-      case TYPES.NOTIFICATION:
+      case MessageType.Notification:
         return this.#handleNotification(data)
 
       default:

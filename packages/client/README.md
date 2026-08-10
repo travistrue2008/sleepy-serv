@@ -264,9 +264,9 @@ All of these are read-only:
 
 Contains the valid values for the `queue` option: `QUEUE.NONE`, `QUEUE.FIFO`, and `QUEUE.LIFO`.
 
-### `TYPES`
+### `MessageType`
 
-Contains the message type names used on the wire: `TYPES.WELCOME`, `TYPES.HEARTBEAT`, `TYPES.REQUEST`, `TYPES.RESPONSE`, and `TYPES.NOTIFICATION`. A response message's `type` is always `TYPES.RESPONSE`, and a notification's is always `TYPES.NOTIFICATION`.
+Contains the message type names used on the wire: `MessageType.Welcome`, `MessageType.Heartbeat`, `MessageType.Request`, `MessageType.Response`, and `MessageType.Notification`. A response message's `type` is always `MessageType.Response`, and a notification's is always `MessageType.Notification`.
 
 ## Errors
 

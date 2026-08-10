@@ -1,4 +1,4 @@
-import SleepySocketClient, { QUEUE, TYPES } from './'
+import SleepySocketClient, { QUEUE, MessageType } from './'
 import { id } from './utils'
 
 import {
@@ -108,7 +108,7 @@ function sendWelcome (clientId) {
   return {
     id: id(),
     clientId,
-    type: TYPES.WELCOME,
+    type: MessageType.Welcome,
     timestamp: TIMESTAMP,
     headers: {},
     body: {
@@ -181,7 +181,7 @@ async function reconnect (delay = 500, clientId = CLIENT_ID) {
 function response (id, body) {
   return {
     id,
-    type: TYPES.RESPONSE,
+    type: MessageType.Response,
     status: 200,
     timestamp: TIMESTAMP,
     headers: {},
@@ -195,7 +195,7 @@ function notification (event, body) {
   return {
     id: id(),
     clientId: CLIENT_ID,
-    type: TYPES.NOTIFICATION,
+    type: MessageType.Notification,
     event,
     timestamp: TIMESTAMP,
     headers: {},
@@ -280,7 +280,7 @@ describe('SleepySocketClient', () => {
       MockWebSocket.last.open()
 
       MockWebSocket.last.receive({
-        type: TYPES.RESPONSE,
+        type: MessageType.Response,
       })
 
       await expect(promise).rejects.toThrow(
@@ -401,7 +401,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: CLIENT_ID,
-        type: TYPES.HEARTBEAT,
+        type: MessageType.Heartbeat,
         timestamp: sent.timestamp,
         headers: {},
         body: null,
@@ -882,7 +882,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: sent.clientId,
-        type: TYPES.REQUEST,
+        type: MessageType.Request,
         method: 'HEAD',
         route: '/users',
         timestamp: TIMESTAMP,
@@ -904,7 +904,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: sent.clientId,
-        type: TYPES.REQUEST,
+        type: MessageType.Request,
         method: 'POST',
         route: '/users',
         timestamp: TIMESTAMP,
@@ -926,7 +926,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: sent.clientId,
-        type: TYPES.REQUEST,
+        type: MessageType.Request,
         method: 'PUT',
         route: '/users/123',
         timestamp: TIMESTAMP,
@@ -948,7 +948,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: sent.clientId,
-        type: TYPES.REQUEST,
+        type: MessageType.Request,
         method: 'PATCH',
         route: '/users/123',
         timestamp: TIMESTAMP,
@@ -970,7 +970,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: sent.clientId,
-        type: TYPES.REQUEST,
+        type: MessageType.Request,
         method: 'DELETE',
         route: '/users/123',
         timestamp: TIMESTAMP,
@@ -1004,7 +1004,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: sent.clientId,
-        type: TYPES.REQUEST,
+        type: MessageType.Request,
         method: 'GET',
         route: '/',
         timestamp: TIMESTAMP,
@@ -1038,7 +1038,7 @@ describe('SleepySocketClient', () => {
       const sent = JSON.parse(socket.sent[0])
 
       socket.receive({
-        type: TYPES.RESPONSE,
+        type: MessageType.Response,
         status: 200,
         timestamp: TIMESTAMP,
         headers: {},
@@ -1050,7 +1050,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: sent.clientId,
-        type: TYPES.REQUEST,
+        type: MessageType.Request,
         method: 'GET',
         route: '/',
         timestamp: TIMESTAMP,
@@ -1076,7 +1076,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: sent.clientId,
-        type: TYPES.REQUEST,
+        type: MessageType.Request,
         method: 'GET',
         route: '/',
         timestamp: TIMESTAMP,
@@ -1087,7 +1087,7 @@ describe('SleepySocketClient', () => {
 
       expect(res).toStrictEqual({
         id: sent.id,
-        type: TYPES.RESPONSE,
+        type: MessageType.Response,
         status: 200,
         timestamp: TIMESTAMP,
         headers: {},
@@ -1143,7 +1143,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: sent.clientId,
-        type: TYPES.REQUEST,
+        type: MessageType.Request,
         method: 'GET',
         route: '/',
         timestamp: TIMESTAMP,
@@ -1186,7 +1186,7 @@ describe('SleepySocketClient', () => {
       expect(sent).toStrictEqual({
         id: sent.id,
         clientId: sent.clientId,
-        type: TYPES.REQUEST,
+        type: MessageType.Request,
         method: 'GET',
         route: '/',
         timestamp: TIMESTAMP,

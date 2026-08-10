@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createRequestor, FMT } from '../../helpers'
-import SleepySocketClient, { TYPES } from 'sleepy-socket'
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 import {
   createApp,
@@ -45,7 +45,7 @@ describe('WebSocket', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: InternalServerError.status,
       timestamp: res.timestamp,
       headers: {},
@@ -65,7 +65,7 @@ describe('WebSocket', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: ConflictError.status,
       timestamp: res.timestamp,
       headers: {

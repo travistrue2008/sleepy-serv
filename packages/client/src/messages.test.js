@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { TYPES, createMessage } from './messages'
+import { MessageType, createMessage } from './messages'
 
 const ID = '11111111-1111-4111-8111-111111111111'
 const CLIENT_ID = '22222222-2222-4222-8222-222222222222'
@@ -10,12 +10,12 @@ const HEADERS = new Headers({ a: 1 })
 
 describe('createMessage()', () => {
   test('when NO "opts" are provided', () => {
-    const res = createMessage(CLIENT_ID, TYPES.RESPONSE)
+    const res = createMessage(CLIENT_ID, MessageType.Response)
 
     expect(res).toStrictEqual({
       id: res.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       timestamp: TIMESTAMP,
       headers: new Headers(),
       body: null,
@@ -23,12 +23,12 @@ describe('createMessage()', () => {
   })
 
   test('when "opts.id" is provided', () => {
-    const res = createMessage(CLIENT_ID, TYPES.RESPONSE, { id: ID })
+    const res = createMessage(CLIENT_ID, MessageType.Response, { id: ID })
 
     expect(res).toStrictEqual({
       id: ID,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       timestamp: TIMESTAMP,
       headers: new Headers(),
       body: null,
@@ -36,14 +36,14 @@ describe('createMessage()', () => {
   })
 
   test('when "opts.headers" is provided', () => {
-    const res = createMessage(CLIENT_ID, TYPES.RESPONSE, {
+    const res = createMessage(CLIENT_ID, MessageType.Response, {
       headers: HEADERS,
     })
 
     expect(res).toStrictEqual({
       id: res.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       timestamp: TIMESTAMP,
       headers: HEADERS,
       body: null,
@@ -53,14 +53,14 @@ describe('createMessage()', () => {
   test('when "opts.body" is provided', () => {
     const BODY = { a: 1 }
 
-    const res = createMessage(CLIENT_ID, TYPES.RESPONSE, {
+    const res = createMessage(CLIENT_ID, MessageType.Response, {
       body: BODY,
     })
 
     expect(res).toStrictEqual({
       id: res.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       timestamp: TIMESTAMP,
       headers: new Headers(),
       body: BODY,
@@ -68,7 +68,7 @@ describe('createMessage()', () => {
   })
 
   test('when extra "opts" are provided', () => {
-    const res = createMessage(CLIENT_ID, TYPES.RESPONSE, {
+    const res = createMessage(CLIENT_ID, MessageType.Response, {
       method: METHOD,
       status: STATUS,
     })
@@ -76,7 +76,7 @@ describe('createMessage()', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       timestamp: TIMESTAMP,
       method: METHOD,
       status: STATUS,

@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp, MethodNotAllowedError } from 'sleepy-serv'
 import { FMT, createRequestor } from '../../helpers'
-import SleepySocketClient, { TYPES } from 'sleepy-socket'
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 describe('REST', () => {
   test('when making request on route with an unsupported method', async () => {
@@ -27,7 +27,7 @@ describe('WebSocket', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: MethodNotAllowedError.status,
       timestamp: res.timestamp,
       headers: {

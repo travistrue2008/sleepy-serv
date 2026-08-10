@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
 import { FMT, createRequestor } from '../../helpers'
-import SleepySocketClient, { TYPES } from 'sleepy-socket'
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 describe('REST', () => {
   test('when making a POST request with a body', async () => {
@@ -48,7 +48,7 @@ describe('WebSocket', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: 201,
       timestamp: res.timestamp,
       headers: {

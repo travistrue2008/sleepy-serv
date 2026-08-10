@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test'
 import { waitFor } from '../../helpers'
 import { createApp } from 'sleepy-serv'
-import SleepySocketClient, { TYPES } from 'sleepy-socket'
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 test('when the server broadcasts', async () => {
   const received = []
@@ -19,7 +19,7 @@ test('when the server broadcasts', async () => {
   expect(received[0]).toStrictEqual({
     id: received[0].id,
     clientId: client.id,
-    type: TYPES.NOTIFICATION,
+    type: MessageType.Notification,
     event: 'state_changed',
     timestamp: received[0].timestamp,
     headers: {},
@@ -43,7 +43,7 @@ test('when the server sends to a clientId', async () => {
   expect(received[0]).toStrictEqual({
     id: received[0].id,
     clientId: client.id,
-    type: TYPES.NOTIFICATION,
+    type: MessageType.Notification,
     event: 'player_joined',
     timestamp: received[0].timestamp,
     headers: {},

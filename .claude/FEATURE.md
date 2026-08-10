@@ -383,13 +383,23 @@ convert, so the real contract is not visible until then.
 - [x] `packages/client/src/utils.test.js` (needed `mock<IdGenerator>()`;
       a bare `mock()` falls back to its `(...args: any[]) => any`
       constraint and made the `setIdGenerator` assertion vacuous)
-- [ ] `packages/client/src/messages.js` (`TYPES` becomes `MessageType`,
-      a public breaking change, atomic across `index.js`, both test
-      files, and the **25** root E2E files in group 4 that import
-      `TYPES` by package name, 64 occurrences under `tests/`; needs a
-      CHANGELOG entry, a version bump, and updates to
-      `packages/client/README.md:267-269` and
-      `.claude/kbase/architecture/websocket.md:5,7,112`)
+- [x] `packages/client/src/messages.js` (`TYPES` becomes `MessageType`,
+      a public breaking change). Landed atomically across 29 files: the
+      module itself, `index.js`, both client test files, and the 25 root
+      E2E files, 108 occurrences in all. Members went PascalCase to
+      match the server; the five wire values are byte-identical to
+      `packages/server/src/messages.ts`, verified by diffing the two
+      sorted value sets. Mutating one value fails 46 tests, so the
+      strings are genuinely exercised rather than merely present.
+      `README.md:267-269` came out correct from the mechanical rename;
+      `websocket.md:5,7` were already converted during the server work,
+      and `:112` had a stale parenthetical about the client "still
+      spelling this `TYPES.HEARTBEAT`" that is now removed.
+      **No version bump.** The plan called for one, but
+      [`publishing.md`](./kbase/operations/publishing.md) is explicit
+      that entries accumulate under `## [Unreleased]` and the release
+      workflow promotes the heading and bumps versions. Bumping by hand
+      here would collide with that. A CHANGELOG entry was added instead.
 - [ ] `packages/client/src/messages.test.js`
 - [ ] `packages/client/src/index.js`
 - [ ] `packages/client/src/index.test.js`

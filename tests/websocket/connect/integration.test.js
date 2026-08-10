@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
-import SleepySocketClient, { TYPES } from 'sleepy-socket'
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 const HEARTBEAT_INTERVAL = 20
 
@@ -33,7 +33,7 @@ test('when a request carries the cached clientId', async () => {
   expect(res).toStrictEqual({
     id: res.id,
     clientId: client.id,
-    type: TYPES.RESPONSE,
+    type: MessageType.Response,
     status: 200,
     timestamp: res.timestamp,
     headers: {
