@@ -68,7 +68,7 @@ function defaultMethodMap () {
   }
 }
 
-function buildBunRequest (bunReq, server) {
+function buildEndpointRequest (bunReq, server) {
   const url = new URL(bunReq.url)
   const qs = url.search.replace('?', '')
   const json = () => bunReq.json()
@@ -269,7 +269,7 @@ function  buildSocketRoutes (mergedRoutes) {
 function buildModuleRoutes (routePaths) {
   return routePaths.map(route => {
     const handler = async (bunReq, server) => {
-      const req = buildBunRequest(bunReq, server)
+      const req = buildEndpointRequest(bunReq, server)
 
       return executeMiddlewareChain(req, route.chain)
     }
