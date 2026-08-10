@@ -26,6 +26,26 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   This aligns the client with `sleepy-serv`, which already exports `MessageType` with the
   same members and the same values.
 
+- **Breaking (`sleepy-socket`):** the exported `QUEUE` object is now `Queue`, and its
+  members are PascalCase instead of SCREAMING_SNAKE. `QUEUE.NONE`, `QUEUE.FIFO`, and
+  `QUEUE.LIFO` become `Queue.None`, `Queue.Fifo`, and `Queue.Lifo`.
+
+  As with `MessageType`, the values are unchanged (`'none'`, `'fifo'`, `'lifo'`), so code
+  passing a raw string to the `queue` option keeps working.
+
+  To migrate, change `import SleepySocketClient, { QUEUE } from 'sleepy-socket'` to
+  `import SleepySocketClient, { Queue } from 'sleepy-socket'` and update the member names.
+
+  Both renames follow one convention: enum-like constant objects are PascalCase with
+  PascalCase members. Plain array and scalar constants keep SCREAMING_SNAKE.
+
+- **Breaking (`sleepy-socket`):** the read-only `secure` property on `SleepySocketClient`
+  is now `isSecure`, matching the existing `isConnected` property.
+
+  The `secure` **option** passed to `connect()` is unchanged. Only the property you read
+  back off the client was renamed, so `connect(host, port, { secure: true })` still reads
+  exactly as before; `client.secure` becomes `client.isSecure`.
+
 ## [0.6.2] - 2026-07-20
 
 ### Added

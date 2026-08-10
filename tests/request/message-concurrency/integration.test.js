@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
-import SleepySocketClient, { QUEUE } from 'sleepy-socket'
+import SleepySocketClient, { Queue } from 'sleepy-socket'
 
 async function makeRequests (client) {
   const results = []
@@ -32,7 +32,7 @@ describe('WebSocket', () => {
     const host = app.server.url.hostname
 
     const client = await SleepySocketClient.connect(host, app.server.port, {
-      queue: QUEUE.NONE,
+      queue: Queue.None,
     })
 
     const results = await makeRequests(client)
@@ -48,7 +48,7 @@ describe('WebSocket', () => {
     const host = app.server.url.hostname
 
     const client = await SleepySocketClient.connect(host, app.server.port, {
-      queue: QUEUE.FIFO,
+      queue: Queue.Fifo,
     })
 
     const results = await makeRequests(client)
@@ -64,7 +64,7 @@ describe('WebSocket', () => {
     const host = app.server.url.hostname
 
     const client = await SleepySocketClient.connect(host, app.server.port, {
-      queue: QUEUE.LIFO,
+      queue: Queue.Lifo,
     })
 
     const results = await makeRequests(client)

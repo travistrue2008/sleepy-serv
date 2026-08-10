@@ -154,10 +154,10 @@ Requests are sent over one socket, so responses can come back in a different ord
 For example, if you fire three requests that take 300ms, 100ms, and 200ms:
 
 ```js
-import SleepySocketClient, { QUEUE } from 'sleepy-socket'
+import SleepySocketClient, { Queue } from 'sleepy-socket'
 
 const client = await SleepySocketClient.connect('localhost', 3000, {
-  queue: QUEUE.FIFO,
+  queue: Queue.Fifo,
 })
 
 const results = []
@@ -170,11 +170,11 @@ await Promise.all([
 ```
 
 The three queue types resolve those promises differently:
-- `QUEUE.NONE`: each promise resolves the moment its response arrives, so `results` is `[2, 3, 1]`. This is the default.
-- `QUEUE.FIFO`: responses are held back until every earlier request has resolved, so `results` is `[1, 2, 3]`, matching the order you sent them.
-- `QUEUE.LIFO`: responses drain from the most recent request backwards, so `results` is `[3, 2, 1]`.
+- `Queue.None`: each promise resolves the moment its response arrives, so `results` is `[2, 3, 1]`. This is the default.
+- `Queue.Fifo`: responses are held back until every earlier request has resolved, so `results` is `[1, 2, 3]`, matching the order you sent them.
+- `Queue.Lifo`: responses drain from the most recent request backwards, so `results` is `[3, 2, 1]`.
 
-`QUEUE.NONE` is the right choice most of the time. `QUEUE.FIFO` is useful when responses have to be applied in the order they were requested.
+`Queue.None` is the right choice most of the time. `Queue.Fifo` is useful when responses have to be applied in the order they were requested.
 
 ### Mount Paths
 
@@ -202,7 +202,7 @@ The parameters are:
 - `opts`: an optional options object
 
 The `opts` object can contain these optional properties:
-- `queue`: how responses are handed back, one of `QUEUE.NONE`, `QUEUE.FIFO`, or `QUEUE.LIFO`. Defaults to `QUEUE.NONE`. An unrecognized value throws a `RangeError`.
+- `queue`: how responses are handed back, one of `Queue.None`, `Queue.Fifo`, or `Queue.Lifo`. Defaults to `Queue.None`. An unrecognized value throws a `RangeError`.
 - `secure`: set to `true` to use `https` and `wss` instead of `http` and `ws`. Defaults to `false`.
 - `timeout`: how long to wait, in milliseconds, both for the initial connection and for each individual request. Defaults to `30_000`.
 - `serverTimeout`: how long the client tolerates silence from the server, in milliseconds, before it considers the connection dead and closes it. Defaults to `120_000`.
@@ -254,15 +254,15 @@ All of these are read-only:
 - `connectionData`: whatever payload the server attached when the connection was established. This is where application data such as an auth token shows up.
 - `token`: the reclaim token used internally to restore the session after a drop. This is not an application auth token; that would be on `connectionData`.
 - `queueType`: the configured queue type
-- `secure`: whether the connection uses `wss`
+- `isSecure`: whether the connection uses `wss`
 - `timeout`: the configured request timeout
 - `serverTimeout`: the configured server silence timeout
 - `heartbeatInterval`: how often the client sends heartbeats. This is dictated by the server, not configured by you.
 - `mountPath`: the configured mount path
 
-### `QUEUE`
+### `Queue`
 
-Contains the valid values for the `queue` option: `QUEUE.NONE`, `QUEUE.FIFO`, and `QUEUE.LIFO`.
+Contains the valid values for the `queue` option: `Queue.None`, `Queue.Fifo`, and `Queue.Lifo`.
 
 ### `MessageType`
 
@@ -271,7 +271,7 @@ Contains the message type names used on the wire: `MessageType.Welcome`, `Messag
 ## Errors
 
 Most failures surface as thrown errors or rejected promises:
-- `Invalid queue type: <value>`: a `RangeError` thrown by `connect()` when `queue` isn't a valid `QUEUE` value. This is thrown before any network call is made.
+- `Invalid queue type: <value>`: a `RangeError` thrown by `connect()` when `queue` isn't a valid `Queue` value. This is thrown before any network call is made.
 - `Connection failed.`: the connection couldn't be established
 - `Connection timed out.`: the connection wasn't established within `timeout` milliseconds
 - `opts.headers must be a Headers instance`: a `TypeError` thrown when a request's `headers` option isn't a `Headers` object

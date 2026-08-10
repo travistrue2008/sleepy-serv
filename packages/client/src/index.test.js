@@ -1,4 +1,4 @@
-import SleepySocketClient, { QUEUE, MessageType } from './'
+import SleepySocketClient, { Queue, MessageType } from './'
 import { id } from './utils'
 
 import {
@@ -292,8 +292,8 @@ describe('SleepySocketClient', () => {
       const { client, socket } = await connectAndOpen()
 
       expect(client.isConnected).toBe(true)
-      expect(client.queueType).toBe(QUEUE.NONE)
-      expect(client.secure).toBe(false)
+      expect(client.queueType).toBe(Queue.None)
+      expect(client.isSecure).toBe(false)
       expect(client.timeout).toBe(30_000)
       expect(client.heartbeatInterval).toBe(30_000)
       expect(client.serverTimeout).toBe(120_000)
@@ -324,10 +324,10 @@ describe('SleepySocketClient', () => {
 
     test('when "opts.queue" is set', async () => {
       const { client } = await connectAndOpen({
-        queue: QUEUE.FIFO,
+        queue: Queue.Fifo,
       })
 
-      expect(client.queueType).toBe(QUEUE.FIFO)
+      expect(client.queueType).toBe(Queue.Fifo)
     })
 
     test('when "opts.secure" is set', async () => {
@@ -335,7 +335,7 @@ describe('SleepySocketClient', () => {
         secure: true,
       })
 
-      expect(client.secure).toBe(true)
+      expect(client.isSecure).toBe(true)
       expect(socket.url).toBe(`wss://localhost:3000/ws?ticket=${TICKET}`)
     })
 
@@ -558,8 +558,8 @@ describe('SleepySocketClient', () => {
 
       expect(postDropStatus).toBe(false)
       expect(client.isConnected).toBe(true)
-      expect(client.queueType).toBe(QUEUE.NONE)
-      expect(client.secure).toBe(false)
+      expect(client.queueType).toBe(Queue.None)
+      expect(client.isSecure).toBe(false)
       expect(client.timeout).toBe(30_000)
       expect(client.heartbeatInterval).toBe(30_000)
       expect(client.serverTimeout).toBe(120_000)
@@ -1197,7 +1197,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when calls respond out-of-order (queue = NONE)', async () => {
-      const { client, socket } = await connectAndOpen({ queue: QUEUE.NONE })
+      const { client, socket } = await connectAndOpen({ queue: Queue.None })
       const order = []
 
       const p1 = client.get('/a').then(() => order.push(1))
@@ -1218,7 +1218,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when calls respond out-of-order (queue = FIFO)', async () => {
-      const { client, socket } = await connectAndOpen({ queue: QUEUE.FIFO })
+      const { client, socket } = await connectAndOpen({ queue: Queue.Fifo })
 
       const order = []
 
@@ -1240,7 +1240,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when calls respond out-of-order (queue = LIFO)', async () => {
-      const { client, socket } = await connectAndOpen({ queue: QUEUE.LIFO })
+      const { client, socket } = await connectAndOpen({ queue: Queue.Lifo })
 
       const order = []
 

@@ -4,13 +4,16 @@ import { joinRoute } from './utils'
 export * from './messages'
 export * from './utils'
 
-export const QUEUE = {
-  NONE: 'none',
-  FIFO: 'fifo',
-  LIFO: 'lifo',
+export type TimeoutHandle = ReturnType<typeof setTimeout>
+export type IntervalHandle = ReturnType<typeof setInterval>
+
+export const Queue = {
+  None: 'none',
+  Fifo: 'fifo',
+  Lifo: 'lifo',
 } as const
 
-export type QUEUE = typeof QUEUE[keyof typeof QUEUE]
+export type Queue = typeof Queue[keyof typeof Queue]
 
 export type ReconnectOptions = {
   minDelay?: number
@@ -20,7 +23,7 @@ export type ReconnectOptions = {
 }
 
 export type ConnectOptions = {
-  queue?: QUEUE
+  queue?: Queue
   secure?: boolean
   timeout?: number
   serverTimeout?: number
@@ -77,12 +80,18 @@ type DispatchedMessage = {
   reject: (reason: Error) => void
 }
 
+type NormalizedRequestOpts = {
+  headers: Headers
+  query: Record<string, unknown>
+  body: unknown
+}
+
 const RECONNECT_JITTER = 0.5
 const JSON_CONTENT_TYPE = 'application/json;charset=utf-8'
 
 export default class SleepySocketClient {
   #id: string | null = null
-  #queueType: QUEUE = QUEUE.NONE
+  #queueType: Queue = Queue.None
   #ready = false
   #closing = false
   #secure = false
@@ -111,12 +120,12 @@ export default class SleepySocketClient {
     return this.#ready
   }
 
-  get queueType (): QUEUE {
-    return this.#queueType
+  get isSecure (): boolean {
+    return this.#secure
   }
 
-  get secure (): boolean {
-    return this.#secure
+  get queueType (): Queue {
+    return this.#queueType
   }
 
   get timeout (): number {
@@ -152,7 +161,7 @@ export default class SleepySocketClient {
     port: number,
     opts: ConnectOptions = {},
   ): Promise<SleepySocketClient> {
-    if (opts.queue && !Object.values(QUEUE).includes(opts.queue)) {
+    if (opts.queue && !Object.values(Queue).includes(opts.queue)) {
       throw new RangeError(`Invalid queue type: ${opts.queue}`)
     }
 
@@ -165,7 +174,7 @@ export default class SleepySocketClient {
 
     client.#host = host
     client.#port = port
-    client.#queueType = opts.queue ?? QUEUE.NONE
+    client.#queueType = opts.queue ?? Queue.None
     client.#secure = opts.secure ?? false
     client.#timeout = opts.timeout ?? 30_000
     client.#serverTimeout = opts.serverTimeout ?? 120_000
@@ -375,11 +384,7 @@ export default class SleepySocketClient {
     this.#heartbeatTimer = null
   }
 
-  #normalizeRequestOpts (opts: RequestOptions): {
-    headers: Headers
-    query: Record<string, unknown>
-    body: unknown
-  } {
+  #normalizeRequestOpts (opts: RequestOptions): NormalizedRequestOpts {
     if (opts.headers !== undefined && !(opts.headers instanceof Headers)) {
       throw new TypeError('opts.headers must be a Headers instance')
     }
@@ -546,13 +551,13 @@ export default class SleepySocketClient {
 
   #drain (): void {
     switch (this.#queueType) {
-      case QUEUE.NONE:
+      case Queue.None:
         return this.#processNone()
 
-      case QUEUE.FIFO:
+      case Queue.Fifo:
         return this.#processFifo()
 
-      case QUEUE.LIFO:
+      case Queue.Lifo:
         return this.#processLifo()
     }
   }

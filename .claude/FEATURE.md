@@ -439,11 +439,10 @@ convert, so the real contract is not visible until then.
       `this.#socket` between handler registration and the welcome frame,
       the old code would detach the listener from the *new* socket. The
       local is more correct, but it is not a pure annotation.
-      (2) `QUEUE` is now `as const` with a derived type, but keeps its
-      SCREAMING_SNAKE members, so it is the last enum-like object out of
-      step with `MessageType`, `StatusCode`, and `Fmt`. Renaming it is a
-      second public breaking change on top of `TYPES` to `MessageType`,
-      so it was left for an explicit decision rather than folded in.
+      (2) `QUEUE` became `as const` with a derived type here, then was
+      renamed to `Queue` with PascalCase members in the follow-up
+      commit, bringing the last enum-like object in line with
+      `MessageType`, `StatusCode`, and `Fmt`.
 - [ ] `packages/client/src/index.test.js`
 
 ## 4. E2E tests (root `tests/`)
