@@ -301,23 +301,23 @@ convert, so the real contract is not visible until then.
 - [x] `packages/server/tests/errors/request/ws-endpoints/integration.test.js`
 - [x] `packages/server/tests/errors/request/ws-message/api/get.js`
 - [x] `packages/server/tests/errors/request/ws-message/integration.test.js`
-- [ ] `packages/server/tests/middleware/all-levels/api/meta.js`
-- [ ] `packages/server/tests/middleware/all-levels/api/users/get.js`
-- [ ] `packages/server/tests/middleware/all-levels/api/users/meta.js`
-- [ ] `packages/server/tests/middleware/all-levels/integration.test.js`
-- [ ] `packages/server/tests/middleware/app-level/api/users/get.js`
-- [ ] `packages/server/tests/middleware/app-level/integration.test.js`
-- [ ] `packages/server/tests/middleware/meta-level-parent/api/meta.js`
-- [ ] `packages/server/tests/middleware/meta-level-parent/api/users/get.js`
-- [ ] `packages/server/tests/middleware/meta-level-parent/integration.test.js`
-- [ ] `packages/server/tests/middleware/meta-level-sibling/api/users/get.js`
-- [ ] `packages/server/tests/middleware/meta-level-sibling/api/users/meta.js`
-- [ ] `packages/server/tests/middleware/meta-level-sibling/integration.test.js`
-- [ ] `packages/server/tests/middleware/meta-no-middleware/api/users/get.js`
-- [ ] `packages/server/tests/middleware/meta-no-middleware/api/users/meta.js`
-- [ ] `packages/server/tests/middleware/meta-no-middleware/integration.test.js`
-- [ ] `packages/server/tests/middleware/module-level/api/users/get.js`
-- [ ] `packages/server/tests/middleware/module-level/integration.test.js`
+- [x] `packages/server/tests/middleware/all-levels/api/meta.js`
+- [x] `packages/server/tests/middleware/all-levels/api/users/get.js`
+- [x] `packages/server/tests/middleware/all-levels/api/users/meta.js`
+- [x] `packages/server/tests/middleware/all-levels/integration.test.js`
+- [x] `packages/server/tests/middleware/app-level/api/users/get.js`
+- [x] `packages/server/tests/middleware/app-level/integration.test.js`
+- [x] `packages/server/tests/middleware/meta-level-parent/api/meta.js`
+- [x] `packages/server/tests/middleware/meta-level-parent/api/users/get.js`
+- [x] `packages/server/tests/middleware/meta-level-parent/integration.test.js`
+- [x] `packages/server/tests/middleware/meta-level-sibling/api/users/get.js`
+- [x] `packages/server/tests/middleware/meta-level-sibling/api/users/meta.js`
+- [x] `packages/server/tests/middleware/meta-level-sibling/integration.test.js`
+- [x] `packages/server/tests/middleware/meta-no-middleware/api/users/get.js`
+- [x] `packages/server/tests/middleware/meta-no-middleware/api/users/meta.js`
+- [x] `packages/server/tests/middleware/meta-no-middleware/integration.test.js`
+- [x] `packages/server/tests/middleware/module-level/api/users/get.js`
+- [x] `packages/server/tests/middleware/module-level/integration.test.js`
 - [ ] `packages/server/tests/request/querystring/api/get.js`
 - [ ] `packages/server/tests/request/querystring/integration.test.js`
 - [ ] `packages/server/tests/request/route-dynamic/api/users/:userId/get.js`

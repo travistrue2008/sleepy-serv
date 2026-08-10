@@ -2,11 +2,17 @@ import { test, expect } from 'bun:test'
 import { createApp } from '../../../src'
 import { FMT, createRequestor, createSocketClient } from '../../helpers'
 
+import type { NextFn, Request } from '../../../src'
+
+type Accum = {
+  list: string[]
+}
+
 test('when all levels of middleware are defined (REST)', async () => {
   const app = await createApp(0, import.meta.dirname, {
     middleware: [
-      (_req, res, next) => next({
-        ...res,
+      (_req: Request, res: unknown, next: NextFn | null) => next!({
+        ...res as Accum,
         list: ['root'],
       }),
     ],
@@ -24,8 +30,8 @@ test('when all levels of middleware are defined (REST)', async () => {
 test('when all levels of middleware are defined (ws)', async () => {
   const app = await createApp(0, import.meta.dirname, {
     middleware: [
-      (_req, res, next) => next({
-        ...res,
+      (_req: Request, res: unknown, next: NextFn | null) => next!({
+        ...res as Accum,
         list: ['root'],
       }),
     ],
