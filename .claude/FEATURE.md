@@ -318,18 +318,18 @@ convert, so the real contract is not visible until then.
 - [x] `packages/server/tests/middleware/meta-no-middleware/integration.test.js`
 - [x] `packages/server/tests/middleware/module-level/api/users/get.js`
 - [x] `packages/server/tests/middleware/module-level/integration.test.js`
-- [ ] `packages/server/tests/request/querystring/api/get.js`
-- [ ] `packages/server/tests/request/querystring/integration.test.js`
-- [ ] `packages/server/tests/request/route-dynamic/api/users/:userId/get.js`
-- [ ] `packages/server/tests/request/route-dynamic/integration.test.js`
-- [ ] `packages/server/tests/request/route-resource/api/users/get.js`
-- [ ] `packages/server/tests/request/route-resource/integration.test.js`
-- [ ] `packages/server/tests/request/route-root/api/get.js`
-- [ ] `packages/server/tests/request/route-root/integration.test.js`
-- [ ] `packages/server/tests/url/custom-host/api/get.js`
-- [ ] `packages/server/tests/url/custom-host/integration.test.js`
-- [ ] `packages/server/tests/url/mount-path/api/users/get.js`
-- [ ] `packages/server/tests/url/mount-path/integration.test.js`
+- [x] `packages/server/tests/request/querystring/api/get.js`
+- [x] `packages/server/tests/request/querystring/integration.test.js`
+- [x] `packages/server/tests/request/route-dynamic/api/users/:userId/get.js`
+- [x] `packages/server/tests/request/route-dynamic/integration.test.js`
+- [x] `packages/server/tests/request/route-resource/api/users/get.js`
+- [x] `packages/server/tests/request/route-resource/integration.test.js`
+- [x] `packages/server/tests/request/route-root/api/get.js`
+- [x] `packages/server/tests/request/route-root/integration.test.js`
+- [x] `packages/server/tests/url/custom-host/api/get.js`
+- [x] `packages/server/tests/url/custom-host/integration.test.js`
+- [x] `packages/server/tests/url/mount-path/api/users/get.js`
+- [x] `packages/server/tests/url/mount-path/integration.test.js`
 
 ## 3. `client` implementation and unit tests
 

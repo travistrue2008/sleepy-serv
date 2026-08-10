@@ -8,7 +8,7 @@ test('when making a request with querystring (REST)', async () => {
 
   const res = await req.get('/', FMT.TEXT, {
     query: {
-      userId: 123,
+      userId: '123',
     },
   })
 
