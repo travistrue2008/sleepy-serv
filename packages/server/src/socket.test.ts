@@ -31,6 +31,8 @@ import {
 } from './errors'
 
 import type { UUID } from 'node:crypto'
+import type { ServerWebSocket, WebSocketHandler } from 'bun'
+import type { SocketData } from './utils'
 
 type TicketBody = {
   clientId: string
@@ -59,7 +61,20 @@ const UUIDs: UUID[] = [
 
 type LooseHandler = (req: Record<string, unknown>, res: unknown) => Response
 
-function buildSocket (clientId: string) {
+/*
+  The handlers are typed against Bun's `ServerWebSocket`, which has 20
+  members. These tests only ever touch four, so the mock is cast once
+  here rather than stubbing the rest. `welcome` is a test-only accessor
+  over the first frame the handler sent.
+ */
+
+type SocketMock = ServerWebSocket<SocketData> & {
+  send: ReturnType<typeof mock>
+  close: ReturnType<typeof mock>
+  readonly welcome: Record<string, unknown>
+}
+
+function buildSocket (clientId: string): SocketMock {
   const send = mock()
 
   return {
@@ -74,7 +89,32 @@ function buildSocket (clientId: string) {
     get welcome () {
       return JSON.parse(send.mock.calls[0][0])
     },
-  }
+  } as unknown as SocketMock
+}
+
+/* `welcome` is the first frame sent, so its shape varies by test */
+
+function welcomeToken (ws: SocketMock): string {
+  const { body } = ws.welcome as { body: { token: string } }
+
+  return body.token
+}
+
+/*
+  Bun declares `open` and `close` optional, since a handler object may
+  supply any subset; only `message` is required. `buildSocketServer`
+  always supplies all three, so this narrows once rather than asserting
+  at each of the 32 call sites.
+ */
+
+type TestServer = Required<
+  Pick<WebSocketHandler<SocketData>, 'open' | 'close' | 'message'>
+>
+
+function buildTestServer (
+  ...args: Parameters<typeof buildSocketServer>
+): TestServer {
+  return buildSocketServer(...args) as TestServer
 }
 
 class TestError extends RequestError {
@@ -254,7 +294,7 @@ describe('buildSocketState()', () => {
   })
 })
 
-describe('buildSocketServer()', () => {
+describe('buildTestServer()', () => {
   const state = buildSocketState({
     ws: {
       disconnectThreshold: 60_000,
@@ -262,7 +302,7 @@ describe('buildSocketServer()', () => {
     },
   })
 
-  const server = buildSocketServer([], state)
+  const server = buildTestServer([], state)
 
   describe('message()', () => {
     const HEADERS = new Headers({
@@ -270,7 +310,7 @@ describe('buildSocketServer()', () => {
     })
 
     test('when parsing incoming message fails', async () => {
-      const server = buildSocketServer([], state)
+      const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
       await server.message(ws, 'invalid json')
@@ -280,7 +320,7 @@ describe('buildSocketServer()', () => {
 
     describe(`"type" = "${MessageType.Heartbeat}"`, () => {
       test('when a heartbeat message is received', async () => {
-        const server = buildSocketServer([], state)
+        const server = buildTestServer([], state)
         const ws = buildSocket(CLIENT_ID)
 
         await server.message(ws, JSON.stringify({
@@ -301,7 +341,7 @@ describe('buildSocketServer()', () => {
 
     describe(`"type" = "${MessageType.Request}"`, () => {
       test('when validation fails', async () => {
-        const server = buildSocketServer([], state)
+        const server = buildTestServer([], state)
 
         const ws = buildSocket(CLIENT_ID)
 
@@ -338,7 +378,7 @@ describe('buildSocketServer()', () => {
       })
 
       test('when message does NOT match any routes', async () => {
-        const server = buildSocketServer([
+        const server = buildTestServer([
           {
             method: 'GET',
             path: '/',
@@ -377,7 +417,7 @@ describe('buildSocketServer()', () => {
       })
 
       test('when message does NOT match any methods', async () => {
-        const server = buildSocketServer([
+        const server = buildTestServer([
           {
             method: 'GET',
             path: '/users',
@@ -416,7 +456,7 @@ describe('buildSocketServer()', () => {
       })
 
       test('when middleware fails (generic Error)', async () => {
-        const server = buildSocketServer([
+        const server = buildTestServer([
           {
             method: 'GET',
             path: '/',
@@ -457,7 +497,7 @@ describe('buildSocketServer()', () => {
       })
 
       test('when middleware fails (RequestError subclass)', async () => {
-        const server = buildSocketServer([
+        const server = buildTestServer([
           {
             method: 'GET',
             path: '/',
@@ -503,7 +543,7 @@ describe('buildSocketServer()', () => {
       })
 
       test('when successful', async () => {
-        const server = buildSocketServer([
+        const server = buildTestServer([
           {
             method: 'GET',
             path: '/users',
@@ -540,7 +580,7 @@ describe('buildSocketServer()', () => {
       })
 
       test('when route and method match with dynamic params', async () => {
-        const server = buildSocketServer([
+        const server = buildTestServer([
           {
             method: 'GET',
             path: '/users/:userId',
@@ -664,7 +704,7 @@ describe('buildSocketServer()', () => {
 
     test('when an expired inactive session is present', () => {
       const state = buildSocketState()
-      const server = buildSocketServer([], state)
+      const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
       state.inactiveSessions.set('stale', {
@@ -690,13 +730,13 @@ describe('buildSocketServer()', () => {
 
     test('when the socket is no longer registered', () => {
       const state = buildSocketState()
-      const server = buildSocketServer([], state)
+      const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, 1000)
+      server.close(ws, 1000, '')
 
-      const fn = () => server.close(ws, 1006)
+      const fn = () => server.close(ws, 1006, '')
 
       expect(fn).not.toThrow()
       expect(state.inactiveSessions.has(CLIENT_ID)).toBe(false)
@@ -707,13 +747,13 @@ describe('buildSocketServer()', () => {
       const newSocket = buildSocket(CLIENT_ID)
 
       server.open(oldSocket)
-      server.close(oldSocket, 1000)
+      server.close(oldSocket, 1000, '')
       server.open(newSocket)
 
       const res = updateTicket({
         method: 'PUT',
         headers: new Headers({
-          authorization: `Bearer ${newSocket.welcome.body.token}`,
+          authorization: `Bearer ${welcomeToken(newSocket)}`,
         }),
         params: {
           clientId: CLIENT_ID,
@@ -746,7 +786,7 @@ describe('buildSocketServer()', () => {
 
       const result = await res.json()
 
-      server.close(ws, 1006)
+      server.close(ws, 1006, '')
 
       expect(result).toStrictEqual({
         clientId: CLIENT_ID,
@@ -760,7 +800,7 @@ describe('buildSocketServer()', () => {
 
       server.open(ws)
       jest.advanceTimersByTime(state.disconnectThreshold + 100)
-      server.close(ws, 1000)
+      server.close(ws, 1000, '')
 
       const res = updateTicket({
         method: 'PUT',
@@ -796,7 +836,7 @@ describe('buildSocketServer()', () => {
         },
       }, undefined)
 
-      server.close(ws, 1006)
+      server.close(ws, 1006, '')
       jest.advanceTimersByTime(101)
 
       expect(fn).toThrow(new NotFoundError())
@@ -817,7 +857,7 @@ describe('buildSocketServer()', () => {
         },
       }, undefined)
 
-      server.close(ws, 1000)
+      server.close(ws, 1000, '')
 
       expect(fn).toThrow(new NotFoundError())
     })
@@ -1437,7 +1477,7 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when the token is incorrect', () => {
-      const server = buildSocketServer([], state)
+      const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
@@ -1455,11 +1495,11 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when the socket is closed unexpectedly (expired)', () => {
-      const server = buildSocketServer([], state)
+      const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, 1006)
+      server.close(ws, 1006, '')
       jest.advanceTimersByTime(state.reclaimTtl + 1)
 
       const fn = () => updateTicket({
@@ -1475,11 +1515,11 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when the socket is closed unexpectedly and (fresh)', async () => {
-      const server = buildSocketServer([], state)
+      const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, 1006)
+      server.close(ws, 1006, '')
 
       const result = updateTicket({
         params: {
@@ -1502,7 +1542,7 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when the socket is still open', async () => {
-      const server = buildSocketServer([], state)
+      const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
@@ -1528,11 +1568,11 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when "res" has content', async () => {
-      const server = buildSocketServer([], state)
+      const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, 1006)
+      server.close(ws, 1006, '')
 
       const result = updateTicket({
         params: {
@@ -1558,7 +1598,7 @@ describe('buildSocketHandlers()', () => {
 
 describe('buildSocketCommands()', () => {
   const state = buildSocketState()
-  const server = buildSocketServer([], state)
+  const server = buildTestServer([], state)
   const commands = buildSocketCommands(state)
 
   describe('send()', () => {

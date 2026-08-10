@@ -27,26 +27,35 @@ committed.
 - [x] `types/bun-test.d.ts` augmenting bun-types with the missing
       `toHaveBeenCalledOnce` matcher (shared by both packages; remove
       once bun-types ships it upstream)
-- [ ] `packages/server/tsconfig.build.json` and `build:types` script.
-      **Now unblocked**, since `index.ts` exists. `exports` was changed
-      to `./src/index.ts` during that conversion because the E2E suites
-      import `sleepy-serv` by package name and every one of them failed
-      to resolve otherwise. That is the minimum to keep the workspace
-      running, not the finished packaging story.
-- [ ] Server `exports` conditions and `publish.yml` build step. Also
-      unblocked. `exports` is still a bare string, so a TypeScript
-      consumer typechecks our source under *their* tsconfig, which is
-      the failure mode the `.d.ts` plan exists to prevent. Needs
-      `{ "types": "./<declarationDir>/index.d.ts", "bun": "./src/index.ts",
-      "default": "./src/index.ts" }`, the declaration output in
-      `.gitignore`, and `build:types` running before the `--dry-run`
-      pre-flight in `publish.yml`.
+- [x] `packages/server/tsconfig.build.json` and its `build` script. Emits
+      declarations only, tests excluded. The server keeps shipping `.ts`
+      source, which is safe because `Bun.serve` guarantees every
+      consumer runs Bun; the `.d.ts` exists so a TypeScript consumer
+      does not typecheck our source under *their* tsconfig.
 
-      Verified the tarball is otherwise correct today: 9 files
-      (LICENSE, README, package.json, 6 `.ts` sources), no test files
-      leaked through the `files` allowlist. Down from 7 sources to 6
-      because `meta.js` was deleted and `status.ts` folded into
-      `utils.ts`.
+      Named `build`, not `build:types`, so `bun run --filter '*' build`
+      covers both packages and no workspace member can be silently
+      skipped in CI.
+- [x] Server `exports` conditions and `publish.yml` build step.
+      `exports` is now
+      `{ "types": "./dist/index.d.ts", "bun": "./src/index.ts",
+      "default": "./src/index.ts" }`, with both runtime conditions on
+      source since there is only one runtime to serve. `files` gained
+      `dist`; `dist/` was already gitignored and ESLint-ignored from the
+      client work.
+
+      Verified against a packed tarball extracted into a real
+      `node_modules`, not just a successful build: the consumer resolves
+      `sleepy-serv/dist/index.d.ts`, and hiding `dist` makes it fall
+      through to our source and fail on our own dependencies
+      (`Cannot find module 'ajv'` inside `src/messages.ts`) — exactly
+      the failure this prevents. Tarball is 21 files (LICENSE, README,
+      package.json, 6 `.ts` sources, 12 declaration files and maps), no
+      tests leaked.
+
+      Also confirmed the workspace typechecks, lints, and tests green
+      with no `dist` present anywhere, so a fresh checkout needs no
+      build step.
 - [x] Swap `.npmignore` for a `files` allowlist in both packages
       (verified with `npm pack --dry-run`: server 10 files, client 6,
       both identical to their pre-change baselines)
@@ -155,7 +164,75 @@ convert, so the real contract is not visible until then.
       bare `JSON`, since the package has 27 `JSON.parse`/`JSON.stringify`
       calls that a naive pass would have destroyed.
 
-- [ ] **Adopt Bun's own WebSocket types for `buildSocketServer`.**
+- [x] **Adopt Bun's own WebSocket types for `buildSocketServer`.**
+      **Closed by returning `WebSocketHandler<SocketData>` directly and
+      deleting the hand-written `SocketServer`.**
+
+      Investigation changed the premise. `Bun.serve` declares
+      `websocket: WebSocketHandler<WebSocketData>`, and the handler
+      object is passed straight into it, so conformance to Bun's
+      contract was *already* enforced. Verified by mutation: giving
+      `SocketServer.open` a wrong parameter type, or deleting its
+      `message` member, both fail at the `Bun.serve` call.
+
+      That enforcement was incidental, though: it held only because the
+      value happened to flow directly into `Bun.serve`, and a refactor
+      of `buildServer` could have dropped it silently. `SocketServer` is
+      therefore gone, and `buildSocketServer` returns
+      `WebSocketHandler<SocketData>`, so the contract is stated where the
+      object is built rather than depending on where the value flows. An
+      interim `WebSocketHandler<SocketData>` annotation on
+      `websocketServer` in `index.ts` was reverted once this landed,
+      since the return type now carries it.
+
+      **The cost lands entirely in the tests, and Bun's uneven
+      optionality is why.** Confirmed in
+      `bun-types@1.3.14/serve.d.ts`: `message` is
+      *required*, while `open?` and `close?` are optional, because a
+      handler object may supply any subset. Calling an optional member
+      gives `TS2722`, so the switch produced 32 errors in
+      `socket.test.ts`: 22 `server.open` calls plus 10 `server.close`
+      calls. The 11 `server.message` calls produced none.
+
+      `socket.test.ts` absorbs this with a local
+      `TestServer = Required<Pick<WebSocketHandler<SocketData>, 'open' |
+      'close' | 'message'>>` and a `buildTestServer` wrapper, narrowing
+      once instead of spraying 32 `!` operators over the call sites. The
+      wrapper takes `...args: Parameters<typeof buildSocketServer>`, so
+      it cannot drift from the real signature.
+
+      Also 10 `close` call sites gained a `''` reason argument, since Bun
+      types `close(ws, code, reason)` with three required parameters.
+      That one is orthogonal: it fails with `TS2554` under any return
+      type, and it makes the tests faithful to what Bun actually calls.
+
+      **`SocketConnection` deliberately stays** as the *parameter* type,
+      rather than becoming `ServerWebSocket<SocketData>`. Bun declares
+      `message(ws, message)` with method shorthand, so its parameters
+      are bivariant and would *stop* catching parameter drift that the
+      current arrow-property syntax catches.
+
+      The mock-factory cost this note predicted did arrive, though,
+      because the handlers are now invoked with
+      `ServerWebSocket<SocketData>`. `socket.test.ts` absorbs it with a
+      single `as unknown as SocketMock` inside the existing `buildSocket`
+      factory, rather than stubbing 16 unused members.
+
+      **The `as WebSocketHandler<SocketData>` on the returned literal is
+      redundant.** Verified by removing it: the object is already
+      assignable, and drift still fails without it (a wrong `open`
+      parameter type gives `TS2352` plus `TS2339`; a deleted `message`
+      member gives `TS2352`). Left as written, but it is not what
+      provides the checking.
+
+      One caution for anyone revisiting: parameter *count* is not
+      checked in either direction. Dropping `code` from
+      `close: (ws, code)` compiles fine, since a function taking fewer
+      parameters is assignable to one taking more. Only wrong parameter
+      types and missing members are caught.
+
+      Original analysis follows, retained because it is still accurate.
+
       Lands with `index.ts`, since that is where `Bun.serve` is called.
       The names, confirmed against `bun-types@1.3.14`:
 
@@ -391,12 +468,21 @@ convert, so the real contract is not visible until then.
       `ResponseMessage`, and `Frame` was replaced by `AnyMessage`
       (`BaseMessage | ResponseMessage`), which is what `sendRaw` can
       return: an ack or a full response.
-- [ ] **Nothing pins the `Queue` values.** Mutating `Fifo: 'fifo'` to
-      `'fifoo'` fails zero tests, since every test reaches them through
-      the constant. `MessageType` fails 46 under the same treatment.
-      `Queue` is the union `'none' | 'fifo' | 'lifo'`, so a consumer may
-      pass a raw string and a value change would break them silently.
-      Best addressed alongside `index.test.js`.
+- [x] **Nothing pins the `Queue` values.** Fixed with a whole-object
+      `toStrictEqual` in `packages/client/src/index.test.ts`, following
+      the `StatusCode` precedent in `packages/server/src/utils.test.ts`.
+      Mutating `Fifo: 'fifo'` to `'fifoo'` went from zero failures to
+      one.
+
+      `Queue` was the only unpinned case. `MessageType` is unpinned
+      explicitly but exercised implicitly: the same mutation there fails
+      46 tests, because the value crosses the wire and both packages
+      must agree on it. `Queue` never leaves the client, so nothing
+      forced its value to be correct.
+
+      Why it mattered: `Queue` is the union `'none' | 'fifo' | 'lifo'`,
+      so a consumer may legitimately pass a raw string, and a value
+      change would have broken them with no test failing here.
 
 ### Source and unit tests
 

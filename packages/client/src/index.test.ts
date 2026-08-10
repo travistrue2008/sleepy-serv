@@ -307,6 +307,23 @@ afterEach(() => {
   globalThis.fetch = OriginalFetch
 })
 
+/*
+  Every other test reaches these through the constant, so the system stays
+  self-consistent under any value. They are public API though: `Queue` is
+  the union `'none' | 'fifo' | 'lifo'`, so a consumer may pass a raw
+  string, and changing one would break them silently.
+ */
+
+describe('Queue', () => {
+  test('when every member is compared against its literal value', () => {
+    expect(Queue).toStrictEqual({
+      None: 'none',
+      Fifo: 'fifo',
+      Lifo: 'lifo',
+    })
+  })
+})
+
 describe('SleepySocketClient', () => {
   describe('.connect()', () => {
     test('when "opts.queue" is invalid', async () => {

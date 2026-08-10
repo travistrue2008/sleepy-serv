@@ -55,6 +55,27 @@ TypeScript migration. Per-file progress lives in
   for the whole migration. Untouched `.js` files are parsed but never
   type-checked, so they keep running with zero errors.
 
+### `bun run typecheck` is the source of truth, not the editor
+
+- **The whole check is** `bun run typecheck` from the repo root: the root
+  config, then every workspace member's own script, which for the client
+  includes the portable gate. Seven `tsconfig*.json` files now exist with
+  deliberately different `include` sets, so "my editor is quiet" and
+  "the repo typechecks" are not the same statement.
+- **No `typescript.tsdk` is pinned** and the repo carries no `.vscode/`
+  directory, so an editor runs whatever TypeScript it bundles rather than
+  the workspace's `5.9.3`. Editor diagnostics disagreeing with the CLI is
+  therefore expected rather than surprising, and the CLI wins. Restarting
+  the TS server clears the common case, which is stale state after
+  concurrent edits.
+- **Prove a clean run is not a vacuous one.** With this many configs, a
+  file silently falling outside every `include` looks identical to a file
+  with no errors. Plant a deliberate type error in the file under
+  question, confirm `tsc` reports it, then revert. This is the same
+  discipline as the [`mock()`
+  rule](#a-bare-mock-types-as-any-so-pass-it-a-type-argument), applied to
+  configs rather than to assertions.
+
 ### The root E2E config typechecks the packages a second time, on purpose
 
 - **Setup:** `tsconfig.json` at the repo root covers `tests/**/*` with
@@ -343,6 +364,10 @@ TypeScript migration. Per-file progress lives in
 
 ### `SocketConnection` is structural, not Bun's `ServerWebSocket`
 
+Scope note: this covers the handler *parameters*. The object those
+handlers are returned in is typed the other way, deriving from Bun. See
+[the next section](#buildsocketserver-returns-buns-websockethandler-directly).
+
 - **Choice:** `socket.ts` declares its own three-member type
   (`data`, `send`, `close`) instead of importing `ServerWebSocket` from
   `bun`.
@@ -360,6 +385,83 @@ TypeScript migration. Per-file progress lives in
   `raw: string` would have compiled while still being wrong. `socket.ts`
   types `raw` as `string | Buffer` to match reality, and `String(raw)`
   makes explicit the coercion `JSON.parse` was already doing implicitly.
+
+### `buildSocketServer` returns Bun's `WebSocketHandler` directly
+
+- **Choice:** the hand-written `SocketServer` type is deleted, and
+  `buildSocketServer` returns `WebSocketHandler<SocketData>`.
+- **Why derive at all.** `SocketServer` restated Bun's three signatures
+  independently, so a change in `bun-types` would surface as a runtime
+  failure inside `Bun.serve` rather than a compile error. The public
+  contract is now Bun's own, so drift is a build break.
+- **The optionality is not uniform.** Confirmed in
+  `bun-types@1.3.14/serve.d.ts`, since this is the whole basis of the
+  cost below:
+
+  ```ts
+  message(ws, message): void | Promise<void>       // required
+  open?(ws): void | Promise<void>                  // optional
+  close?(ws, code, reason): void | Promise<void>   // optional
+  ```
+
+  A handler object may supply any subset, so only `message` is
+  guaranteed.
+- **Cost, measured rather than estimated: 32 `TS2722`** ("Cannot invoke
+  an object which is possibly 'undefined'"), all in `socket.test.ts`,
+  and the arithmetic confirms the cause exactly: 22 `server.open` calls
+  plus 10 `server.close` calls. The 11 `server.message` calls produce
+  none, because that member is required.
+- **The tests narrow once instead of asserting 32 times.**
+  `socket.test.ts` declares a local
+  `TestServer = Required<Pick<WebSocketHandler<SocketData>, 'open' |
+  'close' | 'message'>>` and a `buildTestServer` wrapper that casts. The
+  guarantee is real (the function always returns all three), so it is
+  stated in one place rather than as 32 `!` operators. Same principle as
+  `LooseHandler` and `SocketMock` in the same file. The wrapper takes
+  `...args: Parameters<typeof buildSocketServer>`, so it needs no
+  imports of its own and cannot drift from the real signature.
+- **A separate cost, orthogonal to the type choice.** Bun declares
+  `close(ws, code, reason)` with three *required* parameters, so 10 test
+  call sites gained a `''` reason. Verified orthogonal: dropping the
+  argument fails with `TS2554` regardless of which return type is used.
+  That is the tests becoming faithful to what Bun actually calls.
+- **The implementation still declares two parameters**
+  (`close (ws, code)`). A function accepting fewer parameters is
+  assignable to one accepting more, so this compiles, and it is not a
+  hole: the handler genuinely ignores `reason`.
+- **The `as WebSocketHandler<SocketData>` on the returned literal is
+  redundant.** Verified by removing it: the object is already assignable,
+  and both drift probes still fail without it (a wrong `open` parameter
+  type gives `TS2352` plus `TS2339`; a deleted `message` member gives
+  `TS2352`, since `message` is required). It is retained as written
+  rather than removed, but it is not what provides the checking.
+- **Naming wart to be aware of:** `buildSocketHandlers()` returns
+  `SocketEndpoint[]`, the HTTP handshake terminals, not WebSocket
+  handlers. `buildSocketServer()` is what returns the handler object.
+
+### Test doubles for wide interfaces: one cast at the factory
+
+- **Problem:** once the handlers are typed through
+  `ServerWebSocket<SocketData>` (20 members), the four-property object
+  literal returned by `socket.test.ts`'s `buildSocket` no longer
+  satisfies them, across 75 call sites.
+- **Choice:** a single `as unknown as SocketMock` inside the factory,
+  where `SocketMock` intersects `ServerWebSocket<SocketData>` with the
+  test-only surface: `send` and `close` re-narrowed to mocks, plus a
+  `welcome` accessor.
+- **Rationale:** the same trade-off as `LooseHandler`
+  [above](#the-request-hierarchy-and-why-middleware-is-not-generic).
+  Stubbing 16 unused members would be inert code proving nothing, while
+  the assertions that matter (`toHaveBeenCalledWith` on `send` and
+  `close`) stay fully typed because the intersection re-narrows exactly
+  those two.
+- **Type a field by what it holds, not by what it is named.** `welcome`
+  was first annotated `WelcomeMessage`, which took the file from 1 error
+  to 9: despite the name it holds *the first frame the handler sent*,
+  and most suites use it to read a `response` frame. It stays
+  `Record<string, unknown>`, with a local `welcomeToken()` helper at the
+  one site that reads `body.token`. Typing it precisely would require
+  renaming it first.
 
 ### `SocketData` is required-and-nullable, not optional
 
@@ -404,10 +506,20 @@ TypeScript migration. Per-file progress lives in
 - **The compiler cannot verify any of this.** `ws.data` is produced by
   `UpgradeData` and consumed as `SocketData`, with Bun's `upgrade` in
   between, so the two types are never structurally compared. Correctness
-  rests on the initialization, not on the declaration. That link becomes
-  checkable when the `WebSocketHandler<T>` work lands (see
-  [`.claude/FEATURE.md`](../../FEATURE.md)), which is the point of doing
-  the initialization now.
+  rests on the initialization, not on the declaration.
+- **This was expected to become checkable once the handlers derived from
+  `WebSocketHandler<T>`. It did not.** Verified after that change landed:
+  adding a required field to `SocketData` still produces **zero** errors.
+  Two independent reasons, either sufficient on its own. `UpgradeData`
+  declares `clientId?: string` alongside a `[key: string]: unknown` index
+  signature, so it accepts any shape; and the upgrade call goes through
+  `CreateSocketRequest`, whose `server.upgrade` is a hand-rolled
+  structural type rather than Bun's `Server<SocketData>`, so `SocketData`
+  never enters the comparison. Typing the *handlers* constrains what
+  comes out of `Bun.serve`, not what goes into `upgrade`.
+- **Closing it would mean typing the upgrade site**, replacing the local
+  `UpgradeContext` and `CreateSocketRequest.server` with Bun's `Server`.
+  Untaken so far, and tracked nowhere else, so it is recorded here.
 - **Cost:** 8 assertions in `socket.test.js` pin the upgrade context
   exactly, and all 8 had to gain the three fields. `toHaveBeenCalledWith`
   does distinguish a present-but-`undefined` key from an absent one, so

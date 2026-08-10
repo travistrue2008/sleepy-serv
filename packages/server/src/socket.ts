@@ -21,6 +21,7 @@ import {
   ServiceUnavailableError,
 } from './errors'
 
+import type { WebSocketHandler } from 'bun'
 import type { ValidateFunction } from 'ajv'
 
 import type {
@@ -84,12 +85,6 @@ export type SocketEndpoint = {
   method: HttpMethod
   path: string
   handler: (req: Request, res: unknown) => Response
-}
-
-export type SocketServer = {
-  open: (ws: SocketConnection) => void
-  close: (ws: SocketConnection, code: number) => void
-  message: (ws: SocketConnection, raw: string | Buffer) => Promise<void>
 }
 
 export type SocketCommands = {
@@ -418,7 +413,7 @@ export function buildSocketState (opts: AppOptions = {}): SocketState {
 export function buildSocketServer (
   routes: SocketRoute[],
   state: SocketState,
-): SocketServer {
+): WebSocketHandler<SocketData> {
   const {
     disconnectThreshold,
     heartbeatInterval,
@@ -536,7 +531,7 @@ export function buildSocketServer (
         ws.send(JSON.stringify(res))
       }
     },
-  }
+  } as WebSocketHandler<SocketData>
 }
 
 export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
