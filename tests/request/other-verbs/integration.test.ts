@@ -11,7 +11,8 @@ describe('REST', () => {
   ])('when making a %s request', async method => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const fn = req[method.toLowerCase()]
+    const verb = method.toLowerCase() as Lowercase<typeof method>
+    const fn = req[verb]
 
     console.log('method:', method)
     console.log('fn:', fn)
@@ -35,15 +36,16 @@ describe('WebSocket', () => {
   ])('when making a %s request', async method => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
-    const res = await client[method.toLowerCase()]('/resource')
+    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const verb = method.toLowerCase() as Lowercase<typeof method>
+    const res = await client[verb]('/resource')
 
     await client.close()
     await app.server.stop(true)
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: 200,
       timestamp: res.timestamp,

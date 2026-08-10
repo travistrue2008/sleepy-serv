@@ -2,8 +2,8 @@ import { describe, test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
 import SleepySocketClient, { Queue } from 'sleepy-socket'
 
-async function makeRequests (client) {
-  const results = []
+async function makeRequests (client: SleepySocketClient): Promise<number[]> {
+  const results: number[] = []
 
   await Promise.all([
     client.get('/', { query: { delay: 300 } }).then(() => results.push(1)),
@@ -18,7 +18,7 @@ describe('WebSocket', () => {
   test('when default "queue" is used', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
     const results = await makeRequests(client)
 
     await client.close()
@@ -31,7 +31,7 @@ describe('WebSocket', () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
 
-    const client = await SleepySocketClient.connect(host, app.server.port, {
+    const client = await SleepySocketClient.connect(host, app.server.port!, {
       queue: Queue.None,
     })
 
@@ -47,7 +47,7 @@ describe('WebSocket', () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
 
-    const client = await SleepySocketClient.connect(host, app.server.port, {
+    const client = await SleepySocketClient.connect(host, app.server.port!, {
       queue: Queue.Fifo,
     })
 
@@ -63,7 +63,7 @@ describe('WebSocket', () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
 
-    const client = await SleepySocketClient.connect(host, app.server.port, {
+    const client = await SleepySocketClient.connect(host, app.server.port!, {
       queue: Queue.Lifo,
     })
 
