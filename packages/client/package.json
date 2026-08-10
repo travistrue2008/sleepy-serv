@@ -23,6 +23,11 @@
     "websocket",
     "www"
   ],
-  "scripts": {},
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.portable.json"
+  },
   "dependencies": {}
 }

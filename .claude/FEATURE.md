@@ -333,16 +333,44 @@ convert, so the real contract is not visible until then.
 
 ## 3. `client` implementation and unit tests
 
-Starts with the client's own config work: `tsconfig.json` plus
-`tsconfig.portable.json`, the `engines` field, and the `dist` build
-wiring (which also flips `files` from `src` to `dist`).
+### Config work (precedes any source conversion)
+
+- [x] `packages/client/tsconfig.json` (`types: ["bun"]`, DOM lib, all of
+      `src/**/*` including tests)
+- [x] `packages/client/tsconfig.portable.json` (the portability gate:
+      `types: []`, tests excluded). Verified load-bearing by mutation:
+      `node:crypto` → TS2307, `Bun.version` → TS2868, `process.env` →
+      TS2591, all three clean under `tsconfig.json`; and the `exclude`
+      proven by planting a type error in a `*.test.ts`.
+- [x] `engines: { "node": ">=22" }` on the client. Global `WebSocket` is
+      the binding constraint; the package stays dependency-free.
+- [x] `typecheck` script on the client, running both configs.
+- [x] Root `typecheck` script (`bun run --filter '*' typecheck`).
+      Confirmed to propagate a nonzero exit code.
+- [ ] `dist` build wiring: `tsconfig.build.json`, a `build` script,
+      `dist/` in `.gitignore`, `files: ["dist"]`, and conditional
+      `exports`. **Deliberately deferred to the end of group 3**, not
+      skipped. Flipping `exports` to `./dist/index.js` while the source
+      is still `.js` would break all 31 root E2E files, which resolve
+      `sleepy-socket` by package name. When `index.js` converts,
+      `exports` first moves to `./src/index.ts` (mirroring what the
+      server did) to keep the workspace running.
+      **Open question for that step:** the client cannot ship `.ts`
+      source the way the server does, so if `files` becomes `["dist"]`
+      and `exports.default` points into `dist`, the E2E suites need a
+      build before `bun test`. Either accept that, or keep a `bun`
+      condition on `./src/index.ts` and ship `src` alongside `dist`.
+      That is a real tradeoff and needs a decision, not a default.
+
+### Source and unit tests
 
 - [ ] `packages/client/src/utils.js`
 - [ ] `packages/client/src/utils.test.js`
 - [ ] `packages/client/src/messages.js` (`TYPES` becomes `MessageType`,
       a public breaking change, atomic across `index.js`, both test
-      files, and the 22 root E2E files in group 4; needs a CHANGELOG
-      entry, a version bump, and updates to
+      files, and the **25** root E2E files in group 4 that import
+      `TYPES` by package name, 64 occurrences under `tests/`; needs a
+      CHANGELOG entry, a version bump, and updates to
       `packages/client/README.md:267-269` and
       `.claude/kbase/architecture/websocket.md:5,7,112`)
 - [ ] `packages/client/src/messages.test.js`

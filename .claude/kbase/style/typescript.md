@@ -55,6 +55,37 @@ TypeScript migration. Per-file progress lives in
   for the whole migration. Untouched `.js` files are parsed but never
   type-checked, so they keep running with zero errors.
 
+### The client ships two configs, the server one
+
+- **Problem:** `sleepy-socket` must run in a browser, in Node, and in
+  Bun, but its own tests import `bun:test`. A single config with
+  `types: ["bun"]` makes Bun and Node globals visible to *source* files,
+  so an accidental `Bun.serve` or `process.env` would typecheck clean
+  and only fail in a browser consumer's bundle.
+- **Choice:** Two configs in `packages/client`.
+  - `tsconfig.json` includes all of `src/**/*` with `types: ["bun"]`.
+    This is what editors pick up, so test files typecheck normally.
+  - `tsconfig.portable.json` is the enforcement gate: same `lib`, but
+    `types: []` and `exclude: ["src/**/*.test.ts"]`.
+- **Why `types: []` is the mechanism.** It stops `@types/node` and
+  `@types/bun` from loading, so `node:*` specifiers fail to resolve and
+  `Bun`/`process` become unresolved names. Portability becomes a compile
+  error rather than a runtime surprise.
+- **`lib: ["ESNext", "DOM", "DOM.Iterable"]` is what makes this
+  workable.** The client's four globals (`WebSocket`, `fetch`,
+  `Headers`, `crypto.randomUUID`) all come from `DOM`, so the portable
+  config needs no `@types` package at all. Verified: `DOM` plus
+  `types: ["bun"]` coexist without duplicate-global conflicts, so the
+  two configs differ only in `types` and `exclude`.
+- **Verified load-bearing**, not assumed. Under the portable config,
+  `node:crypto` fails with TS2307, `Bun.version` with TS2868, and
+  `process.env` with TS2591; all three pass under `tsconfig.json`. The
+  `exclude` was separately proven by planting a type error in a
+  `*.test.ts` file and confirming only `tsconfig.json` reports it.
+- The server needs no equivalent, because `Bun.serve` structurally
+  guarantees every consumer runs Bun. Portability is not a goal there,
+  so there is nothing to gate.
+
 ### `types/bun-test.d.ts`
 
 - **Problem:** `bun-types@1.3.14` declares `toHaveBeenCalled`,
