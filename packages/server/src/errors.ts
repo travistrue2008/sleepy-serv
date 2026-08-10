@@ -1,13 +1,22 @@
+import { StatusCode } from './status'
+
+import type { FormattedError } from './utils'
+
+export type ErrorOutput =
+  | { message: string }
+  | FormattedError[]
+  | null
+
 export class RequestError extends Error {
-  static get status () {
+  static get status (): StatusCode {
     throw new Error('Unimplemented')
   }
 
-  get output () {
+  get output (): ErrorOutput {
     return this.message ? { message: this.message } : null
   }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'RequestError'
@@ -17,9 +26,11 @@ export class RequestError extends Error {
 // 4xx - Client Errors
 
 export class BadRequestError extends RequestError {
-  static get status () { return 400 }
+  static get status (): StatusCode {
+    return StatusCode.BadRequest
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'BadRequestError'
@@ -27,9 +38,11 @@ export class BadRequestError extends RequestError {
 }
 
 export class UnauthorizedError extends RequestError {
-  static get status () { return 401 }
+  static get status (): StatusCode {
+    return StatusCode.Unauthorized
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'UnauthorizedError'
@@ -37,9 +50,11 @@ export class UnauthorizedError extends RequestError {
 }
 
 export class PaymentRequiredError extends RequestError {
-  static get status () { return 402 }
+  static get status (): StatusCode {
+    return StatusCode.PaymentRequired
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'PaymentRequiredError'
@@ -47,9 +62,11 @@ export class PaymentRequiredError extends RequestError {
 }
 
 export class ForbiddenError extends RequestError {
-  static get status () { return 403 }
+  static get status (): StatusCode {
+    return StatusCode.Forbidden
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'ForbiddenError'
@@ -57,7 +74,9 @@ export class ForbiddenError extends RequestError {
 }
 
 export class NotFoundError extends RequestError {
-  static get status () { return 404 }
+  static get status (): StatusCode {
+    return StatusCode.NotFound
+  }
 
   constructor () {
     super('')
@@ -67,7 +86,9 @@ export class NotFoundError extends RequestError {
 }
 
 export class MethodNotAllowedError extends RequestError {
-  static get status () { return 405 }
+  static get status (): StatusCode {
+    return StatusCode.MethodNotAllowed
+  }
 
   constructor () {
     super('')
@@ -77,9 +98,11 @@ export class MethodNotAllowedError extends RequestError {
 }
 
 export class NotAcceptableError extends RequestError {
-  static get status () { return 406 }
+  static get status (): StatusCode {
+    return StatusCode.NotAcceptable
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'NotAcceptableError'
@@ -87,9 +110,11 @@ export class NotAcceptableError extends RequestError {
 }
 
 export class ProxyAuthenticationRequiredError extends RequestError {
-  static get status () { return 407 }
+  static get status (): StatusCode {
+    return StatusCode.ProxyAuthenticationRequired
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'ProxyAuthenticationRequiredError'
@@ -97,9 +122,11 @@ export class ProxyAuthenticationRequiredError extends RequestError {
 }
 
 export class RequestTimeoutError extends RequestError {
-  static get status () { return 408 }
+  static get status (): StatusCode {
+    return StatusCode.RequestTimeout
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'RequestTimeoutError'
@@ -107,9 +134,11 @@ export class RequestTimeoutError extends RequestError {
 }
 
 export class ConflictError extends RequestError {
-  static get status () { return 409 }
+  static get status (): StatusCode {
+    return StatusCode.Conflict
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'ConflictError'
@@ -117,9 +146,11 @@ export class ConflictError extends RequestError {
 }
 
 export class GoneError extends RequestError {
-  static get status () { return 410 }
+  static get status (): StatusCode {
+    return StatusCode.Gone
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'GoneError'
@@ -127,9 +158,11 @@ export class GoneError extends RequestError {
 }
 
 export class LengthRequiredError extends RequestError {
-  static get status () { return 411 }
+  static get status (): StatusCode {
+    return StatusCode.LengthRequired
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'LengthRequiredError'
@@ -137,9 +170,11 @@ export class LengthRequiredError extends RequestError {
 }
 
 export class PreconditionFailedError extends RequestError {
-  static get status () { return 412 }
+  static get status (): StatusCode {
+    return StatusCode.PreconditionFailed
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'PreconditionFailedError'
@@ -147,9 +182,11 @@ export class PreconditionFailedError extends RequestError {
 }
 
 export class PayloadTooLargeError extends RequestError {
-  static get status () { return 413 }
+  static get status (): StatusCode {
+    return StatusCode.PayloadTooLarge
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'PayloadTooLargeError'
@@ -157,9 +194,11 @@ export class PayloadTooLargeError extends RequestError {
 }
 
 export class UriTooLongError extends RequestError {
-  static get status () { return 414 }
+  static get status (): StatusCode {
+    return StatusCode.UriTooLong
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'UriTooLongError'
@@ -167,9 +206,11 @@ export class UriTooLongError extends RequestError {
 }
 
 export class UnsupportedMediaTypeError extends RequestError {
-  static get status () { return 415 }
+  static get status (): StatusCode {
+    return StatusCode.UnsupportedMediaType
+  }
 
-  constructor (subject) {
+  constructor (subject: string) {
     super(`Unsupported ${subject}`)
 
     this.name = 'UnsupportedMediaTypeError'
@@ -177,9 +218,11 @@ export class UnsupportedMediaTypeError extends RequestError {
 }
 
 export class RangeNotSatisfiableError extends RequestError {
-  static get status () { return 416 }
+  static get status (): StatusCode {
+    return StatusCode.RangeNotSatisfiable
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'RangeNotSatisfiableError'
@@ -187,9 +230,11 @@ export class RangeNotSatisfiableError extends RequestError {
 }
 
 export class ExpectationFailedError extends RequestError {
-  static get status () { return 417 }
+  static get status (): StatusCode {
+    return StatusCode.ExpectationFailed
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'ExpectationFailedError'
@@ -197,9 +242,11 @@ export class ExpectationFailedError extends RequestError {
 }
 
 export class ImATeapotError extends RequestError {
-  static get status () { return 418 }
+  static get status (): StatusCode {
+    return StatusCode.ImATeapot
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'ImATeapotError'
@@ -207,9 +254,11 @@ export class ImATeapotError extends RequestError {
 }
 
 export class MisdirectedRequestError extends RequestError {
-  static get status () { return 421 }
+  static get status (): StatusCode {
+    return StatusCode.MisdirectedRequest
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'MisdirectedRequestError'
@@ -217,13 +266,15 @@ export class MisdirectedRequestError extends RequestError {
 }
 
 export class UnprocessableContentError extends RequestError {
-  static get status () { return 422 }
+  static get status (): StatusCode {
+    return StatusCode.UnprocessableContent
+  }
 
-  get output () {
+  get output (): ErrorOutput {
     return JSON.parse(this.message)
   }
 
-  constructor (errors) {
+  constructor (errors: FormattedError[]) {
     super(JSON.stringify(errors))
 
     this.name = 'UnprocessableContentError'
@@ -231,9 +282,11 @@ export class UnprocessableContentError extends RequestError {
 }
 
 export class LockedError extends RequestError {
-  static get status () { return 423 }
+  static get status (): StatusCode {
+    return StatusCode.Locked
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'LockedError'
@@ -241,9 +294,11 @@ export class LockedError extends RequestError {
 }
 
 export class FailedDependencyError extends RequestError {
-  static get status () { return 424 }
+  static get status (): StatusCode {
+    return StatusCode.FailedDependency
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'FailedDependencyError'
@@ -251,9 +306,11 @@ export class FailedDependencyError extends RequestError {
 }
 
 export class TooEarlyError extends RequestError {
-  static get status () { return 425 }
+  static get status (): StatusCode {
+    return StatusCode.TooEarly
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'TooEarlyError'
@@ -261,9 +318,11 @@ export class TooEarlyError extends RequestError {
 }
 
 export class UpgradeRequiredError extends RequestError {
-  static get status () { return 426 }
+  static get status (): StatusCode {
+    return StatusCode.UpgradeRequired
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'UpgradeRequiredError'
@@ -271,9 +330,11 @@ export class UpgradeRequiredError extends RequestError {
 }
 
 export class PreconditionRequiredError extends RequestError {
-  static get status () { return 428 }
+  static get status (): StatusCode {
+    return StatusCode.PreconditionRequired
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'PreconditionRequiredError'
@@ -281,9 +342,11 @@ export class PreconditionRequiredError extends RequestError {
 }
 
 export class TooManyRequestsError extends RequestError {
-  static get status () { return 429 }
+  static get status (): StatusCode {
+    return StatusCode.TooManyRequests
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'TooManyRequestsError'
@@ -291,9 +354,11 @@ export class TooManyRequestsError extends RequestError {
 }
 
 export class RequestHeaderFieldsTooLargeError extends RequestError {
-  static get status () { return 431 }
+  static get status (): StatusCode {
+    return StatusCode.RequestHeaderFieldsTooLarge
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'RequestHeaderFieldsTooLargeError'
@@ -301,9 +366,11 @@ export class RequestHeaderFieldsTooLargeError extends RequestError {
 }
 
 export class UnavailableForLegalReasonsError extends RequestError {
-  static get status () { return 451 }
+  static get status (): StatusCode {
+    return StatusCode.UnavailableForLegalReasons
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'UnavailableForLegalReasonsError'
@@ -313,9 +380,13 @@ export class UnavailableForLegalReasonsError extends RequestError {
 // 5xx - Server Errors
 
 export class InternalServerError extends RequestError {
-  static get status () { return 500 }
+  static get status (): StatusCode {
+    return StatusCode.InternalServerError
+  }
 
-  constructor (message, ctx) {
+  ctx: unknown
+
+  constructor (message?: string, ctx?: unknown) {
     super(message)
 
     this.name = 'InternalServerError'
@@ -324,7 +395,9 @@ export class InternalServerError extends RequestError {
 }
 
 export class NotImplementedError extends RequestError {
-  static get status () { return 501 }
+  static get status (): StatusCode {
+    return StatusCode.NotImplemented
+  }
 
   constructor () {
     super('')
@@ -334,9 +407,11 @@ export class NotImplementedError extends RequestError {
 }
 
 export class BadGatewayError extends RequestError {
-  static get status () { return 502 }
+  static get status (): StatusCode {
+    return StatusCode.BadGateway
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'BadGatewayError'
@@ -344,9 +419,11 @@ export class BadGatewayError extends RequestError {
 }
 
 export class ServiceUnavailableError extends RequestError {
-  static get status () { return 503 }
+  static get status (): StatusCode {
+    return StatusCode.ServiceUnavailable
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'ServiceUnavailableError'
@@ -354,7 +431,9 @@ export class ServiceUnavailableError extends RequestError {
 }
 
 export class GatewayTimeoutError extends RequestError {
-  static get status () { return 504 }
+  static get status (): StatusCode {
+    return StatusCode.GatewayTimeout
+  }
 
   constructor () {
     super('')
@@ -364,9 +443,11 @@ export class GatewayTimeoutError extends RequestError {
 }
 
 export class HTTPVersionNotSupportedError extends RequestError {
-  static get status () { return 505 }
+  static get status (): StatusCode {
+    return StatusCode.HTTPVersionNotSupported
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'HTTPVersionNotSupportedError'
@@ -374,9 +455,11 @@ export class HTTPVersionNotSupportedError extends RequestError {
 }
 
 export class VariantAlsoNegotiatesError extends RequestError {
-  static get status () { return 506 }
+  static get status (): StatusCode {
+    return StatusCode.VariantAlsoNegotiates
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'VariantAlsoNegotiatesError'
@@ -384,9 +467,11 @@ export class VariantAlsoNegotiatesError extends RequestError {
 }
 
 export class InsufficientStorageError extends RequestError {
-  static get status () { return 507 }
+  static get status (): StatusCode {
+    return StatusCode.InsufficientStorage
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'InsufficientStorageError'
@@ -394,9 +479,11 @@ export class InsufficientStorageError extends RequestError {
 }
 
 export class LoopDetectedError extends RequestError {
-  static get status () { return 508 }
+  static get status (): StatusCode {
+    return StatusCode.LoopDetected
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'LoopDetectedError'
@@ -404,9 +491,11 @@ export class LoopDetectedError extends RequestError {
 }
 
 export class NotExtendedError extends RequestError {
-  static get status () { return 510 }
+  static get status (): StatusCode {
+    return StatusCode.NotExtended
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'NotExtendedError'
@@ -414,9 +503,11 @@ export class NotExtendedError extends RequestError {
 }
 
 export class NetworkAuthenticationRequiredError extends RequestError {
-  static get status () { return 511 }
+  static get status (): StatusCode {
+    return StatusCode.NetworkAuthenticationRequired
+  }
 
-  constructor (message) {
+  constructor (message?: string) {
     super(message)
 
     this.name = 'NetworkAuthenticationRequiredError'

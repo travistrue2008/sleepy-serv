@@ -73,7 +73,7 @@ guessing early.
 - [x] ~~`packages/server/src/meta.test.js`~~ deleted with it (22 tests).
 - [x] `packages/server/src/status.ts` (new module, not a conversion)
 - [x] `packages/server/src/status.test.ts` (new, pins codes to literals)
-- [ ] `packages/server/src/errors.js` (getters return `StatusCode`)
+- [x] `packages/server/src/errors.js` (getters return `StatusCode`)
 - [ ] `packages/server/src/errors.test.js`
 - [ ] `packages/server/src/middleware.js`
 - [ ] `packages/server/src/middleware.test.js`
