@@ -980,6 +980,9 @@ describe('buildSocketHandlers()', () => {
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
           clientId: UUIDs[0],
+          superseded: false,
+          reaped: false,
+          reaperHandle: null,
         },
       })
     })
@@ -1023,6 +1026,9 @@ describe('buildSocketHandlers()', () => {
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
           clientId: UUIDs[0],
+          superseded: false,
+          reaped: false,
+          reaperHandle: null,
         },
       })
     })
@@ -1046,6 +1052,9 @@ describe('buildSocketHandlers()', () => {
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
           clientId: UUIDs[0],
+          superseded: false,
+          reaped: false,
+          reaperHandle: null,
         },
       })
 
@@ -1091,6 +1100,9 @@ describe('buildSocketHandlers()', () => {
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
           clientId: UUIDs[0],
+          superseded: false,
+          reaped: false,
+          reaperHandle: null,
         },
       })
     })
@@ -1115,6 +1127,9 @@ describe('buildSocketHandlers()', () => {
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
           clientId: UUIDs[0],
+          superseded: false,
+          reaped: false,
+          reaperHandle: null,
         },
       })
     })
@@ -1143,6 +1158,9 @@ describe('buildSocketHandlers()', () => {
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
           clientId: UUIDs[0],
+          superseded: false,
+          reaped: false,
+          reaperHandle: null,
         },
       })
     })
@@ -1172,6 +1190,9 @@ describe('buildSocketHandlers()', () => {
         data: {
           clientId: UUIDs[0],
           ok: true,
+          superseded: false,
+          reaped: false,
+          reaperHandle: null,
         },
       })
 
@@ -1203,6 +1224,9 @@ describe('buildSocketHandlers()', () => {
         ...middlewareRes,
         data: {
           clientId: UUIDs[0],
+          superseded: false,
+          reaped: false,
+          reaperHandle: null,
         },
       })
 
@@ -1246,7 +1270,7 @@ describe('buildSocketHandlers()', () => {
 
       const fn = () => createTicket({}, {})
 
-      expect(fn).toThrow(new ServiceUnavailableError())
+      expect(fn).toThrow(new ServiceUnavailableError('Unable to issue ticket'))
     })
 
     test('when called, it mints a fresh clientId and ticket', async () => {
@@ -1410,7 +1434,7 @@ describe('buildSocketHandlers()', () => {
         }),
       }, {})
 
-      expect(fn).toThrow(new UnauthorizedError())
+      expect(fn).toThrow(new UnauthorizedError('Invalid token'))
     })
 
     test('when the socket is closed unexpectedly (expired)', () => {

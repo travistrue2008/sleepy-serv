@@ -97,6 +97,18 @@ export type Middleware<TReq = unknown> = (
   next: MiddlewareNext | null,
 ) => unknown
 
+export type SocketOptions = {
+  disconnectThreshold?: number
+  heartbeatInterval?: number
+  maxTickets?: number
+  reclaimTtl?: number
+  ticketTtl?: number
+}
+
+export type AppOptions = {
+  ws?: SocketOptions
+}
+
 export function toSegments (pathString: string): string[] {
   const [pathname] = String(pathString).split('?')
   const segments = pathname.split('/')

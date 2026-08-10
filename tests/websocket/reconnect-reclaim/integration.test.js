@@ -39,5 +39,8 @@ test('when the token is wrong', async () => {
   await app.server.stop(true)
 
   expect(res.status).toBe(UnauthorizedError.status)
-  expect(res.body).toBe(null)
+
+  expect(res.body).toStrictEqual({
+    message: 'Invalid token',
+  })
 })

@@ -95,8 +95,9 @@ TypeScript migration. Per-file progress lives in
 - **Rationale:** `req` is not a `Request`. The two callers build
   *different* envelopes: `buildBunRequest` (`index.js`) produces
   `{method, route, headers, params, query, raw, server, json}`, while
-  `buildRequest` (`socket.js`) produces
-  `{id, clientId, method, route, headers, params, query, json}`.
+  `buildRequest` (`socket.ts`) produces
+  `{id, clientId, method, route, headers, params, query, json}`, now
+  named `WebSocketRequest`.
   `utils` only forwards the value and never inspects it, so a generic
   states that honestly and lets each caller supply its own shape.
 - **Revisit:** After `socket.ts` and `index.ts` convert. The common core
@@ -121,7 +122,7 @@ TypeScript migration. Per-file progress lives in
 - **Choice:** `formatError`'s input is `Partial<ErrorObject>`, imported
   type-only from `ajv`.
 - **Rationale:** All four call sites pass Ajv validator output
-  (`middleware.js`, `messages.js`, and `socket.js` twice), so the input
+  (`middleware.ts`, `messages.ts`, and `socket.ts` twice), so the input
   really is an Ajv error. `Partial<>` is what allows the unit tests to
   pass minimal `{instancePath, message}` literals, since a bare
   `ErrorObject` also requires `keyword`, `schemaPath`, and `params`.
@@ -185,6 +186,144 @@ TypeScript migration. Per-file progress lives in
   should never actually appear, since Ajv's `messages` option defaults
   to `true` and every configured validator populates the field, so the
   fallback is purely defensive.
+
+### Validators return their validated value, they do not assert
+
+- **Choice:** `validateMessage` returns `IncomingMessage` and
+  `validateSchema` returns `T`, rather than carrying an
+  `asserts x is T` signature.
+- **Rationale:** Both forms are equally unchecked, since TypeScript never
+  verifies an assertion body. The return form is better here for a
+  concrete reason: an assertion permanently narrows the *caller's*
+  variable, and `socket.ts` needs the un-narrowed value afterwards. Its
+  `message` handler validates inside a `try`, and the `catch` builds an
+  error reply out of the **raw** frame, which by definition failed
+  validation. Returning a second, narrowed binding keeps both views
+  available.
+- **Secondary benefit:** a returned value has consumers the compiler
+  checks, so the narrowing has to be right. An assertion whose narrowing
+  nobody uses is inert.
+- **Where the unchecked step lives:** exactly one `as` per validator,
+  immediately after the Ajv call that justifies it. `validateSchema`
+  needs its own for a second reason: it validates a *payload* (a copy
+  with `headers` flattened to a plain object, because Ajv cannot
+  enumerate a `Headers` instance) but returns the *original* request,
+  whose `headers` is still a `Headers`. The two differ by design, so the
+  validator's type parameter cannot flow through automatically.
+- **Tying schema to type:** `ajv.compile<CreateSocketRequest>({...})`
+  puts the shape next to the schema that enforces it, and
+  `validateSchema` infers `T` from the validator instead of taking it at
+  the call site.
+
+### `SocketConnection` is structural, not Bun's `ServerWebSocket`
+
+- **Choice:** `socket.ts` declares its own three-member type
+  (`data`, `send`, `close`) instead of importing `ServerWebSocket` from
+  `bun`.
+- **Rationale:** The module uses three members out of a large interface.
+  Naming only those keeps `buildSocketServer` testable with a plain
+  object literal, which is how `socket.test.js` already drives it.
+- **Verified, not assumed:** `ServerWebSocket<SocketData>` is assignable
+  to `SocketConnection` (`send` returning `number` satisfies a `unknown`
+  return), and the object `buildSocketServer` returns is assignable to
+  `WebSocketHandler<SocketData>`, which is what `Bun.serve` needs. Both
+  were confirmed against `bun-types@1.3.14` before committing to the
+  shape.
+- **Caveat:** Bun declares `message(ws, message: string | Buffer)` with
+  method shorthand, so its parameters are bivariant and a narrower
+  `raw: string` would have compiled while still being wrong. `socket.ts`
+  types `raw` as `string | Buffer` to match reality, and `String(raw)`
+  makes explicit the coercion `JSON.parse` was already doing implicitly.
+
+### `SocketData` is required-and-nullable, not optional
+
+- **Choice:** `superseded: boolean`, `reaped: boolean`, and
+  `reaperHandle: ReturnType<typeof setTimeout> | null`, rather than
+  the `?` optional form all three started with.
+- **The type change alone would have been a lie.** These fields were
+  never initialized. They came into existence only when `armReaper` ran
+  or a socket was superseded or reaped, so a socket that had just opened
+  genuinely lacked them. Dropping `?` without touching the runtime would
+  have declared `boolean` for a value that was `undefined`. The
+  `if (ws.data.superseded)` checks would still work, since `undefined` is
+  falsy, which is exactly what makes the lie survivable and therefore
+  worth avoiding.
+- **So the substantive change is the initialization**, not the
+  annotation. The `GET /ws` terminal now seeds all three on `ctx.data`
+  before calling `server.upgrade`, which is the single place `ws.data` is
+  constructed.
+- **Why `reaperHandle` is `| null` rather than optional.** There is no
+  meaningful initial timer. Required-and-nullable says the key is always
+  present but may hold nothing, which is the true shape; optional would
+  say the key may be missing, which is no longer true. `null` over
+  `undefined` matches the house convention for deliberate absence
+  (`MiddlewareNext | null`, `ErrorOutput`, and the client's
+  `#livenessTimer` / `#heartbeatTimer` / `#reconnectTimer`).
+- **The guard is what makes `null` viable.** Both `clearTimeout`
+  overloads accept `string | number | Timeout | undefined` and reject
+  `null` (`TS2769`), even though `clearTimeout(null)` is a runtime no-op
+  exactly like `clearTimeout(undefined)`. Without a guard, `null` would
+  cost a `?? undefined` at each call site, which is pure compiler
+  appeasement. Wrapping the call instead states the intent directly and
+  narrows the type as a side effect:
+
+  ```ts
+  if (ws.data.reaperHandle) {
+    clearTimeout(ws.data.reaperHandle)
+  }
+  ```
+
+  Expect the same `TS2769` when the client converts, where three timer
+  fields are already initialized to `null`. The same guard resolves it.
+- **The compiler cannot verify any of this.** `ws.data` is produced by
+  `UpgradeData` and consumed as `SocketData`, with Bun's `upgrade` in
+  between, so the two types are never structurally compared. Correctness
+  rests on the initialization, not on the declaration. That link becomes
+  checkable when the `WebSocketHandler<T>` work lands (see
+  [`.claude/FEATURE.md`](../../FEATURE.md)), which is the point of doing
+  the initialization now.
+- **Cost:** 8 assertions in `socket.test.js` pin the upgrade context
+  exactly, and all 8 had to gain the three fields. `toHaveBeenCalledWith`
+  does distinguish a present-but-`undefined` key from an absent one, so
+  `reaperHandle: null` had to be spelled out in each.
+
+### Reading a static member off a caught error
+
+- **Choice:** `err.constructor as typeof RequestError` inside an
+  `err instanceof RequestError` guard.
+- **Rationale:** Status lives on the *class*, not the instance, and
+  `Error.prototype.constructor` is typed `Function`, which has no
+  `status`. The `instanceof` guard establishes the fact at runtime; the
+  cast is only how the static side is reached. Replacing
+  `err.constructor.status ?? InternalServerError.status` with the guard
+  also removes a `??` that could never fire, since every `RequestError`
+  subclass declares `status` and everything else fails the guard.
+
+### A missing message is a gap at the throw site, not an optional param
+
+- **Choice:** `message` is required on all 34 single-message error
+  classes. No class takes a defaulted `message = ''`. Four classes
+  (`NotFoundError`, `MethodNotAllowedError`, `NotImplementedError`,
+  `GatewayTimeoutError`) take no message parameter at all, which is a
+  deliberate statement that those responses carry no body.
+- **How this got settled.** Converting `socket.ts` surfaced two bare
+  throw sites that no longer compiled once `message` was required:
+  `ServiceUnavailableError()` on the ticket-pool cap and
+  `UnauthorizedError()` on a reclaim token mismatch. Both briefly took
+  `message: string = ''` because that was the mechanical fix. Both then
+  had it removed, because the real defect was the throw site: neither
+  error had ever explained itself. They now throw
+  `'Unable to issue ticket'` and `'Invalid token'`.
+- **The general rule:** default a parameter only where both forms are
+  genuinely meaningful. Defaulting to satisfy the compiler preserves the
+  omission instead of fixing it, and it converts a loud failure into a
+  silent empty response body.
+- **Consequence to expect:** giving a previously-bare error a message
+  changes the wire format, since `output` returns `{ message }` when a
+  message is set and `null` otherwise. Both changes flipped their status
+  responses from an empty body to JSON, which broke integration
+  assertions that had pinned `res.body` to `null`. That is the change
+  being visible, not a regression.
 
 ## References
 

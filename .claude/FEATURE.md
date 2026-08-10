@@ -63,10 +63,21 @@ convert, so the real contract is not visible until then.
       `buildEndpointRequest` at `index.js:71`.
 
       `WebSocketRequest` adds `id` and `clientId`. Built by
-      `buildRequest` at `socket.js:208`. (These two fields were read off
+      `buildRequest` in `socket.ts`. (These two fields were read off
       the current implementation; the spec handed over left the
       WebSocket-specific list blank, so confirm they are the intended
-      set.)
+      set.) It now exists as a concrete exported type in `socket.ts`,
+      declared from what `buildRequest` actually returns, so this step is
+      reduced to factoring out the shared `BaseRequest` core once
+      `index.ts` reveals the endpoint side.
+
+      The union is the point:
+
+      ```ts
+      type Request = EndpointRequest | WebSocketRequest
+      ```
+
+      and every chain entry then takes `req: Request`.
 
       Deliberately *not* `BunRequest`: the framework needs less than Bun
       provides and also attaches fields Bun does not have.
@@ -76,13 +87,39 @@ convert, so the real contract is not visible until then.
       touch (`headers`, `params`, `query`, `json`), and it subsumes the
       `TReq` item below.
 
+      **It also replaces `Record<string, unknown>` on
+      `SocketEndpoint.handler`.** That stand-in exists because the
+      handshake terminals genuinely receive either envelope: their
+      `handler` is pushed into a normal route chain (`index.js:238` and
+      `:254`), and chains run from two places, `index.js:274` with
+      `buildEndpointRequest` output and `socket.ts:533` with
+      `buildRequest` output. The two Ajv guards in `socket.ts` are doing
+      union discrimination by hand: `CreateSocketRequest` requires
+      `server` and `raw`, which only the endpoint envelope has, and
+      `validateNotMessage` rejects anything carrying `clientId`, which
+      only the WebSocket envelope has. Once `Request` exists, those
+      become a real discriminated union and the `obj as T` cast inside
+      `validateSchema` narrows instead of asserting.
+
+      **Confirm the name before adopting it.** `Request` is a global
+      (`lib.dom` / Bun), and a module-level `type Request` shadows it:
+      verified that `new Request('http://x')` stops resolving to the
+      global once the alias is declared, with `globalThis.Request` left
+      as the escape hatch. No server module currently references the
+      bare global type, so the shadowing costs nothing internally. The
+      open question is the public surface, since `index.ts` re-exports
+      the API and a consumer writing `import { Request } from
+      'sleepy-serv'` would shadow the global in their own file. Either
+      accept that or pick a prefixed name.
+
 - [ ] **Tighten `TReq` in `utils.ts`.** `executeMiddlewareChain` is
       currently generic over an unconstrained `TReq` because `utils` only
       forwards the request and never inspects it. The two callers build
       different shapes: `index.js:71` (`buildBunRequest`) produces
       `{method, route, headers, params, query, raw, server, json}`, while
-      `socket.js:208` (`buildRequest`) produces
-      `{id, clientId, method, route, headers, params, query, json}`.
+      `socket.ts` (`buildRequest`) produces
+      `{id, clientId, method, route, headers, params, query, json}`,
+      now named `WebSocketRequest`.
       The common core is `method`, `route`, `headers`, `params`, `query`,
       `json`. Once `socket.ts` and `index.ts` are converted (last two in
       group 1), that core can become a named base type with the generic
@@ -145,20 +182,101 @@ convert, so the real contract is not visible until then.
       the numbers are unverified; leaving it undecided is the only bad
       option.
 
-- [ ] **Revisit error message intent.** All `message` constructor params
-      are required, for parity with the original JavaScript rather than
-      as a designed contract. Four sites construct without one and will
-      fail to compile when `socket.js` converts: `socket.js:402`
-      (`ServiceUnavailableError`), `socket.js:502` (`UnauthorizedError`),
-      and the matching assertions at `socket.test.js:1249` and `:1413`.
-      At that point decide per class: either those throw sites should
-      carry a message, or 401 and 503 belong in the no-message group with
-      `NotFoundError`, `MethodNotAllowedError`, `NotImplementedError`,
-      and `GatewayTimeoutError`, whose empty message makes `output` null
-      so no response body is emitted. Also worth settling then: whether
-      `UnsupportedMediaTypeError(subject)` and
+- [x] **Revisit error message intent.** Settled the same way for both
+      classes the `socket.ts` conversion forced: `message` stays
+      **required**, and the two bare throw sites were treated as the
+      defect rather than as evidence the param should be optional.
+
+      - `ServiceUnavailableError` on the ticket-pool cap in `bindTicket`
+        now throws `'Unable to issue ticket'`.
+      - `UnauthorizedError` on a reclaim token mismatch now throws
+        `'Invalid token'`, matching the wording `tests/auth/auth.js:46`
+        already uses for the same condition.
+
+      Both are deliberate **behaviour changes**, and the only ones in the
+      conversion. `output` returns `{ message }` when a message is set
+      and `null` otherwise, so each response flipped from an empty body
+      to JSON with a `content-type`. Tests updated accordingly:
+      `socket.test.js` for the 503, and two integration suites that had
+      pinned the 401 body to `null`
+      (`tests/websocket/reconnect-reclaim` and
+      `packages/server/tests/errors/request/ws-endpoints`).
+
+      Still open: whether `UnsupportedMediaTypeError(subject)` and
       `InternalServerError(message, ctx)` keep their bespoke signatures,
       and whether `ctx` (written, never read) is vestigial.
+
+- [ ] **Adopt Bun's own WebSocket types for `buildSocketServer`.**
+      Lands with `index.ts`, since that is where `Bun.serve` is called.
+      The names, confirmed against `bun-types@1.3.14`:
+
+      - `WebSocketHandler<T>` is the type of the `websocket` property in
+        the `Bun.serve` options. This is what `buildSocketServer` returns
+        and what `SocketServer` currently stands in for. It has **no**
+        generic default, so `T` must be supplied.
+      - `ServerWebSocket<T = undefined>` is the socket instance handed to
+        `open`/`close`/`message`. `SocketConnection` stands in for it.
+      - `T` is `ws.data`, which for this app is `SocketData`.
+
+      The generic is wider than it looks. `Bun.serve` declares
+      `websocket: WebSocketHandler<WebSocketData>`, and that same
+      `WebSocketData` parameter also flows into `Server<WebSocketData>`
+      and `Routes<WebSocketData, R>`, so it is inferred once and unifies
+      the socket handler, the `Server` passed to every route handler, and
+      the `server.upgrade(req, ctx)` context. That makes this one
+      decision spanning `socket.ts` and `index.ts`, not a local swap. It
+      should be settled alongside `UpgradeContext` / `UpgradeData` and
+      the `server.upgrade` signature inside `CreateSocketRequest`.
+
+      Two things to weigh, both already verified:
+
+      - **It buys less safety than it appears to.** Bun declares
+        `message(ws, message)` with method shorthand, so its parameters
+        are bivariant. A handler narrowing `raw` to `string` still
+        assigns to `WebSocketHandler` with no error. Conforming to Bun's
+        type does not by itself protect parameter fidelity; the current
+        hand-written `SocketServer` uses arrow-property syntax and
+        therefore *does* catch that drift (`TS2322`).
+      - **It costs the test mocks.** `ServerWebSocket` has 20 members
+        (`subscribe`, `publish`, `cork`, `readyState`, `remoteAddress`,
+        and so on). `socket.test.js` drives the handlers with a
+        four-property literal, which satisfies `SocketConnection` but
+        would not satisfy `ServerWebSocket<SocketData>`. Switching means
+        either a mock factory that fills in all 20 or keeping
+        `SocketConnection` as the internal parameter type while the
+        returned object conforms to `WebSocketHandler`.
+
+      Already confirmed compatible today: the object `buildSocketServer`
+      returns is assignable to `WebSocketHandler<SocketData>`, and
+      `ServerWebSocket<SocketData>` is assignable to `SocketConnection`.
+      So nothing is blocked, and this is a fidelity improvement rather
+      than a fix.
+
+- [ ] **Decide what an unvalidatable message echoes back.**
+      `buildErrorMessage` in `socket.ts` runs on the catch path, which is
+      reached *before* validation succeeds, so `id` and `clientId` are
+      raw wire values. It reads them through
+      `message as Pick<BaseMessage, 'id' | 'clientId'>`, which claims
+      both are strings when they demonstrably need not be:
+      `socket.test.js` sends a bare `{type: 'heartbeat'}` frame and the
+      reply carries no `clientId` at all (`JSON.stringify` drops the
+      `undefined`). This preserves the JavaScript behaviour exactly, but
+      the cast is a knowing lie. The likely fix is not a better type: the
+      socket already knows its authenticated identity as
+      `ws.data.clientId`, so echoing a client-supplied one on a frame
+      that failed validation is arguably the bug. Changing it is a
+      behaviour change, hence deferred.
+
+- [ ] **`RequestMessage.headers` is typed `Headers` but arrives as a
+      POJO.** Every message type declares `headers: Headers`, which holds
+      for messages the server *builds*. Inbound frames are
+      `JSON.parse`d, so their `headers` is a plain object at runtime.
+      Nothing breaks today (`buildRequest` does
+      `new Headers(message.headers)`, and `HeadersInit` accepts both),
+      but the type is wrong for exactly the direction that crosses the
+      wire. Worth splitting inbound from outbound message types, or
+      typing the field as `HeadersInit`, when the request hierarchy above
+      is designed.
 
 ## 1. `server` implementation and unit tests
 
@@ -183,8 +301,15 @@ convert, so the real contract is not visible until then.
       atomic across `socket.js`, both test files, `tests/helpers.js`, and
       the `ws-message` integration test)
 - [x] `packages/server/src/messages.test.js`
-- [ ] `packages/server/src/socket.js`
-- [ ] `packages/server/src/socket.test.js`
+- [x] `packages/server/src/socket.js`
+- [ ] `packages/server/src/socket.test.js`. Two known blockers:
+      its `TestError` fixture declares
+      `static get status () { return 999 }`, and static members are
+      inheritance-checked, so 999 will not satisfy the base class's
+      `StatusCode` return type; the fixture needs a real code or an
+      assertion. Its `buildSocket()` helper also returns
+      `data: { clientId }` only, which no longer satisfies `SocketData`
+      now that `superseded`, `reaped`, and `reaperHandle` are required.
 - [ ] `packages/server/src/index.js` (no unit test file)
 - [ ] `test-setup.js` (root, cross-cutting Bun test preload)
 

@@ -206,7 +206,7 @@ export function createMessage<T extends MessageType> (
   } as Extract<Message, { type: T }>
 }
 
-export function validateMessage (message: RawMessage): void {
+export function validateMessage (message: RawMessage): IncomingMessage {
   if (message.type === undefined) {
     throw new UnprocessableContentError([
       {
@@ -232,4 +232,6 @@ export function validateMessage (message: RawMessage): void {
 
     throw new UnprocessableContentError(errors)
   }
+
+  return message as IncomingMessage
 }
