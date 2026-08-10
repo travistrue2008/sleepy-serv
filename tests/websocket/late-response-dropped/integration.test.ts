@@ -11,7 +11,7 @@ test('when a reply arrives for an already-timed-out request', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
 
-  const client = await SleepySocketClient.connect(host, app.server.port, {
+  const client = await SleepySocketClient.connect(host, app.server.port!, {
     timeout: 100,
   })
 
