@@ -534,13 +534,13 @@ convert, so the real contract is not visible until then.
 - [ ] `tests/middleware/ws/root-level/integration.test.js`
 - [ ] `tests/mount-path/api/get.js`
 - [ ] `tests/mount-path/integration.test.js`
-- [ ] `tests/request-errors/handler-throws/api/boom/get.js`
-- [ ] `tests/request-errors/handler-throws/api/conflict/get.js`
-- [ ] `tests/request-errors/handler-throws/integration.test.js`
-- [ ] `tests/request-errors/not-allowed-method/api/get.js`
-- [ ] `tests/request-errors/not-allowed-method/integration.test.js`
-- [ ] `tests/request-errors/not-found-resource/api/get.js`
-- [ ] `tests/request-errors/not-found-resource/integration.test.js`
+- [x] `tests/request-errors/handler-throws/api/boom/get.js`
+- [x] `tests/request-errors/handler-throws/api/conflict/get.js`
+- [x] `tests/request-errors/handler-throws/integration.test.js`
+- [x] `tests/request-errors/not-allowed-method/api/get.js`
+- [x] `tests/request-errors/not-allowed-method/integration.test.js`
+- [x] `tests/request-errors/not-found-resource/api/get.js`
+- [x] `tests/request-errors/not-found-resource/integration.test.js`
 - [ ] `tests/request/headers-passthrough/api/whoami/get.js`
 - [ ] `tests/request/headers-passthrough/integration.test.js`
 - [ ] `tests/request/message-concurrency/api/get.js`

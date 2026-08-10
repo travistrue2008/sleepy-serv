@@ -36,7 +36,7 @@ describe('WebSocket', () => {
   test('when the handler throws a generic Error', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
     const res = await client.get('/boom')
 
     await client.close()
@@ -44,7 +44,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: InternalServerError.status,
       timestamp: res.timestamp,
@@ -56,7 +56,7 @@ describe('WebSocket', () => {
   test('when the handler throws a RequestError subclass', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
     const res = await client.get('/conflict')
 
     await client.close()
@@ -64,7 +64,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: ConflictError.status,
       timestamp: res.timestamp,
