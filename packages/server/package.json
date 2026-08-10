@@ -4,8 +4,19 @@
   "author": "Travis J True",
   "license": "MIT",
   "version": "0.6.2",
-  "exports": "./src/index.js",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.*"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/travistrue2008/sleepy-serv.git",
@@ -18,7 +29,10 @@
     "web server",
     "www"
   ],
-  "scripts": {},
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
   "dependencies": {
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1"

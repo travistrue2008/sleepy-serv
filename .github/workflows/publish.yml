@@ -77,6 +77,22 @@ jobs:
       - name: Lint
         run: bunx eslint .
 
+      - name: Typecheck
+        run: bun run typecheck
+
+      # Both packages emit something a consumer needs, so a failed build must
+      # block the release rather than publish a tarball whose `dist` is stale or
+      # missing. `sleepy-socket` compiles to ESM plus declarations, because Node
+      # and browsers cannot load `.ts` from `node_modules`. `sleepy-serv` emits
+      # declarations only: it ships its `.ts` source, which is safe because
+      # `Bun.serve` guarantees every consumer runs Bun, but without a `.d.ts` a
+      # TypeScript consumer would typecheck our source under their tsconfig.
+      #
+      # The filter is deliberately `*` rather than named packages, so a new
+      # workspace member with a `build` script cannot be silently skipped here.
+      - name: Build packages
+        run: bun run --filter '*' build
+
       # Writes to the runner's working tree only. Nothing is committed, pushed, or
       # published until the registry pre-flight below passes.
       - name: Compute next version

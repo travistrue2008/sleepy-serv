@@ -9,7 +9,7 @@ coveragePathIgnorePatterns = [
   "packages/client/tests/**",
   "packages/server/tests/**",
   "tests/**",
-  'test-setup.js',
+  'test-setup.ts',
 ]
 
-preload = ["./test-setup.js"]
+preload = ["./test-setup.ts"]

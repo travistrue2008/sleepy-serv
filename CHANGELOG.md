@@ -8,6 +8,91 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `sleepy-socket` now ships TypeScript declarations. The package compiles to `dist/`, and
+  the declarations cover its whole public surface, including the types `ConnectOptions`,
+  `ReconnectOptions`, `RequestOptions`, `ResponseMessage`, `NotificationMessage`,
+  `EventHandler`, `TicketData`, `Queue`, `MessageType`, `IdGenerator`, `Message`,
+  `MessageHeaders`, `MessageOptions`, `TimeoutHandle`, and `IntervalHandle`.
+
+  Resolution is conditional: Bun loads the TypeScript source directly, while Node and
+  browser bundlers get the compiled ESM output. Both trees ship, so source maps and
+  declaration maps resolve to real sources for consumers. `engines.node` is now `>=22`,
+  which is where global `WebSocket` stabilized.
+
+- `sleepy-socket` exports `defaultIdGenerator`, the `() => crypto.randomUUID()` function
+  the client uses until `setIdGenerator()` replaces it.
+
+  This exists so callers can restore the original behaviour by reference rather than
+  hand-rolling a replacement that would drift if the default ever changes. It matters
+  because `crypto.randomUUID()` requires a secure context, so a browser served over plain
+  `http://` outside localhost needs `setIdGenerator()` and may want to restore afterwards.
+
+- `sleepy-serv` now ships TypeScript declarations, generated into `dist/` alongside the
+  `.ts` sources the package already publishes.
+
+  Consumers previously typechecked our source under their own `tsconfig`, so a project
+  stricter than ours saw errors originating inside the dependency. The declarations remove
+  that. Resolution stays on source at runtime, since `Bun.serve` means every consumer runs
+  Bun; only the `types` condition points at `dist`.
+
+- `sleepy-serv` exports `StatusCode` and `HttpMethod` as runtime values, plus the types
+  `App`, `AppOptions`, `EndpointRequest`, `Request`, `WebSocketRequest`, `Middleware`,
+  `NextFn`, `Server`, `SocketOptions`, `SocketCommands`, `FormattedError`,
+  `FormatterField`, `FormatterSchema`, and `ValidationSchemas`.
+
+  `StatusCode` is the comprehensive 1xx through 5xx set and is the single source of truth
+  for status numbers in the package, including the `status` getter on every error class.
+  The types are what you need to author your own `get.ts` / `meta.ts` route files and
+  middleware.
+
+### Changed
+
+- `sleepy-serv` publishes TypeScript sources instead of JavaScript, and its `exports` is
+  now a conditional map (`types`, `bun`, `default`) rather than the single
+  `./src/index.js` string.
+
+  This is not expected to break anyone: the package calls `Bun.serve`, so it has never
+  been able to run on Node regardless of the source form. What changes is where a
+  non-Bun runtime fails, from a runtime error inside `Bun.serve` to a module-load error.
+
+- **Breaking (`sleepy-socket`):** the exported `TYPES` object is now `MessageType`, and its
+  members are PascalCase instead of SCREAMING_SNAKE. `TYPES.WELCOME` becomes
+  `MessageType.Welcome`, and likewise for `HEARTBEAT`, `REQUEST`, `RESPONSE`, and
+  `NOTIFICATION`.
+
+  The wire values are unchanged (`'welcome'`, `'heartbeat'`, `'request'`, `'response'`,
+  `'notification'`), so this is a source-level rename only. There is no protocol change,
+  and a client and server on opposite sides of this release still interoperate.
+
+  To migrate, change `import SleepySocketClient, { TYPES } from 'sleepy-socket'` to
+  `import SleepySocketClient, { MessageType } from 'sleepy-socket'` and update the member
+  names. Anything comparing against the raw strings needs no change.
+
+  This aligns the client with `sleepy-serv`, which already exports `MessageType` with the
+  same members and the same values.
+
+- **Breaking (`sleepy-socket`):** the exported `QUEUE` object is now `Queue`, and its
+  members are PascalCase instead of SCREAMING_SNAKE. `QUEUE.NONE`, `QUEUE.FIFO`, and
+  `QUEUE.LIFO` become `Queue.None`, `Queue.Fifo`, and `Queue.Lifo`.
+
+  As with `MessageType`, the values are unchanged (`'none'`, `'fifo'`, `'lifo'`), so code
+  passing a raw string to the `queue` option keeps working.
+
+  To migrate, change `import SleepySocketClient, { QUEUE } from 'sleepy-socket'` to
+  `import SleepySocketClient, { Queue } from 'sleepy-socket'` and update the member names.
+
+  Both renames follow one convention: enum-like constant objects are PascalCase with
+  PascalCase members. Plain array and scalar constants keep SCREAMING_SNAKE.
+
+- **Breaking (`sleepy-socket`):** the read-only `secure` property on `SleepySocketClient`
+  is now `isSecure`, matching the existing `isConnected` property.
+
+  The `secure` **option** passed to `connect()` is unchanged. Only the property you read
+  back off the client was renamed, so `connect(host, port, { secure: true })` still reads
+  exactly as before; `client.secure` becomes `client.isSecure`.
+
 ## [0.6.2] - 2026-07-20
 
 ### Added

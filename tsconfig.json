@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "types": ["bun"],
+    "paths": {
+      "sleepy-serv": ["./packages/server/src/index.ts"],
+      "sleepy-socket": ["./packages/client/src/index.ts"]
+    }
+  },
+  "include": [
+    "test-setup.ts",
+    "types/**/*",
+    "tests/**/*"
+  ]
+}

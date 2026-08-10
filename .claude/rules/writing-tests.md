@@ -1,6 +1,7 @@
 ---
 paths:
   - "**/*.test.js"
+  - "**/*.test.ts"
 ---
 
 # Writing tests
