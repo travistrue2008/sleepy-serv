@@ -18,8 +18,4 @@ The chain is transport-agnostic: an HTTP request and a WebSocket **request** fra
 
 App-level middleware (`opts.middleware`) also runs against the built-in `/ws` handshake routes, because they merge into the same chains. A catch-all validator placed there (e.g. a `validateSchemas` requiring a JSON body) will reject the body-less handshake requests. Scope such validators below the reserved paths instead. See [WebSocket Layer](./websocket.md#gotcha-built-in-ws-handlers-make-catch-all-validators-hard).
 
-## Gotcha: two unrelated `meta.js`
-
-`packages/server/src/meta.js` is a generic tree/object utility module, **unrelated** to route `meta.js` files (the ones that `export const middleware`). Don't conflate them.
-
 See also: [Request Flow](./request-flow.md), [Errors](./errors.md).
