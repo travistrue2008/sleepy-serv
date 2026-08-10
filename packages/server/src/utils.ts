@@ -1,4 +1,5 @@
 import type { ErrorObject } from 'ajv'
+import type { BunRequest, Server as BunServer } from 'bun'
 
 export const HttpMethod = {
   Head: 'HEAD',
@@ -89,13 +90,26 @@ export type FormattedError = {
   message: string
 }
 
-export type MiddlewareNext = (data?: unknown) => Promise<Response>
+export type NextFn = (data?: unknown) => Promise<Response>
 
 export type Middleware<TReq = unknown> = (
   req: TReq,
   res: unknown,
-  next: MiddlewareNext | null,
+  next: NextFn | null,
 ) => unknown
+
+export type RouteMiddleware = Middleware<Record<string, unknown>>
+
+export type EndpointRequest = {
+  method: string
+  route: string
+  headers: Headers
+  params: Record<string, string>
+  query: Record<string, unknown>
+  raw: BunRequest
+  server: Server
+  json: () => Promise<unknown>
+}
 
 export type SocketOptions = {
   disconnectThreshold?: number
@@ -105,8 +119,21 @@ export type SocketOptions = {
   ticketTtl?: number
 }
 
+export type SocketData = {
+  clientId: string
+  superseded: boolean
+  reaped: boolean
+  reaperHandle: ReturnType<typeof setTimeout> | null
+}
+
+export type Server = BunServer<SocketData>
+
 export type AppOptions = {
+  hostname?: string
+  mountPath?: string
+  middleware?: RouteMiddleware[]
   ws?: SocketOptions
+  onClose?: () => Promise<void> | void
 }
 
 export function toSegments (pathString: string): string[] {

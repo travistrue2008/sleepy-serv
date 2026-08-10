@@ -257,7 +257,7 @@ TypeScript migration. Per-file progress lives in
   present but may hold nothing, which is the true shape; optional would
   say the key may be missing, which is no longer true. `null` over
   `undefined` matches the house convention for deliberate absence
-  (`MiddlewareNext | null`, `ErrorOutput`, and the client's
+  (`NextFn | null`, `ErrorOutput`, and the client's
   `#livenessTimer` / `#heartbeatTimer` / `#reconnectTimer`).
 - **The guard is what makes `null` viable.** Both `clearTimeout`
   overloads accept `string | number | Timeout | undefined` and reject

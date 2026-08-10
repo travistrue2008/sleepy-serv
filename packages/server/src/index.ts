@@ -4,7 +4,7 @@ import querystring from 'querystring'
 import readline from 'node:readline'
 
 import { stdin, stdout } from 'node:process'
-import { toSegments, executeMiddlewareChain } from './utils'
+import { StatusCode, toSegments, executeMiddlewareChain } from './utils'
 
 import {
   buildSocketState,
@@ -14,9 +14,26 @@ import {
 } from './socket'
 
 import {
+  RequestError,
   NotFoundError,
   MethodNotAllowedError,
 } from './errors'
+
+import type { BunRequest } from 'bun'
+
+import type {
+  HttpMethod,
+  RouteMiddleware,
+  EndpointRequest,
+  AppOptions,
+  Server,
+} from './utils'
+
+import type {
+  SocketRoute,
+  SocketState,
+  SocketCommands,
+} from './socket'
 
 export * from './errors'
 
@@ -25,6 +42,62 @@ export {
   setValidationFormats,
   validateSchemas,
 } from './middleware'
+
+type OutputRoutes = Record<string, string[]>
+type ServerRoutes = Record<string, Record<string, EndpointHandler>>
+
+type EndpointHandler = (
+  bunReq: BunRequest,
+  server: Server,
+) => Promise<Response>
+
+type DirEntry = {
+  path: string
+  stat: fs.Stats
+}
+
+type RoutePath = {
+  method: HttpMethod
+  path: string
+  metaMiddlewarePath: string[]
+  modulePath: string
+}
+
+type ChainRoute = {
+  method: HttpMethod
+  path: string
+  chain: RouteMiddleware[]
+}
+
+type ModuleRoute = {
+  method: HttpMethod
+  path: string
+  handler: EndpointHandler
+}
+
+type RoutingOptions = {
+  basePath: string
+  mountPath: string
+  metadata: string[]
+}
+
+type AppRoutes = {
+  server: ServerRoutes
+  output: OutputRoutes
+  socket: SocketRoute[]
+}
+
+type App = {
+  server: Server
+  commands: SocketCommands
+  routes: OutputRoutes
+}
+
+export type {
+  App,
+  AppOptions,
+  AppRoutes,
+}
 
 const ALLOWED_FILES_META = ['meta.js', 'meta.ts']
 
@@ -53,11 +126,11 @@ const rl = readline.createInterface({
   output: stdout,
 })
 
-function methodNotAllowedHandler (_req) {
+function methodNotAllowedHandler (_req: unknown): never {
   throw new MethodNotAllowedError()
 }
 
-function defaultMethodMap () {
+function defaultMethodMap (): Record<string, EndpointHandler> {
   return {
     HEAD: methodNotAllowedHandler,
     GET: methodNotAllowedHandler,
@@ -68,7 +141,10 @@ function defaultMethodMap () {
   }
 }
 
-function buildEndpointRequest (bunReq, server) {
+function buildEndpointRequest (
+  bunReq: BunRequest,
+  server: Server,
+): EndpointRequest {
   const url = new URL(bunReq.url)
   const qs = url.search.replace('?', '')
   const json = () => bunReq.json()
@@ -85,7 +161,11 @@ function buildEndpointRequest (bunReq, server) {
   }
 }
 
-function validateLeafDirectory (targetPath, filenames, entries) {
+function validateLeafDirectory (
+  targetPath: string,
+  filenames: string[],
+  entries: DirEntry[],
+): void {
   const hasDirectories = entries.some(entry => entry.stat.isDirectory())
 
   if (!hasDirectories) {
@@ -102,7 +182,7 @@ ${targetPath}
   }
 }
 
-function validateDirectory (targetPath, entries) {
+function validateDirectory (targetPath: string, entries: DirEntry[]): void {
   const filenames = entries
     .filter(entry => entry.stat.isFile())
     .map(entry => path.basename(entry.path))
@@ -110,7 +190,7 @@ function validateDirectory (targetPath, entries) {
   validateLeafDirectory(targetPath, filenames, entries)
 }
 
-function getAllFilePathsRec (targetPath, paths) {
+function getAllFilePathsRec (targetPath: string, paths: string[]): string[] {
   const entries = fs.readdirSync(targetPath)
 
   const children = entries.map(item => {
@@ -124,7 +204,7 @@ function getAllFilePathsRec (targetPath, paths) {
 
   validateDirectory(targetPath, children)
 
-  return children.reduce((accum, curr) => {
+  return children.reduce<string[]>((accum, curr) => {
     const result = curr.stat.isDirectory()
       ? getAllFilePathsRec(curr.path, paths)
       : [curr.path]
@@ -133,7 +213,10 @@ function getAllFilePathsRec (targetPath, paths) {
   }, [])
 }
 
-function getFilteredFilePaths (targetPath, allowedFiles) {
+function getFilteredFilePaths (
+  targetPath: string,
+  allowedFiles: string[],
+): string[] {
   const allPaths = getAllFilePathsRec(targetPath, [])
 
   return allPaths.filter(item =>
@@ -141,21 +224,23 @@ function getFilteredFilePaths (targetPath, allowedFiles) {
   )
 }
 
-function getMethodFilePaths (targetPath) {
+function getMethodFilePaths (targetPath: string): string[] {
   return getFilteredFilePaths(targetPath, ALLOWED_FILES_METHODS)
 }
 
-function getMetaFilePaths (targetPath) {
+function getMetaFilePaths (targetPath: string): string[] {
   return getFilteredFilePaths(targetPath, ALLOWED_FILES_META)
 }
 
-function selectMetaPaths (metadata, modulePath) {
+function selectMetaPaths (metadata: string[], modulePath: string): string[] {
   return metadata
     .filter(metaPath => modulePath.startsWith(path.dirname(metaPath)))
     .sort((a, b) => a.length - b.length)
 }
 
-async function resolveMetaMiddleware (metaPaths) {
+async function resolveMetaMiddleware (
+  metaPaths: string[],
+): Promise<RouteMiddleware[]> {
   const modules = await Promise.all(metaPaths.map(item => import(item)))
 
   return modules
@@ -166,7 +251,11 @@ async function resolveMetaMiddleware (metaPaths) {
     ], [])
 }
 
-function buildRoutePaths (rootPath, mountPath, metadata) {
+function buildRoutePaths (
+  rootPath: string,
+  mountPath: string,
+  metadata: string[],
+): RoutePath[] {
   const paths = getMethodFilePaths(rootPath)
 
   return paths.map(modulePath => {
@@ -182,7 +271,7 @@ function buildRoutePaths (rootPath, mountPath, metadata) {
     const metaMiddlewarePath = selectMetaPaths(metadata, modulePath)
 
     return {
-      method: segments[lastIndex].toUpperCase(),
+      method: segments[lastIndex].toUpperCase() as HttpMethod,
       path: joinedPath,
       metaMiddlewarePath,
       modulePath,
@@ -190,7 +279,10 @@ function buildRoutePaths (rootPath, mountPath, metadata) {
   })
 }
 
-async function buildChain (route, rootMiddleware) {
+async function buildChain (
+  route: RoutePath,
+  rootMiddleware: RouteMiddleware[],
+): Promise<ChainRoute> {
   const module = await import(route.modulePath)
   const metaMiddleware = await resolveMetaMiddleware(route.metaMiddlewarePath)
 
@@ -216,13 +308,21 @@ ${route.modulePath}
   }
 }
 
-function buildNormalRoutes (routePaths, rootMiddleware) {
+function buildNormalRoutes (
+  routePaths: RoutePath[],
+  rootMiddleware: RouteMiddleware[],
+): Promise<ChainRoute[]> {
   return Promise.all(
     routePaths.map(route => buildChain(route, rootMiddleware)),
   )
 }
 
-async function buildMergedRoutes (routePaths, middleware, state, opts) {
+async function buildMergedRoutes (
+  routePaths: ChainRoute[],
+  middleware: RouteMiddleware[],
+  state: SocketState,
+  opts: RoutingOptions,
+): Promise<ChainRoute[]> {
   const { basePath, mountPath, metadata } = opts
   const socketRoutes = buildSocketHandlers(state)
 
@@ -259,16 +359,16 @@ async function buildMergedRoutes (routePaths, middleware, state, opts) {
   return routePaths
 }
 
-function  buildSocketRoutes (mergedRoutes) {
+function buildSocketRoutes (mergedRoutes: ChainRoute[]): SocketRoute[] {
   return mergedRoutes.map(route => ({
     ...route,
     segments: toSegments(route.path),
   }))
 }
 
-function buildModuleRoutes (routePaths) {
+function buildModuleRoutes (routePaths: SocketRoute[]): ModuleRoute[] {
   return routePaths.map(route => {
-    const handler = async (bunReq, server) => {
+    const handler: EndpointHandler = async (bunReq, server) => {
       const req = buildEndpointRequest(bunReq, server)
 
       return executeMiddlewareChain(req, route.chain)
@@ -282,20 +382,21 @@ function buildModuleRoutes (routePaths) {
   })
 }
 
-function buildServerRoutes (moduleRoutes) {
-  return moduleRoutes.reduce((accum, curr) => {
-    if (!accum[curr.path]) {
-      accum[curr.path] = defaultMethodMap()
-    }
+function buildServerRoutes (moduleRoutes: ModuleRoute[]): ServerRoutes {
+  return moduleRoutes.reduce<ServerRoutes>(
+    (accum, curr) => {
+      if (!accum[curr.path]) {
+        accum[curr.path] = defaultMethodMap()
+      }
 
-    accum[curr.path][curr.method] = curr.handler
+      accum[curr.path][curr.method] = curr.handler
 
-    return accum
-  }, {})
+      return accum
+    }, {})
 }
 
-function buildOutputRoutes (moduleRoutes) {
-  return moduleRoutes.reduce((accum, curr) => {
+function buildOutputRoutes (moduleRoutes: ModuleRoute[]): OutputRoutes {
+  return moduleRoutes.reduce<OutputRoutes>((accum, curr) => {
     accum[curr.path] = accum[curr.path] || []
     accum[curr.path].push(curr.method)
 
@@ -303,7 +404,11 @@ function buildOutputRoutes (moduleRoutes) {
   }, {})
 }
 
-async function buildRoutes (rootPath, state, opts) {
+async function buildRoutes (
+  rootPath: string,
+  state: SocketState,
+  opts: AppOptions,
+): Promise<AppRoutes> {
   const basePath = `${rootPath}/api`
   const mountPath = opts.mountPath || ''
   const middleware = opts.middleware || []
@@ -336,7 +441,12 @@ async function buildRoutes (rootPath, state, opts) {
   }
 }
 
-function buildServer (port, routes, state, opts) {
+function buildServer (
+  port: number,
+  routes: AppRoutes,
+  state: SocketState,
+  opts: AppOptions,
+): Server {
   const hostname = opts.hostname || '0.0.0.0'
   const websocketServer = buildSocketServer(routes.socket, state)
 
@@ -351,17 +461,25 @@ function buildServer (port, routes, state, opts) {
     error (err) {
       console.error(err)
 
-      const status = err.constructor.status ?? 500
+      if (err instanceof RequestError) {
+        const ctor = err.constructor as typeof RequestError
 
-      return err.output !== undefined
-        ? Response.json(err.output, { status })
-        : new Response(err.message, { status })
+        return Response.json(err.output, { status: ctor.status })
+      }
+
+      return new Response(err.message, {
+        status: StatusCode.InternalServerError,
+      })
     },
   })
 }
 
-function processIO (port, server, opts) {
-  const onClose = opts.onClose || (() => { })
+function processIO (
+  port: number,
+  server: Server,
+  opts: AppOptions,
+): void {
+  const onClose = opts.onClose || (() => {})
 
   console.info(`Running on port: ${port}`)
   console.info('')
@@ -376,7 +494,11 @@ function processIO (port, server, opts) {
   })
 }
 
-export async function createApp (port, rootPath, opts = {}) {
+export async function createApp (
+  port: number,
+  rootPath: string,
+  opts: AppOptions = {},
+): Promise<App> {
   const state = buildSocketState(opts)
   const routes = await buildRoutes(rootPath, state, opts)
   const server = buildServer(port, routes, state, opts)

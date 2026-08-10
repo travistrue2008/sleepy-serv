@@ -22,7 +22,13 @@ import {
 } from './errors'
 
 import type { ValidateFunction } from 'ajv'
-import type { AppOptions, HttpMethod, Middleware } from './utils'
+
+import type {
+  HttpMethod,
+  RouteMiddleware,
+  SocketData,
+  AppOptions,
+} from './utils'
 
 import type {
   BaseMessage,
@@ -34,13 +40,6 @@ import type {
 export type Ticket = {
   clientId: string
   expiresAt: number
-}
-
-export type SocketData = {
-  clientId: string
-  superseded: boolean
-  reaped: boolean
-  reaperHandle: ReturnType<typeof setTimeout> | null
 }
 
 export type SocketConnection = {
@@ -87,7 +86,7 @@ export type SocketRoute = {
   method: HttpMethod
   path: string
   segments: string[]
-  chain: Middleware<WebSocketRequest>[]
+  chain: RouteMiddleware[]
 }
 
 export type SocketEndpoint = {

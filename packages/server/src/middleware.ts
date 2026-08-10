@@ -10,7 +10,7 @@ import {
 } from './errors'
 
 import type { Format, Schema, ValidateFunction } from 'ajv'
-import type { FormattedError, Middleware, MiddlewareNext } from './utils'
+import type { FormattedError, Middleware, NextFn } from './utils'
 
 export type FormatterField = {
   type: string
@@ -124,12 +124,12 @@ export function parseJsonBody (): Middleware<ParsableRequest> {
   return async (
     req: ParsableRequest,
     res: unknown,
-    next: MiddlewareNext | null,
+    next: NextFn | null,
   ): Promise<unknown> => {
     const contentType = req.headers.get('content-type')
 
     if (!contentType) {
-      return (next as MiddlewareNext)(res)
+      return (next as NextFn)(res)
     }
 
     if (!contentType.startsWith('application/json')) {
@@ -138,7 +138,7 @@ export function parseJsonBody (): Middleware<ParsableRequest> {
 
     const body = await parseBody(req)
 
-    return (next as MiddlewareNext)(body)
+    return (next as NextFn)(body)
   }
 }
 
@@ -173,7 +173,7 @@ export function validateSchemas (
   return (
     req: ValidatableRequest,
     res: unknown,
-    next: MiddlewareNext | null,
+    next: NextFn | null,
   ): unknown => {
     const errors = entries.reduce((accum: FormattedError[], [
       key,
@@ -195,6 +195,6 @@ export function validateSchemas (
       throw new UnprocessableContentError(errors)
     }
 
-    return (next as MiddlewareNext)(res)
+    return (next as NextFn)(res)
   }
 }

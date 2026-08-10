@@ -27,10 +27,26 @@ committed.
 - [x] `types/bun-test.d.ts` augmenting bun-types with the missing
       `toHaveBeenCalledOnce` matcher (shared by both packages; remove
       once bun-types ships it upstream)
-- [ ] `packages/server/tsconfig.build.json` and `build:types` script
-      (deferred until `index.ts` exists)
-- [ ] Server `exports` conditions and `publish.yml` build step
-      (deferred, same reason)
+- [ ] `packages/server/tsconfig.build.json` and `build:types` script.
+      **Now unblocked**, since `index.ts` exists. `exports` was changed
+      to `./src/index.ts` during that conversion because the E2E suites
+      import `sleepy-serv` by package name and every one of them failed
+      to resolve otherwise. That is the minimum to keep the workspace
+      running, not the finished packaging story.
+- [ ] Server `exports` conditions and `publish.yml` build step. Also
+      unblocked. `exports` is still a bare string, so a TypeScript
+      consumer typechecks our source under *their* tsconfig, which is
+      the failure mode the `.d.ts` plan exists to prevent. Needs
+      `{ "types": "./<declarationDir>/index.d.ts", "bun": "./src/index.ts",
+      "default": "./src/index.ts" }`, the declaration output in
+      `.gitignore`, and `build:types` running before the `--dry-run`
+      pre-flight in `publish.yml`.
+
+      Verified the tarball is otherwise correct today: 9 files
+      (LICENSE, README, package.json, 6 `.ts` sources), no test files
+      leaked through the `files` allowlist. Down from 7 sources to 6
+      because `meta.js` was deleted and `status.ts` folded into
+      `utils.ts`.
 - [x] Swap `.npmignore` for a `files` allowlist in both packages
       (verified with `npm pack --dry-run`: server 10 files, client 6,
       both identical to their pre-change baselines)
@@ -158,18 +174,18 @@ convert, so the real contract is not visible until then.
       `headers` will be typed as `Headers` on every request variant.
 
 - [ ] **Resolve `next` nullability in built-in middleware.**
-      `Middleware` types `next` as `MiddlewareNext | null` because
+      `Middleware` types `next` as `NextFn | null` because
       `executeMiddlewareChain` really does pass `null` to the last entry.
       But `parseJsonBody` and `validateSchemas` call `next`
       unconditionally, since they are only valid in non-terminal
       position. That precondition is currently asserted with three
-      `next as MiddlewareNext` casts in `middleware.ts` (lines 112, 121,
+      `next as NextFn` casts in `middleware.ts` (lines 112, 121,
       173) rather than encoded. Options when revisiting: a runtime guard
       that throws a clear error, or splitting the chain-entry type so
       terminal handlers and middleware are distinct. Note a naive split
       fails under `strictFunctionTypes`, since a function taking
       non-null `next` is not assignable to one taking
-      `MiddlewareNext | null`. Best settled alongside the `TReq`
+      `NextFn | null`. Best settled alongside the `TReq`
       tightening, since both describe the same chain contract.
 
 - [ ] **Decide whether `StatusCode` literals need pinning.** The deleted
@@ -311,7 +327,7 @@ convert, so the real contract is not visible until then.
       the same error over HTTP would have crashed the `Bun.serve` error
       hook. Now `StatusCode.ImATeapot`, which is still distinct from the
       500 default so the pass-through assertion keeps its meaning.
-- [ ] `packages/server/src/index.js` (no unit test file)
+- [x] `packages/server/src/index.js` (no unit test file)
 - [ ] `test-setup.js` (root, cross-cutting Bun test preload)
 
 ## 2. `server` integration tests (`packages/server/tests/`)
