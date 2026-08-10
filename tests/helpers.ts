@@ -2,6 +2,43 @@ import path from 'path'
 
 import type { App, HttpMethod } from 'sleepy-serv'
 
+export const Fmt = {
+  Text: 'text',
+  Json: 'json',
+} as const
+
+export type Fmt = typeof Fmt[keyof typeof Fmt]
+
+export type HttpResult = {
+  status: number
+  body: unknown
+}
+
+export type Query = Record<string, string>
+
+export type RequestOptions = {
+  mountPath?: string
+  query?: Query
+  headers?: Headers
+  body?: Bun.BodyInit
+}
+
+export type RequestorMethodFn = (
+  route: string,
+  fmt: Fmt,
+  opts?: RequestOptions,
+) => Promise<HttpResult>
+
+export type Requestor = {
+  options: RequestorMethodFn
+  head: RequestorMethodFn
+  get: RequestorMethodFn
+  put: RequestorMethodFn
+  post: RequestorMethodFn
+  patch: RequestorMethodFn
+  delete: RequestorMethodFn
+}
+
 /*
   Poll a predicate on real timers until it is truthy or the timeout elapses.
   The root E2E suite runs on real timers (see test-setup.ts), so there is no
@@ -44,45 +81,6 @@ export function waitFor (
   })
 }
 
-export const Fmt = {
-  Text: 'text',
-  Json: 'json',
-} as const
-
-export type Fmt = typeof Fmt[keyof typeof Fmt]
-
-export type Query = Record<string, string>
-
-export type RequestOptions = {
-  mountPath?: string
-  query?: Query
-  headers?: Headers
-  body?: Bun.BodyInit
-}
-
-export type HttpResult = {
-  status: number
-  body: unknown
-}
-
-export type RequestorMethod = (
-  route: string,
-  fmt: Fmt,
-  opts?: RequestOptions,
-) => Promise<HttpResult>
-
-export type Requestor = {
-  head: RequestorMethod
-  options: RequestorMethod
-  get: RequestorMethod
-  put: RequestorMethod
-  post: RequestorMethod
-  patch: RequestorMethod
-  delete: RequestorMethod
-}
-
-type RequestMethod = HttpMethod | 'OPTIONS'
-
 async function deserializeBody (fmt: Fmt, res: Response): Promise<unknown> {
   const body = await res[fmt]()
 
@@ -91,7 +89,7 @@ async function deserializeBody (fmt: Fmt, res: Response): Promise<unknown> {
 
 async function makeRequestMethod (
   app: App,
-  method: RequestMethod,
+  method: HttpMethod | 'OPTIONS',
   route: string,
   fmt: Fmt,
   opts: RequestOptions = {},
@@ -117,25 +115,25 @@ async function makeRequestMethod (
 
 export function createRequestor (app: App): Requestor {
   return {
-    head (route, fmt, opts) {
-      return makeRequestMethod(app, 'HEAD', route, fmt, opts)
-    },
-    options (route, fmt, opts) {
+    options (route: string, fmt: Fmt, opts: RequestOptions = {}) {
       return makeRequestMethod(app, 'OPTIONS', route, fmt, opts)
     },
-    get (route, fmt, opts) {
+    head (route: string, fmt: Fmt, opts: RequestOptions = {}) {
+      return makeRequestMethod(app, 'HEAD', route, fmt, opts)
+    },
+    get (route: string, fmt: Fmt, opts: RequestOptions = {}) {
       return makeRequestMethod(app, 'GET', route, fmt, opts)
     },
-    put (route, fmt, opts = {}) {
+    put (route: string, fmt: Fmt, opts: RequestOptions = {}) {
       return makeRequestMethod(app, 'PUT', route, fmt, opts)
     },
-    post (route, fmt, opts = {}) {
+    post (route: string, fmt: Fmt, opts: RequestOptions = {}) {
       return makeRequestMethod(app, 'POST', route, fmt, opts)
     },
-    patch (route, fmt, opts = {}) {
+    patch (route: string, fmt: Fmt, opts: RequestOptions = {}) {
       return makeRequestMethod(app, 'PATCH', route, fmt, opts)
     },
-    delete (route, fmt, opts = {}) {
+    delete (route: string, fmt: Fmt, opts: RequestOptions = {}) {
       return makeRequestMethod(app, 'DELETE', route, fmt, opts)
     },
   }
