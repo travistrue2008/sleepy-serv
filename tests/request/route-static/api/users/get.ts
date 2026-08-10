@@ -1,4 +1,6 @@
-export default function (_req) {
+import type { Request } from 'sleepy-serv'
+
+export default function (_req: Request): Response {
   return Response.json([
     {
       id: 1,

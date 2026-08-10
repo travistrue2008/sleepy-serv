@@ -32,7 +32,7 @@ describe('WebSocket', () => {
 
     const host = app.server.url.hostname
 
-    const client = await SleepySocketClient.connect(host, app.server.port, {
+    const client = await SleepySocketClient.connect(host, app.server.port!, {
       mountPath: MOUNT_PATH,
     })
 
@@ -45,7 +45,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: 200,
       timestamp: res.timestamp,

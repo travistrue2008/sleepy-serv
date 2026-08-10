@@ -12,7 +12,7 @@ test('when the client connects', async () => {
   })
 
   const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port)
+  const client = await SleepySocketClient.connect(host, app.server.port!)
 
   await client.close()
   await app.server.stop(true)
@@ -24,7 +24,7 @@ test('when the client connects', async () => {
 test('when a request carries the cached clientId', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port)
+  const client = await SleepySocketClient.connect(host, app.server.port!)
   const res = await client.get('/ok')
 
   await client.close()
@@ -32,7 +32,7 @@ test('when a request carries the cached clientId', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: client.id,
+    clientId: client.id!,
     type: MessageType.Response,
     status: 200,
     timestamp: res.timestamp,
