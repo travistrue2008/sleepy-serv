@@ -1,5 +1,7 @@
 import { parseJsonBody, validateSchemas } from 'sleepy-serv'
 
+import type { Middleware } from 'sleepy-serv'
+
 const SCHEMA_BODY = {
   type: 'object',
   properties: {
@@ -13,12 +15,9 @@ const SCHEMA_BODY = {
   ],
 }
 
-export default [
+export const middleware = [
   parseJsonBody(),
   validateSchemas({
     body: SCHEMA_BODY,
   }),
-  (_req, _res) => {
-    return new Response('', { status: 201 })
-  },
-]
+] satisfies Middleware[]

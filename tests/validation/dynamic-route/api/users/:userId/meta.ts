@@ -1,6 +1,8 @@
 import { parseJsonBody, validateSchemas } from 'sleepy-serv'
 
-const SCHEMA_PARAMS = {
+import type { FormatterSchema, Middleware } from 'sleepy-serv'
+
+const SCHEMA_PARAMS: FormatterSchema = {
   clientId: {
     type: 'format',
     value: 'uuid',
@@ -12,4 +14,4 @@ export const middleware = [
   validateSchemas({
     params: SCHEMA_PARAMS,
   }),
-]
+] satisfies Middleware[]

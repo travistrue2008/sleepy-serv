@@ -3,6 +3,8 @@ import { createApp, UnprocessableContentError } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
+const USER_ID = '00000000-0000-0000-0000-000000000001'
+
 const BODY_VALID = {
   email: 'tony.stark@starkindustries.com',
 }
@@ -13,7 +15,7 @@ describe('REST', () => {
       const app = await createApp(0, import.meta.dirname)
       const req = createRequestor(app)
 
-      const res = await req.post('/users', Fmt.Json, {
+      const res = await req.put(`/users/${USER_ID}`, Fmt.Json, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),
@@ -39,7 +41,7 @@ describe('REST', () => {
       const app = await createApp(0, import.meta.dirname)
       const req = createRequestor(app)
 
-      const res = await req.post('/users', Fmt.Json, {
+      const res = await req.put(`/users/${USER_ID}`, Fmt.Json, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),
@@ -65,7 +67,7 @@ describe('REST', () => {
       const app = await createApp(0, import.meta.dirname)
       const req = createRequestor(app)
 
-      const res = await req.post('/users', Fmt.Json, {
+      const res = await req.put(`/users/${USER_ID}`, Fmt.Json, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),
@@ -86,9 +88,9 @@ describe('WebSocket', () => {
     test('when NO "email" is provided', async () => {
       const app = await createApp(0, import.meta.dirname)
       const host = app.server.url.hostname
-      const client = await SleepySocketClient.connect(host, app.server.port)
+      const client = await SleepySocketClient.connect(host, app.server.port!)
 
-      const res = await client.post('/users', {
+      const res = await client.put(`/users/${USER_ID}`, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),
@@ -103,7 +105,7 @@ describe('WebSocket', () => {
 
       expect(res).toStrictEqual({
         id: res.id,
-        clientId: client.id,
+        clientId: client.id!,
         type: MessageType.Response,
         timestamp: res.timestamp,
         status: UnprocessableContentError.status,
@@ -122,9 +124,9 @@ describe('WebSocket', () => {
     test('when "email" is invalid', async () => {
       const app = await createApp(0, import.meta.dirname)
       const host = app.server.url.hostname
-      const client = await SleepySocketClient.connect(host, app.server.port)
+      const client = await SleepySocketClient.connect(host, app.server.port!)
 
-      const res = await client.post('/users', {
+      const res = await client.put(`/users/${USER_ID}`, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),
@@ -139,7 +141,7 @@ describe('WebSocket', () => {
 
       expect(res).toStrictEqual({
         id: res.id,
-        clientId: client.id,
+        clientId: client.id!,
         type: MessageType.Response,
         timestamp: res.timestamp,
         status: UnprocessableContentError.status,
@@ -158,9 +160,9 @@ describe('WebSocket', () => {
     test('when successful', async () => {
       const app = await createApp(0, import.meta.dirname)
       const host = app.server.url.hostname
-      const client = await SleepySocketClient.connect(host, app.server.port)
+      const client = await SleepySocketClient.connect(host, app.server.port!)
 
-      const res = await client.post('/users', {
+      const res = await client.put(`/users/${USER_ID}`, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),
@@ -172,7 +174,7 @@ describe('WebSocket', () => {
 
       expect(res).toStrictEqual({
         id: res.id,
-        clientId: client.id,
+        clientId: client.id!,
         type: MessageType.Response,
         timestamp: res.timestamp,
         status: 201,
