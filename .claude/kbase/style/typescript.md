@@ -88,22 +88,41 @@ TypeScript migration. Per-file progress lives in
 
 ## Typing decisions
 
-### `executeMiddlewareChain` is generic over the request
+### The request hierarchy, and why `Middleware` is not generic
 
-- **Choice:** `executeMiddlewareChain<TReq>(req: TReq, chain:
-  Middleware<TReq>[])` rather than naming a concrete request type.
-- **Rationale:** `req` is not a `Request`. The two callers build
-  *different* envelopes: `buildBunRequest` (`index.js`) produces
-  `{method, route, headers, params, query, raw, server, json}`, while
-  `buildRequest` (`socket.ts`) produces
-  `{id, clientId, method, route, headers, params, query, json}`, now
-  named `WebSocketRequest`.
-  `utils` only forwards the value and never inspects it, so a generic
-  states that honestly and lets each caller supply its own shape.
-- **Revisit:** After `socket.ts` and `index.ts` convert. The common core
-  is `method`, `route`, `headers`, `params`, `query`, `json`, which can
-  become a named base type with `TReq` constrained to it. Tracked in
-  [`.claude/FEATURE.md`](../../FEATURE.md).
+- **Choice:** four types in `utils.ts`, the dependency root:
+
+  ```ts
+  BaseRequest      method, route, headers, params, query, json
+  EndpointRequest  BaseRequest & { raw, server }
+  WebSocketRequest BaseRequest & { id, clientId }
+  Request          EndpointRequest | WebSocketRequest
+  ```
+
+  `Middleware` is `(req: Request, res, next) => unknown`, with no type
+  parameter, and `executeMiddlewareChain` is concrete.
+- **Why they all live in `utils.ts`.** The import graph is a DAG rooted
+  at `utils`, so `Request` has to be declared there or the modules that
+  build the two variants would need type-only cycles. `EndpointRequest`
+  needs `BunRequest` and `Server<SocketData>`, which is why `SocketData`
+  and the `Server` alias live in `utils` too.
+- **Why the generic went away rather than getting a constraint.** The
+  earlier `executeMiddlewareChain<TReq>` existed because `utils` only
+  forwards the request and never inspects it. That was honest while the
+  two envelopes were unnamed. Once both exist, the union says the same
+  thing with less machinery, and it says it in one place instead of at
+  every instantiation.
+- **What it cost, and why that was the point.** 105 type errors, 104 in
+  test fixtures. `utils.test.ts` had `REQ = { url: '/users' }`, a shape
+  neither envelope has ever produced. `middleware.test.ts` fixtures now
+  spread a `BASE_REQUEST` so each test states only the fields it
+  exercises.
+- **Where a loose type is still correct.** `socket.test.ts` binds the
+  three handshake terminals through a local `LooseHandler`
+  (`(req: Record<string, unknown>, res: unknown) => Response`). Those
+  suites exist to prove the terminals reject malformed input, so the
+  fixtures must be malformed. One cast for the file beats 67 at the call
+  sites, and it names the intent.
 
 ### `Middleware` returns `unknown`
 

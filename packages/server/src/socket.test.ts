@@ -57,6 +57,8 @@ const UUIDs: UUID[] = [
   '00000000-0000-0000-0000-000000000003',
 ]
 
+type LooseHandler = (req: Record<string, unknown>, res: unknown) => Response
+
 function buildSocket (clientId: string) {
   const send = mock()
 
@@ -684,7 +686,7 @@ describe('buildSocketServer()', () => {
 
   describe('close()', () => {
     const handlers = buildSocketHandlers(state)
-    const updateTicket = handlers[2].handler
+    const updateTicket = handlers[2].handler as LooseHandler
 
     test('when the socket is no longer registered', () => {
       const state = buildSocketState()
@@ -828,9 +830,9 @@ describe('buildSocketHandlers()', () => {
 
   const state = buildSocketState()
   const handlers = buildSocketHandlers(state)
-  const createSocket = handlers[0].handler
-  const createTicket = handlers[1].handler
-  const updateTicket = handlers[2].handler
+  const createSocket = handlers[0].handler as LooseHandler
+  const createTicket = handlers[1].handler as LooseHandler
+  const updateTicket = handlers[2].handler as LooseHandler
 
   describe('GET', () => {
     test('when invoked via WebSocket message', async () => {
@@ -1271,7 +1273,7 @@ describe('buildSocketHandlers()', () => {
       })
 
       const handlers = buildSocketHandlers(state)
-      const createTicket = handlers[1].handler
+      const createTicket = handlers[1].handler as LooseHandler
 
       state.tickets.set('a', {
         clientId: 'x',
@@ -1304,7 +1306,7 @@ describe('buildSocketHandlers()', () => {
     test('when expired tickets exist, it sweeps them on mint', () => {
       const state = buildSocketState()
       const handlers = buildSocketHandlers(state)
-      const createTicket = handlers[1].handler
+      const createTicket = handlers[1].handler as LooseHandler
 
       state.tickets.set('expired-a', {
         clientId: 'x',

@@ -25,7 +25,9 @@ import type { ValidateFunction } from 'ajv'
 
 import type {
   HttpMethod,
-  RouteMiddleware,
+  Request,
+  WebSocketRequest,
+  Middleware,
   SocketData,
   AppOptions,
 } from './utils'
@@ -71,28 +73,17 @@ export type SocketState = {
   inactiveSessions: Map<string, InactiveSession>
 }
 
-export type WebSocketRequest = {
-  id: string
-  clientId: string
-  method: HttpMethod
-  route: string
-  headers: Headers
-  params: Record<string, string>
-  query: Record<string, unknown>
-  json: () => Promise<unknown>
-}
-
 export type SocketRoute = {
   method: HttpMethod
   path: string
   segments: string[]
-  chain: RouteMiddleware[]
+  chain: Middleware[]
 }
 
 export type SocketEndpoint = {
   method: HttpMethod
   path: string
-  handler: (req: Record<string, unknown>, res: unknown) => Response
+  handler: (req: Request, res: unknown) => Response
 }
 
 export type SocketServer = {

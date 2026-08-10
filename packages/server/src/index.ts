@@ -23,7 +23,7 @@ import type { BunRequest } from 'bun'
 
 import type {
   HttpMethod,
-  RouteMiddleware,
+  Middleware,
   EndpointRequest,
   AppOptions,
   Server,
@@ -42,6 +42,28 @@ export {
   setValidationFormats,
   validateSchemas,
 } from './middleware'
+
+export { HttpMethod, StatusCode } from './utils'
+
+export type {
+  AppOptions,
+  EndpointRequest,
+  FormattedError,
+  Middleware,
+  NextFn,
+  Request,
+  Server,
+  SocketOptions,
+  WebSocketRequest,
+} from './utils'
+
+export type {
+  FormatterField,
+  FormatterSchema,
+  ValidationSchemas,
+} from './middleware'
+
+export type { SocketCommands } from './socket'
 
 type OutputRoutes = Record<string, string[]>
 type ServerRoutes = Record<string, Record<string, EndpointHandler>>
@@ -66,7 +88,7 @@ type RoutePath = {
 type ChainRoute = {
   method: HttpMethod
   path: string
-  chain: RouteMiddleware[]
+  chain: Middleware[]
 }
 
 type ModuleRoute = {
@@ -87,16 +109,10 @@ type AppRoutes = {
   socket: SocketRoute[]
 }
 
-type App = {
+export type App = {
   server: Server
   commands: SocketCommands
   routes: OutputRoutes
-}
-
-export type {
-  App,
-  AppOptions,
-  AppRoutes,
 }
 
 const ALLOWED_FILES_META = ['meta.js', 'meta.ts']
@@ -150,7 +166,7 @@ function buildEndpointRequest (
   const json = () => bunReq.json()
 
   return {
-    method: bunReq.method,
+    method: bunReq.method as HttpMethod,
     route: url.pathname,
     headers: bunReq.headers,
     params: bunReq.params ?? {},
@@ -240,7 +256,7 @@ function selectMetaPaths (metadata: string[], modulePath: string): string[] {
 
 async function resolveMetaMiddleware (
   metaPaths: string[],
-): Promise<RouteMiddleware[]> {
+): Promise<Middleware[]> {
   const modules = await Promise.all(metaPaths.map(item => import(item)))
 
   return modules
@@ -281,7 +297,7 @@ function buildRoutePaths (
 
 async function buildChain (
   route: RoutePath,
-  rootMiddleware: RouteMiddleware[],
+  rootMiddleware: Middleware[],
 ): Promise<ChainRoute> {
   const module = await import(route.modulePath)
   const metaMiddleware = await resolveMetaMiddleware(route.metaMiddlewarePath)
@@ -310,7 +326,7 @@ ${route.modulePath}
 
 function buildNormalRoutes (
   routePaths: RoutePath[],
-  rootMiddleware: RouteMiddleware[],
+  rootMiddleware: Middleware[],
 ): Promise<ChainRoute[]> {
   return Promise.all(
     routePaths.map(route => buildChain(route, rootMiddleware)),
@@ -319,7 +335,7 @@ function buildNormalRoutes (
 
 async function buildMergedRoutes (
   routePaths: ChainRoute[],
-  middleware: RouteMiddleware[],
+  middleware: Middleware[],
   state: SocketState,
   opts: RoutingOptions,
 ): Promise<ChainRoute[]> {

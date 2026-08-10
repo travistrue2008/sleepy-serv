@@ -64,140 +64,53 @@ guessing early.
 request builders only exist in TypeScript once their own modules
 convert, so the real contract is not visible until then.
 
-- [ ] **Design the request type hierarchy.** Establish a `BaseRequest`
-      with the properties both variants share, and two types extending
-      it. The middleware chain and middleware handlers should accept
-      either.
-
-      `BaseRequest`: `method` (HTTP method), `route` (URL route),
-      `params` (dynamic route param values), `query` (parsed
-      querystring), `headers` (a `Headers` instance), `json` (async,
-      resolves the body to an object).
-
-      `EndpointRequest` adds `server` (the underlying Bun server) and
-      `raw` (the original `BunRequest`, if needed). Built by
-      `buildEndpointRequest` at `index.js:71`.
-
-      `WebSocketRequest` adds `id` and `clientId`. Built by
-      `buildRequest` in `socket.ts`. (These two fields were read off
-      the current implementation; the spec handed over left the
-      WebSocket-specific list blank, so confirm they are the intended
-      set.) It now exists as a concrete exported type in `socket.ts`,
-      declared from what `buildRequest` actually returns, so this step is
-      reduced to factoring out the shared `BaseRequest` core once
-      `index.ts` reveals the endpoint side.
-
-      The union is the point:
+- [x] **Design the request type hierarchy.** Done, per the handed-over
+      spec. All four types live in `utils.ts`, the dependency root, so
+      no module needs a type-only import cycle:
 
       ```ts
-      type Request = EndpointRequest | WebSocketRequest
+      BaseRequest      method, route, headers, params, query, json
+      EndpointRequest  BaseRequest & { raw, server }
+      WebSocketRequest BaseRequest & { id, clientId }
+      Request          EndpointRequest | WebSocketRequest
       ```
 
-      and every chain entry then takes `req: Request`.
+      `Middleware` is no longer generic; it is
+      `(req: Request, res: unknown, next: NextFn | null) => unknown`.
+      `RouteMiddleware` is gone, subsumed by it.
 
-      Deliberately *not* `BunRequest`: the framework needs less than Bun
-      provides and also attaches fields Bun does not have.
-
-      This replaces `ValidatableRequest` in `middleware.ts`, which is a
-      temporary stand-in covering only what that module happens to
-      touch (`headers`, `params`, `query`, `json`), and it subsumes the
-      `TReq` item below.
-
-      **It also replaces `Record<string, unknown>` on
-      `SocketEndpoint.handler`.** That stand-in exists because the
-      handshake terminals genuinely receive either envelope: their
-      `handler` is pushed into a normal route chain (`index.js:238` and
-      `:254`), and chains run from two places, `index.js:274` with
-      `buildEndpointRequest` output and `socket.ts:533` with
-      `buildRequest` output. The two Ajv guards in `socket.ts` are doing
-      union discrimination by hand: `CreateSocketRequest` requires
-      `server` and `raw`, which only the endpoint envelope has, and
-      `validateNotMessage` rejects anything carrying `clientId`, which
-      only the WebSocket envelope has. Once `Request` exists, those
-      become a real discriminated union and the `obj as T` cast inside
-      `validateSchema` narrows instead of asserting.
-
-      **Confirm the name before adopting it.** `Request` is a global
-      (`lib.dom` / Bun), and a module-level `type Request` shadows it:
-      verified that `new Request('http://x')` stops resolving to the
-      global once the alias is declared, with `globalThis.Request` left
-      as the escape hatch. No server module currently references the
-      bare global type, so the shadowing costs nothing internally. The
-      open question is the public surface, since `index.ts` re-exports
-      the API and a consumer writing `import { Request } from
-      'sleepy-serv'` would shadow the global in their own file. Either
-      accept that or pick a prefixed name.
-
-- [ ] **Tighten `TReq` in `utils.ts`.** `executeMiddlewareChain` is
-      currently generic over an unconstrained `TReq` because `utils` only
-      forwards the request and never inspects it. The two callers build
-      different shapes: `index.js:71` (`buildBunRequest`) produces
-      `{method, route, headers, params, query, raw, server, json}`, while
-      `socket.ts` (`buildRequest`) produces
-      `{id, clientId, method, route, headers, params, query, json}`,
-      now named `WebSocketRequest`.
-      The common core is `method`, `route`, `headers`, `params`, `query`,
-      `json`. Once `socket.ts` and `index.ts` are converted (last two in
-      group 1), that core can become a named base type with the generic
-      constrained to it, or the generic can collapse into a union.
-      Superseded by the request type hierarchy above: `TReq` should end
-      up constrained to `BaseRequest`, or collapse into a
-      `EndpointRequest | WebSocketRequest` union.
-      Note: `utils.test.ts` uses `const REQ = { url: '/users' }`, which
-      matches neither envelope (neither has a `url` field). It compiles
-      today only because `TReq` is unconstrained, so tightening the
-      constraint will correctly break it and the fixture will need a
-      realistic shape.
-
-- [ ] **Extract a validation-source builder in `validateSchemas`.**
-      Low priority cleanup, not blocking anything. The per-key
-      conditionals currently sit inline in the reduce
-      (`middleware.ts:182-183`):
-
-      ```ts
-      const raw = key === 'body' ? res : req[key]
-      const data = raw instanceof Headers
-        ? Object.fromEntries(raw)
-        : raw
-      ```
-
-      Replace with a helper that loops the keys actually present in
-      `schemas` and returns an object already in validation-ready form:
-      `body` pulled from `res`, `headers` as a POJO built from the
-      request's `Headers` instance, `params` and `query` passed through.
-      The validation loop then just reads `source[key]`, with no
-      type-sniffing per iteration.
-
-      Note the `instanceof Headers` check exists because the value's
-      shape is not known statically. Doing this after the `BaseRequest`
-      work may let the conversion key off the schema key alone, since
-      `headers` will be typed as `Headers` on every request variant.
-
-- [ ] **Resolve `next` nullability in built-in middleware.**
-      `Middleware` types `next` as `NextFn | null` because
-      `executeMiddlewareChain` really does pass `null` to the last entry.
-      But `parseJsonBody` and `validateSchemas` call `next`
-      unconditionally, since they are only valid in non-terminal
-      position. That precondition is currently asserted with three
-      `next as NextFn` casts in `middleware.ts` (lines 112, 121,
-      173) rather than encoded. Options when revisiting: a runtime guard
-      that throws a clear error, or splitting the chain-entry type so
-      terminal handlers and middleware are distinct. Note a naive split
-      fails under `strictFunctionTypes`, since a function taking
-      non-null `next` is not assignable to one taking
-      `NextFn | null`. Best settled alongside the `TReq`
-      tightening, since both describe the same chain contract.
-
-- [ ] **Decide whether `StatusCode` literals need pinning.** The deleted
-      `status.test.ts` held a table test asserting all 62 members against
-      their raw numbers, plus a uniqueness check. Nothing replaced it.
-      `errors.test.ts` now asserts `StatusCode.NotFound` on both the
-      expected and actual side, so a typo in `utils.ts` (say `NotFound:
-      405`) would keep every test green and ship a wrong status code.
-      Either restore the table test in `utils.test.ts` or accept that
-      the numbers are unverified; leaving it undecided is the only bad
-      option.
-
+      Cost: 105 type errors, 104 of them test fixtures, which is the
+      point. `utils.test.ts` really did have `REQ = { url: '/users' }`
+      matching neither envelope. `middleware.test.ts` fixtures now
+      spread a `BASE_REQUEST`, so each test states only the fields it
+      exercises. `socket.test.ts` binds the three handshake terminals
+      through a local `LooseHandler` type, because those suites
+      deliberately feed malformed input to the validators; that is one
+      cast for the file instead of 67 at the call sites.
+- [x] **Tighten `TReq` in `utils.ts`.** Resolved by the above, more
+      completely than planned: the generic did not need constraining, it
+      needed removing. `executeMiddlewareChain (req: Request, chain:
+      Middleware[])` is now concrete.
+- [x] **Extract a validation-source builder in `validateSchemas`.**
+      Done. `buildValidationSource(req, res)` returns the four keys
+      already in validation-ready form, so the reduce is now just
+      `validator(source[key])` with no per-iteration type sniffing. The
+      `instanceof Headers` check is gone: now that `BaseRequest.headers`
+      is a `Headers` on every variant, `Object.fromEntries(req.headers)`
+      is unconditional.
+- [x] **Resolve `next` nullability in built-in middleware.** Replaced
+      the three `as NextFn` casts with a `requireNext()` guard that
+      throws `TypeError('Middleware cannot be the last entry in a
+      chain')`. Chose the runtime guard over splitting the chain-entry
+      type because, as noted, a naive split fails under
+      `strictFunctionTypes`. Two tests cover the new branch, keeping
+      `middleware.ts` at 100%.
+- [x] **Decide whether `StatusCode` literals need pinning.** Restored
+      into `utils.test.ts`, where `StatusCode` now lives. Verified it
+      earns its place by mutation: with `NotFound: 405`, both new tests
+      fail (the table, and uniqueness, since 405 then collides with
+      `MethodNotAllowed`) while `errors.test.ts` still passes. The gap
+      was real.
 - [x] **Revisit error message intent.** Settled the same way for both
       classes the `socket.ts` conversion forced: `message` stays
       **required**, and the two bare throw sites were treated as the
@@ -268,32 +181,28 @@ convert, so the real contract is not visible until then.
       So nothing is blocked, and this is a fidelity improvement rather
       than a fix.
 
-- [ ] **Decide what an unvalidatable message echoes back.**
-      `buildErrorMessage` in `socket.ts` runs on the catch path, which is
-      reached *before* validation succeeds, so `id` and `clientId` are
-      raw wire values. It reads them through
-      `message as Pick<BaseMessage, 'id' | 'clientId'>`, which claims
-      both are strings when they demonstrably need not be:
-      `socket.test.js` sends a bare `{type: 'heartbeat'}` frame and the
-      reply carries no `clientId` at all (`JSON.stringify` drops the
-      `undefined`). This preserves the JavaScript behaviour exactly, but
-      the cast is a knowing lie. The likely fix is not a better type: the
-      socket already knows its authenticated identity as
-      `ws.data.clientId`, so echoing a client-supplied one on a frame
-      that failed validation is arguably the bug. Changing it is a
-      behaviour change, hence deferred.
+- [x] **Decide what an unvalidatable message echoes back.** Attempted,
+      then reverted, and promoted to
+      [`.claude/todos/bad-client-id.md`](./todos/bad-client-id.md).
 
-- [ ] **`RequestMessage.headers` is typed `Headers` but arrives as a
-      POJO.** Every message type declares `headers: Headers`, which holds
-      for messages the server *builds*. Inbound frames are
-      `JSON.parse`d, so their `headers` is a plain object at runtime.
-      Nothing breaks today (`buildRequest` does
-      `new Headers(message.headers)`, and `HeadersInit` accepts both),
-      but the type is wrong for exactly the direction that crosses the
-      wire. Worth splitting inbound from outbound message types, or
-      typing the field as `HeadersInit`, when the request hierarchy above
-      is designed.
+      `buildErrorMessage` was changed to use `ws.data.clientId`. That is
+      defensible for the catch path in isolation, but it left the
+      success path still echoing the client-supplied value, so the two
+      disagreed. Verifying it also surfaced the larger issue: nothing
+      checks that an inbound frame's `clientId` belongs to the socket it
+      arrived on, because `validateMessage` only checks uuid *format*.
 
+      That is a protocol decision, not a conversion one, so it is out of
+      scope here and tracked separately. Current behaviour is unchanged
+      from the JavaScript: both paths echo whatever the client sent, and
+      the `as Pick<BaseMessage, ...>` cast stays.
+- [x] **`RequestMessage.headers` is typed `Headers` but arrives as a
+      POJO.** Now `Bun.HeadersInit`, which covers both directions: a
+      `Headers` when the message is built, a plain object when it is
+      parsed off the wire. The other three message types stay `Headers`,
+      since they are only ever constructed server-side. Note the bare
+      `HeadersInit` global is not in scope under
+      `lib: ["ESNext"]` without DOM; Bun namespaces it.
 ## 1. `server` implementation and unit tests
 
 - [x] `packages/server/src/utils.js`

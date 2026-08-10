@@ -1,10 +1,90 @@
 import { describe, test, expect, mock } from 'bun:test'
 
 import {
+  HttpMethod,
+  StatusCode,
   toSegments,
   formatError,
   executeMiddlewareChain,
 } from './utils'
+
+import type { Request } from './utils'
+
+describe('StatusCode', () => {
+  test('when every member is compared against its literal code', () => {
+    expect(StatusCode).toStrictEqual({
+      Continue: 100,
+      SwitchingProtocols: 101,
+      Processing: 102,
+      EarlyHints: 103,
+      Ok: 200,
+      Created: 201,
+      Accepted: 202,
+      NonAuthoritativeInformation: 203,
+      NoContent: 204,
+      ResetContent: 205,
+      PartialContent: 206,
+      MultiStatus: 207,
+      AlreadyReported: 208,
+      ImUsed: 226,
+      MultipleChoices: 300,
+      MovedPermanently: 301,
+      Found: 302,
+      SeeOther: 303,
+      NotModified: 304,
+      UseProxy: 305,
+      TemporaryRedirect: 307,
+      PermanentRedirect: 308,
+      BadRequest: 400,
+      Unauthorized: 401,
+      PaymentRequired: 402,
+      Forbidden: 403,
+      NotFound: 404,
+      MethodNotAllowed: 405,
+      NotAcceptable: 406,
+      ProxyAuthenticationRequired: 407,
+      RequestTimeout: 408,
+      Conflict: 409,
+      Gone: 410,
+      LengthRequired: 411,
+      PreconditionFailed: 412,
+      PayloadTooLarge: 413,
+      UriTooLong: 414,
+      UnsupportedMediaType: 415,
+      RangeNotSatisfiable: 416,
+      ExpectationFailed: 417,
+      ImATeapot: 418,
+      MisdirectedRequest: 421,
+      UnprocessableContent: 422,
+      Locked: 423,
+      FailedDependency: 424,
+      TooEarly: 425,
+      UpgradeRequired: 426,
+      PreconditionRequired: 428,
+      TooManyRequests: 429,
+      RequestHeaderFieldsTooLarge: 431,
+      UnavailableForLegalReasons: 451,
+      InternalServerError: 500,
+      NotImplemented: 501,
+      BadGateway: 502,
+      ServiceUnavailable: 503,
+      GatewayTimeout: 504,
+      HTTPVersionNotSupported: 505,
+      VariantAlsoNegotiates: 506,
+      InsufficientStorage: 507,
+      LoopDetected: 508,
+      NotExtended: 510,
+      NetworkAuthenticationRequired: 511,
+    })
+  })
+
+  test('when every code is checked for uniqueness', () => {
+    const codes = Object.values(StatusCode)
+    const unique = new Set(codes)
+
+    expect(unique.size).toBe(codes.length)
+  })
+})
 
 describe('toSegments()', () => {
   test('when no slashes on either end', () => {
@@ -158,10 +238,19 @@ describe('formatError()', () => {
 })
 
 describe('executeMiddlewareChain()', () => {
-  const REQ = { url: '/users' }
+  const REQ: Request = {
+    id: '00000000-0000-0000-0000-000000000000',
+    clientId: '00000000-0000-0000-0000-000000000001',
+    method: HttpMethod.Get,
+    route: '/users',
+    headers: new Headers(),
+    params: {},
+    query: {},
+    json: async () => null,
+  }
 
   test('when NO middleware is provided', async () => {
-    const fn = () => executeMiddlewareChain({}, [])
+    const fn = () => executeMiddlewareChain(REQ, [])
 
     expect(fn).toThrow(new RangeError('Middleware chain is empty'))
   })
@@ -225,7 +314,7 @@ describe('executeMiddlewareChain()', () => {
       }),
     ]
 
-    const fn = () => executeMiddlewareChain({}, chain)
+    const fn = () => executeMiddlewareChain(REQ, chain)
     const err = new TypeError('Handler does not return a Response object')
 
     expect(fn).toThrow(err)
@@ -353,7 +442,7 @@ describe('executeMiddlewareChain()', () => {
       }),
     ]
 
-    const fn = () => executeMiddlewareChain({}, chain)
+    const fn = () => executeMiddlewareChain(REQ, chain)
 
     expect(fn).toThrow(err)
   })

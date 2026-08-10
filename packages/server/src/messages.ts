@@ -37,7 +37,7 @@ export type RequestMessage = BaseMessage & {
   type: typeof MessageType.Request
   method: HttpMethod
   route: string
-  headers: Headers
+  headers: Bun.HeadersInit
   query: Record<string, unknown>
   body: unknown
 }

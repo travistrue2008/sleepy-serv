@@ -90,26 +90,34 @@ export type FormattedError = {
   message: string
 }
 
-export type NextFn = (data?: unknown) => Promise<Response>
+export type NextFn = (data?: unknown) => Response | Promise<Response>
 
-export type Middleware<TReq = unknown> = (
-  req: TReq,
-  res: unknown,
-  next: NextFn | null,
-) => unknown
-
-export type RouteMiddleware = Middleware<Record<string, unknown>>
-
-export type EndpointRequest = {
-  method: string
+export type BaseRequest = {
+  method: HttpMethod
   route: string
   headers: Headers
   params: Record<string, string>
   query: Record<string, unknown>
-  raw: BunRequest
-  server: Server
   json: () => Promise<unknown>
 }
+
+export type EndpointRequest = BaseRequest & {
+  raw: BunRequest
+  server: Server
+}
+
+export type WebSocketRequest = BaseRequest & {
+  id: string
+  clientId: string
+}
+
+export type Request = EndpointRequest | WebSocketRequest
+
+export type Middleware = (
+  req: Request,
+  res: unknown,
+  next: NextFn | null,
+) => unknown
 
 export type SocketOptions = {
   disconnectThreshold?: number
@@ -131,7 +139,7 @@ export type Server = BunServer<SocketData>
 export type AppOptions = {
   hostname?: string
   mountPath?: string
-  middleware?: RouteMiddleware[]
+  middleware?: Middleware[]
   ws?: SocketOptions
   onClose?: () => Promise<void> | void
 }
@@ -164,9 +172,9 @@ export function formatError (
   }
 }
 
-export async function executeMiddlewareChain<TReq> (
-  req: TReq,
-  chain: Middleware<TReq>[],
+export async function executeMiddlewareChain (
+  req: Request,
+  chain: Middleware[],
 ): Promise<Response> {
   if (!chain.length) {
     throw new RangeError('Middleware chain is empty')

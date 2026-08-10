@@ -21,12 +21,41 @@ import {
   UnprocessableContentError,
 } from './errors'
 
+import { HttpMethod } from './utils'
+
+import type { WebSocketRequest } from './utils'
+
+const BASE_REQUEST: WebSocketRequest = {
+  id: '00000000-0000-0000-0000-000000000000',
+  clientId: '00000000-0000-0000-0000-000000000001',
+  method: HttpMethod.Get,
+  route: '/',
+  headers: new Headers(),
+  params: {},
+  query: {},
+  json: async () => null,
+}
+
 describe('parseJsonBody()', () => {
   const parser = parseJsonBody()
 
+  test('when "next" is NOT provided', async () => {
+    const req = {
+      ...BASE_REQUEST,
+      headers: new Headers({}),
+    }
+
+    const fn = () => parser(req, null, null)
+
+    await expect(fn).toThrow(
+      new TypeError('Middleware cannot be the last entry in a chain'),
+    )
+  })
+
   test('when NO "content-type" is provided', async () => {
     const req = {
-      method: 'POST',
+      ...BASE_REQUEST,
+      method: HttpMethod.Post,
       headers: new Headers({}),
       json: mock().mockResolvedValue(undefined),
     }
@@ -41,7 +70,8 @@ describe('parseJsonBody()', () => {
 
   test('when "content-type" is NOT "application/json"', async () => {
     const req = {
-      method: 'POST',
+      ...BASE_REQUEST,
+      method: HttpMethod.Post,
       headers: new Headers({
         'content-type': 'application/xml',
       }),
@@ -59,7 +89,8 @@ describe('parseJsonBody()', () => {
 
   test('when body JSON is invalid', async () => {
     const req = {
-      method: 'POST',
+      ...BASE_REQUEST,
+      method: HttpMethod.Post,
       headers: new Headers({
         'content-type': 'application/json;charset=utf-8',
       }),
@@ -81,7 +112,8 @@ describe('parseJsonBody()', () => {
     }
 
     const req = {
-      method: 'POST',
+      ...BASE_REQUEST,
+      method: HttpMethod.Post,
       headers: new Headers({
         'content-type': 'application/json;charset=utf-8',
       }),
@@ -102,7 +134,8 @@ describe('parseJsonBody()', () => {
     }
 
     const req = {
-      method: 'POST',
+      ...BASE_REQUEST,
+      method: HttpMethod.Post,
       headers: new Headers({
         'content-type': 'application/json;charset=utf-8',
       }),
@@ -169,6 +202,7 @@ describe('setValidationFormats()', () => {
     const next = mock()
 
     const fn = () => middleware({
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {},
@@ -181,6 +215,15 @@ describe('setValidationFormats()', () => {
 
 describe('validateSchemas()', () => {
   const UUID = '00000000-0000-0000-0000-000000000001'
+
+  test('when "next" is NOT provided', () => {
+    const middleware = validateSchemas({})
+    const fn = () => middleware(BASE_REQUEST, null, null)
+
+    expect(fn).toThrow(
+      new TypeError('Middleware cannot be the last entry in a chain'),
+    )
+  })
 
   const PATTERN_UUID =
     '^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$'
@@ -221,6 +264,7 @@ describe('validateSchemas()', () => {
     const middleware = validateSchemas({})
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {},
@@ -240,6 +284,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers({
         userId: '123',
       }),
@@ -267,6 +312,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers({
         userId: UUID,
       }),
@@ -289,6 +335,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers({
         USERID: '123',
       }),
@@ -316,6 +363,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers({
         userId: '123',
       }),
@@ -344,6 +392,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers({
         userId: UUID,
       }),
@@ -365,6 +414,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {
         userId: '123',
@@ -392,6 +442,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {
         userId: UUID,
@@ -414,6 +465,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {
         userId: '123',
@@ -441,6 +493,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {
         userId: UUID,
@@ -463,6 +516,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {
@@ -490,6 +544,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {
@@ -511,6 +566,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {
@@ -538,6 +594,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {
@@ -559,6 +616,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {},
@@ -592,6 +650,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {},
@@ -619,6 +678,7 @@ describe('validateSchemas()', () => {
 
   test('when body contains extra fields (root)', () => {
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {},
@@ -654,6 +714,7 @@ describe('validateSchemas()', () => {
 
   test('when body contains extra fields (sub-key)', () => {
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {},
@@ -697,6 +758,7 @@ describe('validateSchemas()', () => {
 
   test('when a null value for a nullable field is provided', () => {
     const req = {
+      ...BASE_REQUEST,
       headers: new Headers(),
       params: {},
       query: {},

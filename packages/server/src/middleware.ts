@@ -10,7 +10,7 @@ import {
 } from './errors'
 
 import type { Format, Schema, ValidateFunction } from 'ajv'
-import type { FormattedError, Middleware, NextFn } from './utils'
+import type { FormattedError, Middleware, NextFn, Request } from './utils'
 
 export type FormatterField = {
   type: string
@@ -28,21 +28,18 @@ export type ValidationSchemas = {
 
 export type SchemaKey = keyof ValidationSchemas
 
-export type ParsableRequest = {
-  headers: Headers
-  json: () => Promise<unknown>
-}
+function requireNext (next: NextFn | null): NextFn {
+  if (!next) {
+    throw new TypeError('Middleware cannot be the last entry in a chain')
+  }
 
-export type ValidatableRequest = {
-  headers: Headers
-  params: unknown
-  query: unknown
+  return next
 }
 
 let _schemasCompiled = false
 let _customFormats: Record<string, Format> | null = null
 
-async function parseBody (req: ParsableRequest): Promise<unknown> {
+async function parseBody (req: Request): Promise<unknown> {
   try {
     const result = await req.json()
 
@@ -120,16 +117,16 @@ function compileSchemas (
     })
 }
 
-export function parseJsonBody (): Middleware<ParsableRequest> {
+export function parseJsonBody (): Middleware {
   return async (
-    req: ParsableRequest,
+    req: Request,
     res: unknown,
     next: NextFn | null,
   ): Promise<unknown> => {
     const contentType = req.headers.get('content-type')
 
     if (!contentType) {
-      return (next as NextFn)(res)
+      return requireNext(next)(res)
     }
 
     if (!contentType.startsWith('application/json')) {
@@ -138,7 +135,7 @@ export function parseJsonBody (): Middleware<ParsableRequest> {
 
     const body = await parseBody(req)
 
-    return (next as NextFn)(body)
+    return requireNext(next)(body)
   }
 }
 
@@ -163,25 +160,37 @@ export function resetValidationFormatsState (): void {
   _schemasCompiled = false
 }
 
+function buildValidationSource (
+  req: Request,
+  res: unknown,
+): Record<SchemaKey, unknown> {
+  return {
+    body: res,
+    headers: Object.fromEntries(req.headers),
+    params: req.params,
+    query: req.query,
+  }
+}
+
 export function validateSchemas (
   schemas: ValidationSchemas,
-): Middleware<ValidatableRequest> {
+): Middleware {
   const entries = compileSchemas(schemas)
 
   _schemasCompiled = true
 
   return (
-    req: ValidatableRequest,
+    req: Request,
     res: unknown,
     next: NextFn | null,
   ): unknown => {
+    const source = buildValidationSource(req, res)
+
     const errors = entries.reduce((accum: FormattedError[], [
       key,
       validator,
     ]) => {
-      const raw = key === 'body' ? res : req[key]
-      const data = raw instanceof Headers ? Object.fromEntries(raw) : raw
-      const valid = validator(data)
+      const valid = validator(source[key])
 
       return !valid
         ? [
@@ -195,6 +204,6 @@ export function validateSchemas (
       throw new UnprocessableContentError(errors)
     }
 
-    return (next as NextFn)(res)
+    return requireNext(next)(res)
   }
 }
