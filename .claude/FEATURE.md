@@ -35,9 +35,28 @@ committed.
       `dist` build wiring (start of group 3). When `dist` lands, the
       client's `files` becomes `["dist"]`.
 
+## Deferred refinements
+
+Revisit once the work that motivates them is actually done, rather than
+guessing early.
+
+- [ ] **Tighten `TReq` in `utils.ts`.** `executeMiddlewareChain` is
+      currently generic over an unconstrained `TReq` because `utils` only
+      forwards the request and never inspects it. The two callers build
+      different shapes: `index.js:71` (`buildBunRequest`) produces
+      `{method, route, headers, params, query, raw, server, json}`, while
+      `socket.js:208` (`buildRequest`) produces
+      `{id, clientId, method, route, headers, params, query, json}`.
+      The common core is `method`, `route`, `headers`, `params`, `query`,
+      `json`. Once `socket.ts` and `index.ts` are converted (last two in
+      group 1), that core can become a named base type with the generic
+      constrained to it, or the generic can collapse into a union.
+      Deliberately deferred: both shapes only become visible in
+      TypeScript when their own modules convert.
+
 ## 1. `server` implementation and unit tests
 
-- [ ] `packages/server/src/utils.js`
+- [x] `packages/server/src/utils.js`
 - [ ] `packages/server/src/utils.test.js`
 - [ ] `packages/server/src/meta.js`
 - [ ] `packages/server/src/meta.test.js`
