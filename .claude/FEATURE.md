@@ -266,10 +266,10 @@ convert, so the real contract is not visible until then.
       converts. `Bun.BodyInit` for the same reason `Bun.HeadersInit` was
       needed: the bare DOM globals are out of scope under
       `lib: ["ESNext"]`.
-- [ ] `packages/server/tests/errors/initialization/leaf-directory-has-no-method-file/api/users/meta.js`
-- [ ] `packages/server/tests/errors/initialization/leaf-directory-has-no-method-file/integration.test.js`
-- [ ] `packages/server/tests/errors/initialization/method-file-has-no-default-export/api/get.js`
-- [ ] `packages/server/tests/errors/initialization/method-file-has-no-default-export/integration.test.js`
+- [x] `packages/server/tests/errors/initialization/leaf-directory-has-no-method-file/api/users/meta.js`
+- [x] `packages/server/tests/errors/initialization/leaf-directory-has-no-method-file/integration.test.js`
+- [x] `packages/server/tests/errors/initialization/method-file-has-no-default-export/api/get.js`
+- [x] `packages/server/tests/errors/initialization/method-file-has-no-default-export/integration.test.js`
 - [ ] `packages/server/tests/errors/initialization/whitelist-supported-file/api/get.js`
 - [ ] `packages/server/tests/errors/initialization/whitelist-supported-file/api/get.util.js`
 - [ ] `packages/server/tests/errors/initialization/whitelist-supported-file/integration.test.js`
