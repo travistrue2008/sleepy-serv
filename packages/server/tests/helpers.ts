@@ -4,8 +4,8 @@ import { MessageType } from '../src/messages'
 import type { App, HttpMethod } from '../src'
 
 export const Fmt = {
-  TEXT: 'text',
-  JSON: 'json',
+  Text: 'text',
+  Json: 'json',
 } as const
 
 export type Fmt = typeof Fmt[keyof typeof Fmt]
@@ -134,7 +134,7 @@ export async function createSocketClient (
   const mountPath = opts.mountPath ?? ''
   const hostRoot = `${app.server.url.host}${mountPath}/ws`
   const req = createRequestor(app)
-  const res = await req.post('/ws', Fmt.JSON, { mountPath })
+  const res = await req.post('/ws', Fmt.Json, { mountPath })
   const { ticket } = res.body as { ticket: string }
   const url = `ws://${hostRoot}?ticket=${ticket}`
   const socket = new WebSocket(url)

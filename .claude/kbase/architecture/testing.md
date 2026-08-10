@@ -10,7 +10,7 @@
 
 `packages/server/tests/helpers.js` exposes function factories instead of the old `Context` class (the class was removed 2026-07-16 once every suite migrated):
 
-- `createRequestor(app)` for REST: `req.get/put/post(route, fmt, opts)` returns `{ status, body }`. `fmt` is `Fmt.TEXT` / `Fmt.JSON`, and the body is deserialized with `res[fmt]()`. Per-call `opts` carries `query` and `mountPath`.
+- `createRequestor(app)` for REST: `req.get/put/post(route, fmt, opts)` returns `{ status, body }`. `fmt` is `Fmt.Text` / `Fmt.Json`, and the body is deserialized with `res[fmt]()`. That indexing is why `Fmt`'s **values** stay lowercase while its members are PascalCase: the values are `Response` method names, so `tsc` rejects any other spelling. Per-call `opts` carries `query` and `mountPath`.
 - `createSocketClient(app, opts)` for WebSocket: runs the POST-ticket, connect, and welcome handshake, then exposes `ws.get/put/post(route, opts)`, `heartbeat()`, `sendRaw(payload)`, plus `clientId` / `token` / `socket` getters. ws responses are asserted on `msg.status` / `msg.body`. Its getter is `clientId`, **not** `id`: this helper is a test double over a raw socket, not a `SleepySocketClient` (whose getter is `client.id`), so the two suites read the session id under different names on purpose (see [Identifier naming](./websocket.md#identifier-naming-id-vs-clientid)).
 
 Naming convention across suites: `app` + `req` + `res` for REST, `app` + `ws` + `msg` for ws. Most endpoints are tested twice, once per transport, with a `(REST)` / `(ws)` suffix on the test name.
@@ -18,7 +18,7 @@ Naming convention across suites: `app` + `req` + `res` for REST, `app` + `ws` + 
 Two non-obvious rules:
 
 - **`sendRaw(payload)` is the only way to test message-schema validation.** The ergonomic `get/put/post` and `heartbeat` always inject a valid `id`, `clientId`, `type`, and `timestamp`, so a malformed frame (a missing or invalid field) cannot be expressed through them. The `errors/request/ws-message` suite drives every validation case through `sendRaw`.
-- **`mountPath` is a per-call `opts` field, not a positional arg.** `createRequestor().post(route, fmt, opts)` takes three arguments; a fourth is silently dropped. So `createSocketClient` forwards the mount path as `req.post('/ws', Fmt.JSON, { mountPath })` for the ticket POST to reach the mounted `/ws`, and the ws message `route` must still include the mount prefix.
+- **`mountPath` is a per-call `opts` field, not a positional arg.** `createRequestor().post(route, fmt, opts)` takes three arguments; a fourth is silently dropped. So `createSocketClient` forwards the mount path as `req.post('/ws', Fmt.Json, { mountPath })` for the ticket POST to reach the mounted `/ws`, and the ws message `route` must still include the mount prefix.
 
 See also [Testing Patterns](../guides/testing-patterns.md) for timer and mocking conventions.
 

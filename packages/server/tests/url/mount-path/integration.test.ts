@@ -8,7 +8,7 @@ test('when adding a mount path (REST)', async () => {
   })
 
   const req = createRequestor(app)
-  const res = await req.get('/test-mount-path/users', Fmt.TEXT)
+  const res = await req.get('/test-mount-path/users', Fmt.Text)
 
   await app.server.stop(true)
 

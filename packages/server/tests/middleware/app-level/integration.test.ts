@@ -19,7 +19,7 @@ test('when app-level middleware is defined (REST)', async () => {
   })
 
   const req = createRequestor(app)
-  const res = await req.get('/users', Fmt.TEXT)
+  const res = await req.get('/users', Fmt.Text)
 
   await app.server.stop(true)
 

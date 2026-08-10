@@ -5,7 +5,7 @@ import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 test('when making a resource-level request (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const req = createRequestor(app)
-  const res = await req.get('/users', Fmt.TEXT)
+  const res = await req.get('/users', Fmt.Text)
 
   await app.server.stop(true)
 

@@ -6,7 +6,7 @@ import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 test('when a RequestError sub-type is thrown (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const req = createRequestor(app)
-  const res = await req.get('/', Fmt.JSON)
+  const res = await req.get('/', Fmt.Json)
 
   await app.server.stop(true)
 

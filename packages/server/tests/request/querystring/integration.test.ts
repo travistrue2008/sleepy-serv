@@ -6,7 +6,7 @@ test('when making a request with querystring (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const req = createRequestor(app)
 
-  const res = await req.get('/', Fmt.TEXT, {
+  const res = await req.get('/', Fmt.Text, {
     query: {
       userId: '123',
     },

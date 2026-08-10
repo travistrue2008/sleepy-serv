@@ -135,12 +135,21 @@ convert, so the real contract is not visible until then.
       `InternalServerError(message, ctx)` keep their bespoke signatures,
       and whether `ctx` (written, never read) is vestigial.
 
-- [ ] **Rename `FMT` to `Fmt`.** Deferred to "much later" on purpose:
-      the members are already correct, only the alias name is off. It is
-      an atomic rename across `packages/server/tests`, so it is cheapest
-      once group 2 is fully converted and every call site is already
-      being touched. Note the root `tests/helpers.js` declares a
-      *separate* `FMT`, so group 4 is an independent decision.
+- [x] **Rename `FMT` to `Fmt`.** Done in two passes across
+      `packages/server/tests`: the alias and its 53 references, then the
+      members from SCREAMING_SNAKE to PascalCase (`Fmt.Text`,
+      `Fmt.Json`), which brings it in line with `MessageType.Welcome`
+      and `StatusCode.Ok`. This entry previously claimed "the members
+      are already correct, only the alias name is off"; that was wrong.
+      **The values stay lowercase, and this is enforced, not stylistic.**
+      `deserializeBody` does `res[fmt]()`, so a value must be a real
+      `Response` method name. Mutating `Json: 'json'` to `Json: 'Json'`
+      fails with TS2551. That makes `Fmt` different in kind from
+      `MessageType` and `StatusCode`, whose values we choose: here an
+      external API pins them, and only the member identifiers are ours.
+      Renaming members needed anchored `Fmt.JSON` patterns rather than a
+      bare `JSON`, since the package has 27 `JSON.parse`/`JSON.stringify`
+      calls that a naive pass would have destroyed.
 
 - [ ] **Adopt Bun's own WebSocket types for `buildSocketServer`.**
       Lands with `index.ts`, since that is where `Bun.serve` is called.
@@ -406,7 +415,18 @@ convert, so the real contract is not visible until then.
 
 ## 4. E2E tests (root `tests/`)
 
-- [ ] `tests/helpers.js` (shared)
+- [ ] `tests/helpers.js` (shared). **Also rename its `FMT` to `Fmt` and
+      its members to PascalCase**, matching what
+      `packages/server/tests/helpers.ts` now does. This is a *separate*
+      declaration from the server's, with its own 81 references across
+      27 E2E suites, so it did not move with the server rename. Two
+      things to carry over: anchor the member pass on `Fmt.JSON` rather
+      than a bare `JSON`, to avoid destroying `JSON.parse` /
+      `JSON.stringify` calls; and leave the `'text'` / `'json'` values
+      alone, since `res[fmt]()` requires real `Response` method names.
+      This copy also still carries a `NONE: 'none'` member that no E2E
+      test uses, the same dead variant already removed server-side, so
+      drop it and give `fmt` the `Fmt | null` treatment.
 - [ ] `tests/auth/auth.js`
 - [ ] `tests/auth/api/auth/post.js`
 - [ ] `tests/auth/api/protected/get.js`
