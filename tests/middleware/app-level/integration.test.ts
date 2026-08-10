@@ -3,12 +3,18 @@ import { createApp, InternalServerError } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
-function root (req, _res, next) {
+import type { NextFn, Request } from 'sleepy-serv'
+
+function root (
+  req: Request,
+  _res: unknown,
+  next: NextFn | null,
+): Response | Promise<Response> {
   if (req.query.err !== undefined) {
     throw new Error('Error from root middleware')
   }
 
-  return next(['From root middleware'])
+  return next!(['From root middleware'])
 }
 
 describe('REST', () => {
@@ -48,7 +54,7 @@ describe('WebSocket', () => {
     })
 
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
 
     const res = await client.get('/', {
       query: {
@@ -63,7 +69,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: InternalServerError.status,
       timestamp: res.timestamp,
@@ -78,7 +84,7 @@ describe('WebSocket', () => {
     })
 
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
     const res = await client.get('/')
 
     await client.close()
@@ -88,7 +94,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: 200,
       timestamp: res.timestamp,

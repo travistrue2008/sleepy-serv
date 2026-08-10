@@ -17,7 +17,7 @@ test('when meta middleware writes to res (REST)', async () => {
 test('when meta middleware writes to res (ws)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port)
+  const client = await SleepySocketClient.connect(host, app.server.port!)
   const res = await client.get('/')
 
   await client.close()
@@ -25,7 +25,7 @@ test('when meta middleware writes to res (ws)', async () => {
 
   expect(res).toStrictEqual({
     id: res.id,
-    clientId: client.id,
+    clientId: client.id!,
     type: MessageType.Response,
     status: 200,
     timestamp: res.timestamp,
