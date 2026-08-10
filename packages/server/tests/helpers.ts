@@ -24,20 +24,20 @@ export type HttpResult = {
   body: unknown
 }
 
-export type MessageFrame = {
+export type BaseMessage = {
   id: string
   clientId?: string
   type: MessageType
   timestamp: string
 }
 
-export type ResponseFrame = MessageFrame & {
+export type ResponseMessage = BaseMessage & {
   status: number
   headers: Record<string, string>
   body: unknown
 }
 
-export type Frame = MessageFrame | ResponseFrame
+export type HeartbeatMessage = BaseMessage
 
 export type MessagePayload = {
   headers?: unknown
@@ -48,7 +48,7 @@ export type MessagePayload = {
 export type RequestorMethod = (
   route: string,
   fmt: Fmt | null,
-  opts?: RequestOptions,
+  opts: RequestOptions,
 ) => Promise<HttpResult>
 
 export type Requestor = {
@@ -63,11 +63,11 @@ export type SocketTestClient = {
   readonly heartbeatInterval: number
   readonly socket: WebSocket
   close: () => Promise<void>
-  heartbeat: () => Promise<MessageFrame>
-  get: (route: string, opts?: MessagePayload) => Promise<ResponseFrame>
-  put: (route: string, opts?: MessagePayload) => Promise<ResponseFrame>
-  post: (route: string, opts?: MessagePayload) => Promise<ResponseFrame>
-  sendRaw: (payload: Record<string, unknown>) => Promise<Frame>
+  heartbeat: () => Promise<BaseMessage>
+  get: (route: string, opts: MessagePayload) => Promise<ResponseMessage>
+  put: (route: string, opts: MessagePayload) => Promise<ResponseMessage>
+  post: (route: string, opts: MessagePayload) => Promise<ResponseMessage>
+  sendRaw: (payload: Record<string, unknown>) => Promise<unknown>
 }
 
 type WelcomeData = {
@@ -115,13 +115,13 @@ async function makeRequestMethod (
 
 export function createRequestor (app: App): Requestor {
   return {
-    get (route, fmt = null, opts = {}) {
+    get (route: string, fmt: Fmt | null = null, opts: RequestOptions = {}) {
       return makeRequestMethod(app, 'GET', route, fmt, opts)
     },
-    put (route, fmt = null, opts = {}) {
+    put (route: string, fmt: Fmt | null = null, opts: RequestOptions = {}) {
       return makeRequestMethod(app, 'PUT', route, fmt, opts)
     },
-    post (route, fmt = null, opts = {}) {
+    post (route: string, fmt: Fmt | null = null, opts: RequestOptions = {}) {
       return makeRequestMethod(app, 'POST', route, fmt, opts)
     },
   }
@@ -168,7 +168,7 @@ export async function createSocketClient (
 
   async function sendRaw (
     payload: Record<string, unknown>,
-  ): Promise<Frame> {
+  ): Promise<unknown> {
     return new Promise(resolve => {
       const handler = (event: MessageEvent): void => {
         resolve(JSON.parse(event.data))
@@ -184,7 +184,7 @@ export async function createSocketClient (
   async function sendMessage (
     type: MessageType,
     payload: Record<string, unknown>,
-  ): Promise<Frame> {
+  ): Promise<ResponseMessage> {
     return new Promise(resolve => {
       const handler = (event: MessageEvent): void => {
         resolve(JSON.parse(event.data))
@@ -200,7 +200,7 @@ export async function createSocketClient (
         clientId: data.clientId,
         type,
         timestamp: new Date().toISOString(),
-      }).then(resolve)
+      }).then((value: unknown) => resolve(value as ResponseMessage))
     })
   }
 
@@ -208,7 +208,7 @@ export async function createSocketClient (
     method: HttpMethod,
     route: string,
     payload: MessagePayload,
-  ): Promise<ResponseFrame> {
+  ): Promise<ResponseMessage> {
     const message = await sendMessage(MessageType.Request, {
       method,
       route,
@@ -217,7 +217,7 @@ export async function createSocketClient (
       body: payload.body ?? {},
     })
 
-    return message as ResponseFrame
+    return message as ResponseMessage
   }
 
   return {
@@ -238,19 +238,19 @@ export async function createSocketClient (
 
       await Promise.resolve() /* revisit this */
     },
-    heartbeat (): Promise<MessageFrame> {
+    heartbeat (): Promise<BaseMessage> {
       return sendMessage(MessageType.Heartbeat, {})
     },
-    get (route: string, opts: MessagePayload = {}): Promise<ResponseFrame> {
+    get (route: string, opts: MessagePayload = {}): Promise<ResponseMessage> {
       return sendRequest('GET', route, opts)
     },
-    put (route: string, opts: MessagePayload = {}): Promise<ResponseFrame> {
+    put (route: string, opts: MessagePayload = {}): Promise<ResponseMessage> {
       return sendRequest('PUT', route, opts)
     },
-    post (route: string, opts: MessagePayload = {}): Promise<ResponseFrame> {
+    post (route: string, opts: MessagePayload = {}): Promise<ResponseMessage> {
       return sendRequest('POST', route, opts)
     },
-    sendRaw (payload: MessagePayload): Promise<Frame> {
+    sendRaw (payload: MessagePayload): Promise<unknown> {
       return sendRaw(payload)
     },
   }

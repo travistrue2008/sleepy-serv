@@ -374,6 +374,23 @@ convert, so the real contract is not visible until then.
       condition on `./src/index.ts` and ship `src` alongside `dist`.
       That is a real tradeoff and needs a decision, not a default.
 
+### Follow-ups raised during group 3
+
+- [ ] **`packages/server/tests/helpers.ts` still uses `Frame` naming**
+      (`MessageFrame`, `ResponseFrame`, `Frame`, 17 references). The
+      client's equivalents were renamed to `ResponseMessage` /
+      `NotificationMessage` to match the `...Message` convention both
+      packages' source already uses. These are a *separate* symbol set
+      in a test double, not the protocol types, so they were left alone
+      rather than swept. Decide whether the convention should reach test
+      helpers too.
+- [ ] **Nothing pins the `Queue` values.** Mutating `Fifo: 'fifo'` to
+      `'fifoo'` fails zero tests, since every test reaches them through
+      the constant. `MessageType` fails 46 under the same treatment.
+      `Queue` is the union `'none' | 'fifo' | 'lifo'`, so a consumer may
+      pass a raw string and a value change would break them silently.
+      Best addressed alongside `index.test.js`.
+
 ### Source and unit tests
 
 > **Do not publish `sleepy-socket` until group 3 finishes.** The moment
@@ -422,7 +439,7 @@ convert, so the real contract is not visible until then.
       working as intended, not a gap.
 - [x] `packages/client/src/index.js`. Exports the authoring types
       (`ConnectOptions`, `ReconnectOptions`, `RequestOptions`,
-      `ResponseFrame`, `NotificationFrame`, `EventHandler`,
+      `ResponseMessage`, `NotificationMessage`, `EventHandler`,
       `TicketData`); `ReconnectConfig` and `DispatchedMessage` stay
       module-private since neither appears in a public signature.
       `exports` flipped to `./src/index.ts`, without which all 31 E2E

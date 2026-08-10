@@ -37,7 +37,7 @@ export type RequestOptions = {
   body?: unknown
 }
 
-export type ResponseFrame = {
+export type ResponseMessage = {
   id: string
   clientId: string
   type: typeof MessageType.Response
@@ -47,7 +47,7 @@ export type ResponseFrame = {
   body: unknown
 }
 
-export type NotificationFrame = {
+export type NotificationMessage = {
   id: string
   clientId: string
   type: typeof MessageType.Notification
@@ -57,7 +57,7 @@ export type NotificationFrame = {
   body: unknown
 }
 
-export type EventHandler = (payload: NotificationFrame) => void
+export type EventHandler = (payload: NotificationMessage) => void
 
 export type TicketData = {
   clientId: string
@@ -75,8 +75,8 @@ type DispatchedMessage = {
   id: string
   ready: boolean
   timer: ReturnType<typeof setTimeout>
-  response: ResponseFrame | null
-  resolve: (value: ResponseFrame) => void
+  response: ResponseMessage | null
+  resolve: (value: ResponseMessage) => void
   reject: (reason: Error) => void
 }
 
@@ -410,7 +410,7 @@ export default class SleepySocketClient {
     method: string,
     route: string,
     opts: RequestOptions = {},
-  ): Promise<ResponseFrame> {
+  ): Promise<ResponseMessage> {
     if (!this.#ready) {
       throw new Error('Socket is closed')
     }
@@ -484,7 +484,7 @@ export default class SleepySocketClient {
     this.#scheduleReconnect(0, this.#reconnectConfig)
   }
 
-  #handleRequest (data: ResponseFrame): void {
+  #handleRequest (data: ResponseMessage): void {
     const entry = this.#dispatchedMessages.find(item => item.id === data.id)
 
     if (!entry) {
@@ -499,7 +499,7 @@ export default class SleepySocketClient {
     this.#drain()
   }
 
-  #handleNotification (data: NotificationFrame): void {
+  #handleNotification (data: NotificationMessage): void {
     this.#emit('notification', data)
   }
 
@@ -562,7 +562,7 @@ export default class SleepySocketClient {
     }
   }
 
-  #emit (event: string, payload: NotificationFrame): void {
+  #emit (event: string, payload: NotificationMessage): void {
     const handlers = this.#listeners.get(event)
 
     if (!handlers) {
@@ -617,27 +617,27 @@ export default class SleepySocketClient {
     }
   }
 
-  head (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
+  head (route: string, opts: RequestOptions = {}): Promise<ResponseMessage> {
     return this.#sendRequest('HEAD', route, opts)
   }
 
-  get (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
+  get (route: string, opts: RequestOptions = {}): Promise<ResponseMessage> {
     return this.#sendRequest('GET', route, opts)
   }
 
-  post (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
+  post (route: string, opts: RequestOptions = {}): Promise<ResponseMessage> {
     return this.#sendRequest('POST', route, opts)
   }
 
-  put (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
+  put (route: string, opts: RequestOptions = {}): Promise<ResponseMessage> {
     return this.#sendRequest('PUT', route, opts)
   }
 
-  patch (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
+  patch (route: string, opts: RequestOptions = {}): Promise<ResponseMessage> {
     return this.#sendRequest('PATCH', route, opts)
   }
 
-  delete (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
+  delete (route: string, opts: RequestOptions = {}): Promise<ResponseMessage> {
     return this.#sendRequest('DELETE', route, opts)
   }
 }
