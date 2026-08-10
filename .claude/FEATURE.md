@@ -270,9 +270,21 @@ convert, so the real contract is not visible until then.
 - [x] `packages/server/tests/errors/initialization/leaf-directory-has-no-method-file/integration.test.js`
 - [x] `packages/server/tests/errors/initialization/method-file-has-no-default-export/api/get.js`
 - [x] `packages/server/tests/errors/initialization/method-file-has-no-default-export/integration.test.js`
-- [ ] `packages/server/tests/errors/initialization/whitelist-supported-file/api/get.js`
-- [ ] `packages/server/tests/errors/initialization/whitelist-supported-file/api/get.util.js`
-- [ ] `packages/server/tests/errors/initialization/whitelist-supported-file/integration.test.js`
+- [x] ~~`packages/server/tests/errors/initialization/whitelist-supported-file/`~~
+      deleted, not converted. It tested the `whitelist` option, which
+      commit `689c858` ("Removed deprecated feature: 'illegal file
+      whitelist'", 30 commits back) deleted from `index.js` along with
+      the sibling `unsupported-file-to-api-directory` suite. This
+      directory was missed.
+
+      It survived because the assertion could not fail:
+      `expect(fn).not.toThrow(...)` on an `async` function never
+      observes the rejection, and the error string it named
+      (`"Directory contains illegal files:"`) had been deleted with the
+      feature. Confirmed by removing the only method file, which makes
+      `createApp` reject outright; the test still reported 1 pass. The
+      dead `whitelist` option rode along because plain JavaScript
+      ignores unknown keys, so only the `AppOptions` check surfaced it.
 - [ ] `packages/server/tests/errors/request/middleware-throws-error/api/get.js`
 - [ ] `packages/server/tests/errors/request/middleware-throws-error/integration.test.js`
 - [ ] `packages/server/tests/errors/request/no-Response-object-returned/api/get.js`
