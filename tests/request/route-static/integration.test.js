@@ -1,13 +1,13 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
-import { FMT, createRequestor } from '../../helpers'
+import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 describe('REST', () => {
   test('when making a request on a static route', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/users', FMT.JSON)
+    const res = await req.get('/users', Fmt.Json)
 
     expect(res.status).toBe(200)
 

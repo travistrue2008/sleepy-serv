@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp, UnprocessableContentError } from 'sleepy-serv'
-import { FMT, createRequestor } from '../../helpers'
+import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 const BODY_VALID = {
@@ -13,7 +13,7 @@ describe('REST', () => {
       const app = await createApp(0, import.meta.dirname)
       const req = createRequestor(app)
 
-      const res = await req.post('/users', FMT.JSON, {
+      const res = await req.post('/users', Fmt.Json, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),
@@ -39,7 +39,7 @@ describe('REST', () => {
       const app = await createApp(0, import.meta.dirname)
       const req = createRequestor(app)
 
-      const res = await req.post('/users', FMT.JSON, {
+      const res = await req.post('/users', Fmt.Json, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),
@@ -65,7 +65,7 @@ describe('REST', () => {
       const app = await createApp(0, import.meta.dirname)
       const req = createRequestor(app)
 
-      const res = await req.post('/users', FMT.JSON, {
+      const res = await req.post('/users', Fmt.Json, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),

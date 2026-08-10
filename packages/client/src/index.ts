@@ -206,7 +206,7 @@ export default class SleepySocketClient {
       method: 'POST',
     })
 
-    return response.json()
+    return await response.json() as TicketData
   }
 
   async #reclaimTicket (): Promise<TicketData | null> {
@@ -223,7 +223,7 @@ export default class SleepySocketClient {
       return null
     }
 
-    return response.json()
+    return await response.json() as TicketData
   }
 
   async #requestTicket (): Promise<TicketData> {

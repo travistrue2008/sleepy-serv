@@ -1,13 +1,13 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp, MethodNotAllowedError } from 'sleepy-serv'
-import { FMT, createRequestor } from '../../helpers'
+import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 describe('REST', () => {
   test('when making request on route with an unsupported method', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.post('/', FMT.JSON)
+    const res = await req.post('/', Fmt.Json)
 
     expect(res.status).toBe(MethodNotAllowedError.status)
     expect(res.body).toBe(null)

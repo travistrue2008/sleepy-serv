@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { FMT, createRequestor } from '../helpers'
+import { Fmt, createRequestor } from '../helpers'
 import { UnauthorizedError, createApp } from 'sleepy-serv'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -15,7 +15,7 @@ describe('REST', () => {
   test('when invoking a protected route omits the token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/protected')
+    const res = await req.get('/protected', Fmt.Json)
 
     await app.server.stop(true)
 
@@ -27,7 +27,7 @@ describe('REST', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
 
-    const res = await req.get('/protected', FMT.JSON, {
+    const res = await req.get('/protected', Fmt.Json, {
       headers: new Headers({
         authorization: 'Bearer not-a-real-token',
       }),
@@ -42,10 +42,10 @@ describe('REST', () => {
   test('when invoking a protected route with a VALID token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const authRes = await req.post('/auth', FMT.TEXT)
+    const authRes = await req.post('/auth', Fmt.Text)
     const token = authRes.body
 
-    const res = await req.get('/protected', FMT.JSON, {
+    const res = await req.get('/protected', Fmt.Json, {
       headers: new Headers({
         authorization: `Bearer ${token}`,
       }),
@@ -60,7 +60,7 @@ describe('REST', () => {
   test('when invoking a public route without a token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/public', FMT.JSON)
+    const res = await req.get('/public', Fmt.Json)
 
     await app.server.stop(true)
 

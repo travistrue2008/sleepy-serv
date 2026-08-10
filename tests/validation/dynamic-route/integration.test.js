@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp, UnprocessableContentError } from 'sleepy-serv'
-import { FMT, createRequestor } from '../../helpers'
+import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 const USER_ID = '00000000-0000-0000-0000-000000000001'
@@ -15,7 +15,7 @@ describe('REST', () => {
       const app = await createApp(0, import.meta.dirname)
       const req = createRequestor(app)
 
-      const res = await req.put(`/users/${USER_ID}`, FMT.JSON, {
+      const res = await req.put(`/users/${USER_ID}`, Fmt.Json, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),
@@ -41,7 +41,7 @@ describe('REST', () => {
       const app = await createApp(0, import.meta.dirname)
       const req = createRequestor(app)
 
-      const res = await req.put(`/users/${USER_ID}`, FMT.JSON, {
+      const res = await req.put(`/users/${USER_ID}`, Fmt.Json, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),
@@ -67,7 +67,7 @@ describe('REST', () => {
       const app = await createApp(0, import.meta.dirname)
       const req = createRequestor(app)
 
-      const res = await req.put(`/users/${USER_ID}`, FMT.JSON, {
+      const res = await req.put(`/users/${USER_ID}`, Fmt.Json, {
         headers: new Headers({
           'content-type': 'application/json;charset=utf-8',
         }),

@@ -55,6 +55,33 @@ TypeScript migration. Per-file progress lives in
   for the whole migration. Untouched `.js` files are parsed but never
   type-checked, so they keep running with zero errors.
 
+### The root E2E config typechecks the packages a second time, on purpose
+
+- **Setup:** `tsconfig.json` at the repo root covers `tests/**/*` with
+  `lib: ["ESNext"]` and `types: ["bun"]`, and maps `sleepy-serv` and
+  `sleepy-socket` through `paths` to their **source**, not their build
+  output.
+- **Why `paths` rather than package resolution.** `sleepy-socket`'s
+  `exports` sends the `types` condition to `./dist/index.d.ts`, so
+  without a mapping the root typecheck would require a build first, and
+  a stale `dist` would be typechecked instead of the source. Mapping to
+  source also matches what actually runs, since Bun resolves the same
+  package through its `bun` condition to `./src/index.ts`.
+- **The side effect is the valuable part.** The client is normally
+  checked under `lib: ["DOM"]`; the root config checks that same source
+  under Bun's lib. Where the two disagree, the stricter one wins and a
+  real hole shows up.
+- **What it caught immediately:** DOM declares `Response.json()` as
+  `Promise<any>`, Bun declares it `Promise<unknown>`. The client's
+  `#createTicket` and `#reclaimTicket` did `return response.json()`
+  against a `Promise<TicketData>` signature. Under the client's own
+  config that is an unchecked `any` flowing straight into a typed
+  return; under the root config it is a TS2322. Both now cast
+  explicitly at the network trust boundary.
+- **Note that `no-explicit-any` cannot catch this class of bug.** The
+  `any` originates in `lib.dom.d.ts`, not in our source. Only checking
+  the same code under a second lib surfaces it.
+
 ### Relative imports in the client carry a `.js` extension
 
 - **Rule:** every relative specifier in `packages/client/src` is written

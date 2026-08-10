@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { FMT, createRequestor } from '../../helpers'
+import { Fmt, createRequestor } from '../../helpers'
 import { UnauthorizedError, createApp } from 'sleepy-serv'
 import SleepySocketClient from 'sleepy-socket'
 
@@ -9,7 +9,7 @@ test('when reclaiming with a valid token', async () => {
   const client = await SleepySocketClient.connect(host, app.server.port)
   const req = createRequestor(app)
 
-  const res = await req.put(`/ws/${client.id}`, FMT.JSON, {
+  const res = await req.put(`/ws/${client.id}`, Fmt.Json, {
     headers: new Headers({
       authorization: `Bearer ${client.token}`,
     }),
@@ -29,7 +29,7 @@ test('when the token is wrong', async () => {
   const client = await SleepySocketClient.connect(host, app.server.port)
   const req = createRequestor(app)
 
-  const res = await req.put(`/ws/${client.id}`, FMT.JSON, {
+  const res = await req.put(`/ws/${client.id}`, Fmt.Json, {
     headers: new Headers({
       authorization: `Bearer ${TOKEN_INVALID}`,
     }),

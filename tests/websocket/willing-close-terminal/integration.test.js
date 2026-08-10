@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { FMT, createRequestor } from '../../helpers'
+import { Fmt, createRequestor } from '../../helpers'
 import { NotFoundError, createApp } from 'sleepy-serv'
 import SleepySocketClient from 'sleepy-socket'
 
@@ -11,7 +11,7 @@ test('when a willingly-closed clientId is reclaimed', async () => {
 
   await client.close()
 
-  const res = await req.put(`/ws/${client.id}`, FMT.JSON, {
+  const res = await req.put(`/ws/${client.id}`, Fmt.Json, {
     headers: new Headers({
       authorization: `Bearer ${client.token}`,
     }),

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
-import { FMT, createRequestor } from '../../helpers'
+import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 describe('REST', () => {
@@ -16,7 +16,7 @@ describe('REST', () => {
     console.log('method:', method)
     console.log('fn:', fn)
 
-    const res = await fn('/resource', FMT.JSON)
+    const res = await fn('/resource', Fmt.Json)
 
     console.log('res:', res)
 

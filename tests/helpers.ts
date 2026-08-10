@@ -1,20 +1,30 @@
 import path from 'path'
 
+import type { App, HttpMethod } from 'sleepy-serv'
+
 /*
   Poll a predicate on real timers until it is truthy or the timeout elapses.
-  The root E2E suite runs on real timers (see test-setup.js), so there is no
+  The root E2E suite runs on real timers (see test-setup.ts), so there is no
   fake clock to advance; this awaits genuine wall-clock events like a reconnect
   swapping in a new socket or a reaper closing one.
  */
 
-export function waitFor (predicate, opts = {}) {
+export type WaitForOptions = {
+  timeout?: number
+  interval?: number
+}
+
+export function waitFor (
+  predicate: () => boolean,
+  opts: WaitForOptions = {},
+): Promise<void> {
   const timeout = opts.timeout ?? 1000
   const interval = opts.interval ?? 10
 
   return new Promise((resolve, reject) => {
     const start = Date.now()
 
-    const check = () => {
+    const check = (): void => {
       if (predicate()) {
         resolve()
 
@@ -34,20 +44,58 @@ export function waitFor (predicate, opts = {}) {
   })
 }
 
-export const FMT = {
-  NONE: 'none',
-  TEXT: 'text',
-  JSON: 'json',
+export const Fmt = {
+  Text: 'text',
+  Json: 'json',
+} as const
+
+export type Fmt = typeof Fmt[keyof typeof Fmt]
+
+export type Query = Record<string, string>
+
+export type RequestOptions = {
+  mountPath?: string
+  query?: Query
+  headers?: Headers
+  body?: Bun.BodyInit
 }
 
-async function deserializeBody (fmt, res) {
-  const methodName = fmt ?? 'json'
-  const body = await res[methodName]()
+export type HttpResult = {
+  status: number
+  body: unknown
+}
+
+export type RequestorMethod = (
+  route: string,
+  fmt: Fmt,
+  opts?: RequestOptions,
+) => Promise<HttpResult>
+
+export type Requestor = {
+  head: RequestorMethod
+  options: RequestorMethod
+  get: RequestorMethod
+  put: RequestorMethod
+  post: RequestorMethod
+  patch: RequestorMethod
+  delete: RequestorMethod
+}
+
+type RequestMethod = HttpMethod | 'OPTIONS'
+
+async function deserializeBody (fmt: Fmt, res: Response): Promise<unknown> {
+  const body = await res[fmt]()
 
   return body
 }
 
-async function makeRequestMethod (app, method, route, fmt, opts = {}) {
+async function makeRequestMethod (
+  app: App,
+  method: RequestMethod,
+  route: string,
+  fmt: Fmt,
+  opts: RequestOptions = {},
+): Promise<HttpResult> {
   const query = new URLSearchParams(opts.query ?? {}).toString()
   const mountPath = opts.mountPath ?? ''
   const pathname = path.join(mountPath, route)
@@ -67,7 +115,7 @@ async function makeRequestMethod (app, method, route, fmt, opts = {}) {
   }
 }
 
-export function createRequestor (app) {
+export function createRequestor (app: App): Requestor {
   return {
     head (route, fmt, opts) {
       return makeRequestMethod(app, 'HEAD', route, fmt, opts)

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
-import { FMT, createRequestor } from '../helpers'
+import { Fmt, createRequestor } from '../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 const MOUNT_PATH = '/test-mount-path'
@@ -13,7 +13,7 @@ describe('REST', () => {
 
     const req = createRequestor(app)
 
-    const res = await req.get('/', FMT.JSON, {
+    const res = await req.get('/', Fmt.Json, {
       mountPath: MOUNT_PATH,
     })
 

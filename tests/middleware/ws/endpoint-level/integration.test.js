@@ -1,13 +1,13 @@
 import { describe, test, expect } from 'bun:test'
 import { InternalServerError, createApp } from 'sleepy-serv'
-import { createRequestor, FMT } from '../../../helpers'
+import { createRequestor, Fmt } from '../../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 describe('POST', () => {
   test('when middleware errors', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.post('/ws?err', FMT.TEXT)
+    const res = await req.post('/ws?err', Fmt.Text)
 
     await app.server.stop(true)
 
@@ -18,7 +18,7 @@ describe('POST', () => {
   test('when middleware is successful', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.post('/ws', FMT.JSON)
+    const res = await req.post('/ws', Fmt.Json)
 
     await app.server.stop(true)
 
@@ -40,7 +40,7 @@ describe('PUT', () => {
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
-    const res = await req.put(`/ws/${client.id}?err`, FMT.TEXT)
+    const res = await req.put(`/ws/${client.id}?err`, Fmt.Text)
 
     await client.close()
     await app.server.stop(true)
@@ -55,7 +55,7 @@ describe('PUT', () => {
     const host = app.server.url.hostname
     const client = await SleepySocketClient.connect(host, app.server.port)
 
-    const res = await req.put(`/ws/${client.id}`, FMT.JSON, {
+    const res = await req.put(`/ws/${client.id}`, Fmt.Json, {
       headers: new Headers({
         authorization: `Bearer ${client.token}`,
       }),
@@ -80,7 +80,7 @@ describe('GET', () => {
   test('when middleware errors', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/ws?ticket=asdf&err', FMT.TEXT)
+    const res = await req.get('/ws?ticket=asdf&err', Fmt.Text)
 
     await app.server.stop(true)
 
@@ -92,7 +92,7 @@ describe('GET', () => {
     const app = await createApp(0, import.meta.dirname)
     const { host } = app.server.url
     const req = createRequestor(app)
-    const res = await req.post('/ws', FMT.JSON)
+    const res = await req.post('/ws', Fmt.Json)
     const ws = new WebSocket(`ws://${host}/ws?ticket=${res.body.ticket}`)
 
     const data = await new Promise(resolve => {

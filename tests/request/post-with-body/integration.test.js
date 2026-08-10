@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
-import { FMT, createRequestor } from '../../helpers'
+import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 describe('REST', () => {
@@ -8,7 +8,7 @@ describe('REST', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
 
-    const res = await req.post('/echo', FMT.JSON, {
+    const res = await req.post('/echo', Fmt.Json, {
       headers: new Headers({
         'content-type': 'application/json;charset=utf-8',
       }),

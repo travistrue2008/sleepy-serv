@@ -1,13 +1,13 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp, NotFoundError } from 'sleepy-serv'
-import { FMT, createRequestor } from '../../helpers'
+import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 describe('REST', () => {
   test('when making a request on a non-existent route', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/nope', FMT.JSON)
+    const res = await req.get('/nope', Fmt.Json)
 
     expect(res.status).toBe(NotFoundError.status)
     expect(res.body).toBe(null)

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp, InternalServerError } from 'sleepy-serv'
-import { FMT, createRequestor } from '../../helpers'
+import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 function root (req, _res, next) {
@@ -18,7 +18,7 @@ describe('REST', () => {
     })
 
     const req = createRequestor(app)
-    const res = await req.get('/?err', FMT.TEXT)
+    const res = await req.get('/?err', Fmt.Text)
 
     await app.server.stop(true)
 
@@ -32,7 +32,7 @@ describe('REST', () => {
     })
 
     const req = createRequestor(app)
-    const res = await req.get('/', FMT.TEXT)
+    const res = await req.get('/', Fmt.Text)
 
     await app.server.stop(true)
 

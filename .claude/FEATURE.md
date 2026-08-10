@@ -478,18 +478,35 @@ convert, so the real contract is not visible until then.
 
 ## 4. E2E tests (root `tests/`)
 
-- [ ] `tests/helpers.js` (shared). **Also rename its `FMT` to `Fmt` and
-      its members to PascalCase**, matching what
-      `packages/server/tests/helpers.ts` now does. This is a *separate*
-      declaration from the server's, with its own 81 references across
-      27 E2E suites, so it did not move with the server rename. Two
-      things to carry over: anchor the member pass on `Fmt.JSON` rather
-      than a bare `JSON`, to avoid destroying `JSON.parse` /
-      `JSON.stringify` calls; and leave the `'text'` / `'json'` values
-      alone, since `res[fmt]()` requires real `Response` method names.
-      This copy also still carries a `NONE: 'none'` member that no E2E
-      test uses, the same dead variant already removed server-side, so
-      drop it and give `fmt` the `Fmt | null` treatment.
+### Group 4 setup
+
+- [x] Root `tsconfig.json` covering `tests/**/*`, wired into the root
+      `typecheck` script. Nothing had covered these 82 files before, so
+      converting them without this would have produced `.ts` that was
+      never typechecked. Maps both packages through `paths` to their
+      **source**, so the typecheck needs no prior build and checks what
+      actually runs. See
+      [typescript.md](./kbase/style/typescript.md) for why the resulting
+      double-check of the client is a feature, not redundancy.
+
+- [x] `tests/helpers.js`. `FMT` became `Fmt` with PascalCase members, 80
+      occurrences across 24 files, anchored on `Fmt.JSON` so the 16
+      `JSON.parse` / `JSON.stringify` calls survived (verified before
+      and after). Values stay lowercase: `res[fmt]()` needs real
+      `Response` method names.
+      Dropped the dead `NONE: 'none'` member, which no E2E test used and
+      which would have thrown as `res.none()`.
+      Also dropped the implicit `fmt ?? 'json'` default in
+      `deserializeBody`. Exactly one call site relied on it,
+      `req.get('/protected')` in the auth suite, and the very next test
+      in that file already spelled out `FMT.JSON` for the same route, so
+      the call is now explicit and `fmt` is required.
+      **Two dead helper methods left in place, not deleted:** nothing
+      calls `req.head()` or `req.options()`. `options` is the odder one,
+      since `HttpMethod` has no `OPTIONS` member, so no route file can
+      ever serve it; it is typed through a local
+      `RequestMethod = HttpMethod | 'OPTIONS'` that says so. Worth a
+      decision, but deleting them is not part of a conversion.
 - [ ] `tests/auth/auth.js`
 - [ ] `tests/auth/api/auth/post.js`
 - [ ] `tests/auth/api/protected/get.js`

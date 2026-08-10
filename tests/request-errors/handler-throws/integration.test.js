@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createRequestor, FMT } from '../../helpers'
+import { createRequestor, Fmt } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 import {
@@ -12,7 +12,7 @@ describe('REST', () => {
   test('when the handler throws a generic Error', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/boom', FMT.TEXT)
+    const res = await req.get('/boom', Fmt.Text)
 
     await app.server.stop(true)
 
@@ -23,7 +23,7 @@ describe('REST', () => {
   test('when the handler throws a RequestError subclass', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/conflict', FMT.JSON)
+    const res = await req.get('/conflict', Fmt.Json)
 
     await app.server.stop(true)
 
