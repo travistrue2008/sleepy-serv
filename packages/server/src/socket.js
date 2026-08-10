@@ -3,7 +3,7 @@ import addFormats from 'ajv-formats'
 import crypto from 'node:crypto'
 
 import { toSegments, formatError, executeMiddlewareChain } from './utils'
-import { TYPES, createMessage, validateMessage } from './messages'
+import { MessageType, createMessage, validateMessage } from './messages'
 
 import {
   NotFoundError,
@@ -229,7 +229,7 @@ async function buildOutgoingMessage (id, clientId, response) {
   const usingJson = contentType.includes('application/json')
   const body = usingJson ? JSON.parse(text) : text
 
-  return createMessage(clientId, TYPES.RESPONSE, {
+  return createMessage(clientId, MessageType.Response, {
     id,
     status: response.status,
     headers: response.headers,
@@ -293,9 +293,9 @@ export function buildSocketServer (routes, state) {
 
       const welcomeMessage = createMessage(
         ws.data.clientId,
-        TYPES.WELCOME,
+        MessageType.Welcome,
         {
-          headers: {},
+          headers: new Headers(),
           body: {
             heartbeatInterval,
             token,
@@ -339,9 +339,9 @@ export function buildSocketServer (routes, state) {
       try {
         validateMessage(incomingMsg)
 
-        if (incomingMsg.type === TYPES.HEARTBEAT) {
+        if (incomingMsg.type === MessageType.Heartbeat) {
           const { id, clientId } = incomingMsg
-          const ack = createMessage(clientId, TYPES.HEARTBEAT, { id })
+          const ack = createMessage(clientId, MessageType.Heartbeat, { id })
 
           ws.send(JSON.stringify(ack))
 
@@ -364,10 +364,10 @@ export function buildSocketServer (routes, state) {
         const body = err.output !== undefined ? err.output : err.message
 
         const headers = err.output !== undefined
-          ? { 'content-type': 'application/json;charset=utf-8' }
-          : {}
+          ? new Headers({ 'content-type': 'application/json;charset=utf-8' })
+          : new Headers()
 
-        const res = createMessage(clientId, TYPES.RESPONSE, {
+        const res = createMessage(clientId, MessageType.Response, {
           id,
           status,
           headers,
@@ -520,9 +520,9 @@ export function buildSocketCommands (state) {
       throw new ReferenceError(`No live socket for client: ${clientId}`)
     }
 
-    const message = createMessage(clientId, TYPES.NOTIFICATION, {
+    const message = createMessage(clientId, MessageType.Notification, {
       event,
-      headers: {},
+      headers: new Headers(),
       body,
     })
 

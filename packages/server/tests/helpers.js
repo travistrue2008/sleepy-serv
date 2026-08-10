@@ -1,5 +1,5 @@
 import crypto from 'node:crypto'
-import { TYPES } from '../src/messages'
+import { MessageType } from '../src/messages'
 
 export const FMT = {
   NONE: 'none',
@@ -63,10 +63,12 @@ export async function createSocketClient (app, opts = {}) {
     socket.addEventListener('message', event => {
       const message = JSON.parse(event.data)
 
-      if (message.type !== TYPES.WELCOME) {
+      if (message.type !== MessageType.Welcome) {
+        const expected = MessageType.Welcome
+
         return reject(
           new TypeError(
-            `Expected ${TYPES.WELCOME} message, but got: "${message.type}"`,
+            `Expected ${expected} message, but got: "${message.type}"`,
           ),
         )
       }
@@ -113,7 +115,7 @@ export async function createSocketClient (app, opts = {}) {
   }
 
   async function sendRequest (method, route, payload) {
-    const message = await sendMessage(TYPES.REQUEST, {
+    const message = await sendMessage(MessageType.Request, {
       method,
       route,
       headers: payload.headers ?? {},
@@ -141,7 +143,7 @@ export async function createSocketClient (app, opts = {}) {
       await socket.close()
     },
     heartbeat () {
-      return sendMessage(TYPES.HEARTBEAT, {})
+      return sendMessage(MessageType.Heartbeat, {})
     },
     get (route, opts = {}) {
       return sendRequest('GET', route, opts)

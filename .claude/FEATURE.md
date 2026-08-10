@@ -165,7 +165,7 @@ convert, so the real contract is not visible until then.
 - [x] `packages/server/src/errors.test.js`
 - [x] `packages/server/src/middleware.js`
 - [x] `packages/server/src/middleware.test.js`
-- [ ] `packages/server/src/messages.js` (`TYPES` becomes `MessageType`,
+- [x] `packages/server/src/messages.js` (`TYPES` becomes `MessageType`,
       atomic across `socket.js`, both test files, `tests/helpers.js`, and
       the `ws-message` integration test)
 - [ ] `packages/server/src/messages.test.js`

@@ -4,18 +4,44 @@ import crypto from 'node:crypto'
 import { formatError } from './utils'
 import { UnprocessableContentError } from './errors'
 
-export const TYPES = {
-  REQUEST: 'request',
-  RESPONSE: 'response',
-  WELCOME: 'welcome',
-  HEARTBEAT: 'heartbeat',
-  NOTIFICATION: 'notification',
+import type { ValidateFunction } from 'ajv'
+
+export const MessageType = {
+  Request: 'request',
+  Response: 'response',
+  Welcome: 'welcome',
+  Heartbeat: 'heartbeat',
+  Notification: 'notification',
+} as const
+
+export type MessageType = typeof MessageType[keyof typeof MessageType]
+
+export const RECEIVED_MESSAGE_TYPES: string[] = [
+  MessageType.Heartbeat,
+  MessageType.Request,
+]
+
+export type MessageOptions = {
+  id?: string
+  status?: number
+  method?: string
+  route?: string
+  headers?: Headers
+  query?: Record<string, unknown>
+  body?: unknown
 }
 
-export const TYPES_RECEIVED = [
-  TYPES.HEARTBEAT,
-  TYPES.REQUEST,
-]
+export type Message = MessageOptions & {
+  id: string
+  clientId: string
+  type: MessageType
+  timestamp: string
+}
+
+export type IncomingMessage = {
+  type?: string
+  [key: string]: unknown
+}
 
 const ajv = new Ajv({
   allErrors: true,
@@ -37,7 +63,7 @@ const SCHEMA_BASE = {
     },
     type: {
       type: 'string',
-      enum: TYPES_RECEIVED,
+      enum: RECEIVED_MESSAGE_TYPES,
     },
     timestamp: {
       type: 'string',
@@ -58,7 +84,7 @@ const validateHeartbeat = ajv.compile({
     ...SCHEMA_BASE.properties,
     type: {
       type: 'string',
-      const: TYPES.HEARTBEAT,
+      const: MessageType.Heartbeat,
     },
   },
   required: SCHEMA_BASE.required,
@@ -70,7 +96,7 @@ const validateRequest = ajv.compile({
     ...SCHEMA_BASE.properties,
     type: {
       type: 'string',
-      const: TYPES.REQUEST,
+      const: MessageType.Request,
     },
     method: {
       type: 'string',
@@ -114,12 +140,16 @@ const validateRequest = ajv.compile({
   ],
 })
 
-const TYPE_VALIDATORS = {
-  [TYPES.HEARTBEAT]: validateHeartbeat,
-  [TYPES.REQUEST]: validateRequest,
+const TYPE_VALIDATORS: Record<string, ValidateFunction> = {
+  [MessageType.Heartbeat]: validateHeartbeat,
+  [MessageType.Request]: validateRequest,
 }
 
-export function createMessage (clientId, type, opts = {}) {
+export function createMessage (
+  clientId: string,
+  type: MessageType,
+  opts: MessageOptions = {},
+): Message {
   const timestamp = new Date().toISOString()
 
   const base = {
@@ -135,9 +165,7 @@ export function createMessage (clientId, type, opts = {}) {
   }
 }
 
-export function validateMessage (message) {
-  const validate = TYPE_VALIDATORS[message.type]
-
+export function validateMessage (message: IncomingMessage): void {
   if (message.type === undefined) {
     throw new UnprocessableContentError([
       {
@@ -147,17 +175,19 @@ export function validateMessage (message) {
     ])
   }
 
-  if (!TYPES_RECEIVED.includes(message.type)) {
+  if (!RECEIVED_MESSAGE_TYPES.includes(message.type)) {
     throw new UnprocessableContentError([
       {
         path: 'type',
-        message: `must be one of: ${TYPES_RECEIVED}`,
+        message: `must be one of: ${RECEIVED_MESSAGE_TYPES}`,
       },
     ])
   }
 
+  const validate = TYPE_VALIDATORS[message.type]
+
   if (!validate(message)) {
-    const errors = validate.errors.map(item => formatError('', item))
+    const errors = validate.errors!.map(item => formatError('', item))
 
     throw new UnprocessableContentError(errors)
   }

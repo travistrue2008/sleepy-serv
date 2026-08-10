@@ -1,5 +1,5 @@
 import crypto from 'node:crypto'
-import { TYPES } from './messages'
+import { MessageType } from './messages'
 
 import {
   jest,
@@ -261,7 +261,7 @@ describe('buildSocketServer()', () => {
       expect(ws.send).not.toHaveBeenCalled()
     })
 
-    describe(`"type" = "${TYPES.HEARTBEAT}"`, () => {
+    describe(`"type" = "${MessageType.Heartbeat}"`, () => {
       test('when a heartbeat message is received', async () => {
         const server = buildSocketServer([], state)
         const ws = buildSocket(CLIENT_ID)
@@ -269,20 +269,20 @@ describe('buildSocketServer()', () => {
         await server.message(ws, JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.HEARTBEAT,
+          type: MessageType.Heartbeat,
           timestamp: TIMESTAMP,
         }))
 
         expect(ws.welcome).toStrictEqual({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.HEARTBEAT,
+          type: MessageType.Heartbeat,
           timestamp: TIMESTAMP,
         })
       })
     })
 
-    describe(`"type" = "${TYPES.REQUEST}"`, () => {
+    describe(`"type" = "${MessageType.Request}"`, () => {
       test('when validation fails', async () => {
         const server = buildSocketServer([], state)
 
@@ -291,7 +291,7 @@ describe('buildSocketServer()', () => {
         const incomingMessage = JSON.stringify({
           id: 'invalid',
           clientId: CLIENT_ID,
-          type: TYPES.REQUEST,
+          type: MessageType.Request,
           method: 'GET',
           route: '/',
           timestamp: TIMESTAMP,
@@ -305,7 +305,7 @@ describe('buildSocketServer()', () => {
         expect(ws.welcome).toStrictEqual({
           id: 'invalid',
           clientId: CLIENT_ID,
-          type: TYPES.RESPONSE,
+          type: MessageType.Response,
           status: UnprocessableContentError.status,
           timestamp: TIMESTAMP,
           headers: {
@@ -335,7 +335,7 @@ describe('buildSocketServer()', () => {
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.REQUEST,
+          type: MessageType.Request,
           method: 'GET',
           route: '/users',
           timestamp: TIMESTAMP,
@@ -349,7 +349,7 @@ describe('buildSocketServer()', () => {
         expect(ws.welcome).toStrictEqual({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.RESPONSE,
+          type: MessageType.Response,
           status: NotFoundError.status,
           timestamp: TIMESTAMP,
           headers: {
@@ -374,7 +374,7 @@ describe('buildSocketServer()', () => {
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.REQUEST,
+          type: MessageType.Request,
           method: 'POST',
           route: '/users',
           timestamp: TIMESTAMP,
@@ -388,7 +388,7 @@ describe('buildSocketServer()', () => {
         expect(ws.welcome).toStrictEqual({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.RESPONSE,
+          type: MessageType.Response,
           status: MethodNotAllowedError.status,
           timestamp: TIMESTAMP,
           headers: {
@@ -417,7 +417,7 @@ describe('buildSocketServer()', () => {
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.REQUEST,
+          type: MessageType.Request,
           method: 'GET',
           route: '/',
           timestamp: TIMESTAMP,
@@ -431,7 +431,7 @@ describe('buildSocketServer()', () => {
         expect(ws.welcome).toStrictEqual({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.RESPONSE,
+          type: MessageType.Response,
           status: InternalServerError.status,
           timestamp: TIMESTAMP,
           headers: {},
@@ -458,7 +458,7 @@ describe('buildSocketServer()', () => {
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.REQUEST,
+          type: MessageType.Request,
           method: 'GET',
           route: '/',
           timestamp: TIMESTAMP,
@@ -472,7 +472,7 @@ describe('buildSocketServer()', () => {
         expect(ws.welcome).toStrictEqual({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.RESPONSE,
+          type: MessageType.Response,
           status: TestError.status,
           timestamp: TIMESTAMP,
           headers: {
@@ -500,7 +500,7 @@ describe('buildSocketServer()', () => {
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.REQUEST,
+          type: MessageType.Request,
           method: 'GET',
           route: '/users',
           timestamp: TIMESTAMP,
@@ -514,7 +514,7 @@ describe('buildSocketServer()', () => {
         expect(ws.welcome).toStrictEqual({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.RESPONSE,
+          type: MessageType.Response,
           status: 200,
           timestamp: TIMESTAMP,
           headers: {},
@@ -537,7 +537,7 @@ describe('buildSocketServer()', () => {
         const incomingMessage = JSON.stringify({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.REQUEST,
+          type: MessageType.Request,
           method: 'GET',
           route: '/users/123',
           timestamp: TIMESTAMP,
@@ -551,7 +551,7 @@ describe('buildSocketServer()', () => {
         expect(ws.welcome).toStrictEqual({
           id: ID,
           clientId: CLIENT_ID,
-          type: TYPES.RESPONSE,
+          type: MessageType.Response,
           status: 200,
           timestamp: TIMESTAMP,
           headers: {
@@ -574,7 +574,7 @@ describe('buildSocketServer()', () => {
       expect(ws.welcome).toStrictEqual({
         id: ws.welcome.id,
         clientId: CLIENT_ID,
-        type: TYPES.WELCOME,
+        type: MessageType.Welcome,
         timestamp: TIMESTAMP,
         headers: {},
         body: {
@@ -612,7 +612,7 @@ describe('buildSocketServer()', () => {
       jest.advanceTimersByTime(state.disconnectThreshold - 100)
 
       await server.message(ws, JSON.stringify({
-        type: TYPES.HEARTBEAT,
+        type: MessageType.Heartbeat,
       }))
 
       jest.advanceTimersByTime(state.disconnectThreshold - 100)
@@ -633,7 +633,7 @@ describe('buildSocketServer()', () => {
       expect(ws.close).not.toHaveBeenCalled()
 
       await server.message(ws, JSON.stringify({
-        type: TYPES.HEARTBEAT,
+        type: MessageType.Heartbeat,
       }))
 
       jest.advanceTimersByTime(state.disconnectThreshold - 100)
@@ -1542,7 +1542,7 @@ describe('buildSocketCommands()', () => {
       expect(notification).toStrictEqual({
         id: notification.id,
         clientId: CLIENT_ID,
-        type: TYPES.NOTIFICATION,
+        type: MessageType.Notification,
         timestamp: TIMESTAMP,
         event: 'state_changed',
         headers: {},
@@ -1571,7 +1571,7 @@ describe('buildSocketCommands()', () => {
       expect(notifA).toStrictEqual({
         id: notifA.id,
         clientId: CLIENT_ID_A,
-        type: TYPES.NOTIFICATION,
+        type: MessageType.Notification,
         timestamp: TIMESTAMP,
         event: 'player_joined',
         headers: {},
@@ -1583,7 +1583,7 @@ describe('buildSocketCommands()', () => {
       expect(notifB).toStrictEqual({
         id: notifB.id,
         clientId: CLIENT_ID_B,
-        type: TYPES.NOTIFICATION,
+        type: MessageType.Notification,
         timestamp: TIMESTAMP,
         event: 'player_joined',
         headers: {},

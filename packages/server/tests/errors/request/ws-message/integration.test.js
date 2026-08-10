@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import { describe, test, expect } from 'bun:test'
 import { createApp } from '../../../../src'
-import { TYPES, TYPES_RECEIVED } from '../../../../src/messages'
+import { MessageType, RECEIVED_MESSAGE_TYPES } from '../../../../src/messages'
 import { UnprocessableContentError } from '../../../../src/errors'
 import { createSocketClient } from '../../../helpers'
 
@@ -11,11 +11,11 @@ const METHOD = 'GET'
 const ROUTE = '/'
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
 
-describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
+describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   const MESSAGE_VALID = {
     id: ID,
     clientId: CLIENT_ID,
-    type: TYPES.HEARTBEAT,
+    type: MessageType.Heartbeat,
     timestamp: TIMESTAMP,
   }
 
@@ -33,7 +33,7 @@ describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -62,7 +62,7 @@ describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -90,7 +90,7 @@ describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
 
     expect(msg).toStrictEqual({
       id: msg.id,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -119,7 +119,7 @@ describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: msg.clientId,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -148,7 +148,7 @@ describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -177,7 +177,7 @@ describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -186,7 +186,7 @@ describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
       body: [
         {
           path: 'type',
-          message: `must be one of: ${TYPES_RECEIVED}`,
+          message: `must be one of: ${RECEIVED_MESSAGE_TYPES}`,
         },
       ],
     })
@@ -206,7 +206,7 @@ describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -235,7 +235,7 @@ describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -251,11 +251,11 @@ describe(`when "type" = "${TYPES.HEARTBEAT}"`, () => {
   })
 })
 
-describe(`when "type" = "${TYPES.REQUEST}"`, () => {
+describe(`when "type" = "${MessageType.Request}"`, () => {
   const MESSAGE_VALID = {
     id: ID,
     clientId: CLIENT_ID,
-    type: TYPES.REQUEST,
+    type: MessageType.Request,
     method: METHOD,
     route: ROUTE,
     timestamp: TIMESTAMP,
@@ -278,7 +278,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -307,7 +307,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -335,7 +335,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
 
     expect(msg).toStrictEqual({
       id: msg.id,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -364,7 +364,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: msg.clientId,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -393,7 +393,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -422,7 +422,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -431,7 +431,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
       body: [
         {
           path: 'type',
-          message: `must be one of: ${TYPES_RECEIVED}`,
+          message: `must be one of: ${RECEIVED_MESSAGE_TYPES}`,
         },
       ],
     })
@@ -451,7 +451,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -480,7 +480,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -509,7 +509,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -538,7 +538,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -567,7 +567,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -596,7 +596,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -625,7 +625,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -654,7 +654,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -683,7 +683,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -712,7 +712,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {
@@ -741,7 +741,7 @@ describe(`when "type" = "${TYPES.REQUEST}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       status: UnprocessableContentError.status,
       timestamp: TIMESTAMP,
       headers: {

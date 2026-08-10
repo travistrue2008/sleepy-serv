@@ -3,8 +3,8 @@ import { describe, test, expect } from 'bun:test'
 import { UnprocessableContentError } from './errors'
 
 import {
-  TYPES,
-  TYPES_RECEIVED,
+  MessageType,
+  RECEIVED_MESSAGE_TYPES,
   createMessage,
   validateMessage,
 } from './messages'
@@ -19,7 +19,7 @@ const HEADERS = new Headers({ a: 1 })
 
 describe('createMessage()', () => {
   test('when NO "opts" are provided', () => {
-    const res = createMessage(CLIENT_ID, TYPES.RESPONSE, {
+    const res = createMessage(CLIENT_ID, MessageType.Response, {
       headers: new Headers(),
       body: null,
     })
@@ -27,7 +27,7 @@ describe('createMessage()', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       timestamp: TIMESTAMP,
       headers: new Headers(),
       body: null,
@@ -35,7 +35,7 @@ describe('createMessage()', () => {
   })
 
   test('when "opts.id" is provided', () => {
-    const res = createMessage(CLIENT_ID, TYPES.RESPONSE, {
+    const res = createMessage(CLIENT_ID, MessageType.Response, {
       id: ID,
       headers: new Headers(),
       body: null,
@@ -44,7 +44,7 @@ describe('createMessage()', () => {
     expect(res).toStrictEqual({
       id: ID,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       timestamp: TIMESTAMP,
       headers: new Headers(),
       body: null,
@@ -52,7 +52,7 @@ describe('createMessage()', () => {
   })
 
   test('when "opts.headers" is provided', () => {
-    const res = createMessage(CLIENT_ID, TYPES.RESPONSE, {
+    const res = createMessage(CLIENT_ID, MessageType.Response, {
       headers: HEADERS,
       body: null,
     })
@@ -60,7 +60,7 @@ describe('createMessage()', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       timestamp: TIMESTAMP,
       headers: HEADERS,
       body: null,
@@ -70,7 +70,7 @@ describe('createMessage()', () => {
   test('when "opts.body" is provided', () => {
     const BODY = { a: 1 }
 
-    const res = createMessage(CLIENT_ID, TYPES.RESPONSE, {
+    const res = createMessage(CLIENT_ID, MessageType.Response, {
       headers: new Headers(),
       body: BODY,
     })
@@ -78,7 +78,7 @@ describe('createMessage()', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       timestamp: TIMESTAMP,
       headers: new Headers(),
       body: BODY,
@@ -86,7 +86,7 @@ describe('createMessage()', () => {
   })
 
   test('when extra "opts" are provided', () => {
-    const res = createMessage(CLIENT_ID, TYPES.RESPONSE, {
+    const res = createMessage(CLIENT_ID, MessageType.Response, {
       method: METHOD,
       status: STATUS,
       headers: new Headers(),
@@ -96,7 +96,7 @@ describe('createMessage()', () => {
     expect(res).toStrictEqual({
       id: res.id,
       clientId: CLIENT_ID,
-      type: TYPES.RESPONSE,
+      type: MessageType.Response,
       timestamp: TIMESTAMP,
       method: METHOD,
       status: STATUS,
@@ -111,7 +111,7 @@ describe('validateMessage()', () => {
     const MESSAGE_VALID = {
       id: ID,
       clientId: ID,
-      type: TYPES.REQUEST,
+      type: MessageType.Request,
       method: METHOD,
       route: ROUTE,
       timestamp: TIMESTAMP,
@@ -199,7 +199,7 @@ describe('validateMessage()', () => {
       expect(fn).toThrow(new UnprocessableContentError([
         {
           path: 'type',
-          message: `must be one of: ${TYPES_RECEIVED}`,
+          message: `must be one of: ${RECEIVED_MESSAGE_TYPES}`,
         },
       ]))
     })
@@ -233,11 +233,11 @@ describe('validateMessage()', () => {
     })
   })
 
-  describe(`when "type" IS "${TYPES.REQUEST}"`, () => {
+  describe(`when "type" IS "${MessageType.Request}"`, () => {
     const MESSAGE_VALID = {
       id: ID,
       clientId: ID,
-      type: TYPES.REQUEST,
+      type: MessageType.Request,
       method: METHOD,
       route: ROUTE,
       timestamp: TIMESTAMP,
