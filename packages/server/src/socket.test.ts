@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import { StatusCode } from './utils'
 import { MessageType } from './messages'
 
 import {
@@ -29,11 +30,19 @@ import {
   ServiceUnavailableError,
 } from './errors'
 
+import type { UUID } from 'node:crypto'
+
+type TicketBody = {
+  clientId: string
+  ticket: string
+  data: unknown
+}
+
 const ID = crypto.randomUUID()
 const CLIENT_ID = crypto.randomUUID()
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
 
-const BYTES = {
+const BYTES: Record<number, Buffer<ArrayBuffer>> = {
   24: Buffer.alloc(24, 1),
   32: Buffer.alloc(32, 1),
 }
@@ -41,14 +50,14 @@ const BYTES = {
 const BASE64_24 = BYTES[24].toString('base64url')
 const BASE64_32 = BYTES[32].toString('base64url')
 
-const UUIDs = [
+const UUIDs: UUID[] = [
   '00000000-0000-0000-0000-000000000000',
   '00000000-0000-0000-0000-000000000001',
   '00000000-0000-0000-0000-000000000002',
   '00000000-0000-0000-0000-000000000003',
 ]
 
-function buildSocket (clientId) {
+function buildSocket (clientId: string) {
   const send = mock()
 
   return {
@@ -56,6 +65,9 @@ function buildSocket (clientId) {
     close: mock(),
     data: {
       clientId,
+      superseded: false,
+      reaped: false,
+      reaperHandle: null,
     },
     get welcome () {
       return JSON.parse(send.mock.calls[0][0])
@@ -64,7 +76,9 @@ function buildSocket (clientId) {
 }
 
 class TestError extends RequestError {
-  static get status () { return 999 }
+  static get status (): StatusCode {
+    return StatusCode.ImATeapot
+  }
 
   get output () {
     return {
@@ -82,10 +96,11 @@ class TestError extends RequestError {
 
 beforeEach(() => {
   spyOn(crypto, 'randomBytes').mockImplementation(b => BYTES[b])
-  spyOn(crypto, 'randomUUID')
+
+  const randomUUID = spyOn(crypto, 'randomUUID')
 
   UUIDs.forEach((_, index) => {
-    crypto.randomUUID.mockReturnValueOnce(UUIDs[index])
+    randomUUID.mockReturnValueOnce(UUIDs[index])
   })
 })
 
@@ -777,7 +792,7 @@ describe('buildSocketServer()', () => {
         params: {
           clientId: CLIENT_ID,
         },
-      })
+      }, undefined)
 
       server.close(ws, 1006)
       jest.advanceTimersByTime(101)
@@ -798,7 +813,7 @@ describe('buildSocketServer()', () => {
         params: {
           clientId: CLIENT_ID,
         },
-      })
+      }, undefined)
 
       server.close(ws, 1000)
 
@@ -821,7 +836,7 @@ describe('buildSocketHandlers()', () => {
     test('when invoked via WebSocket message', async () => {
       const upgrade = mock(() => true)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
         clientId: crypto.randomUUID(),
@@ -832,7 +847,7 @@ describe('buildSocketHandlers()', () => {
           upgrade,
         },
         raw: REQ_RAW,
-      })
+      }, undefined)
 
       expect(fn).toThrow(new UnprocessableContentError([
         {
@@ -881,7 +896,7 @@ describe('buildSocketHandlers()', () => {
 
     test('when "req.server" is missing', async () => {
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
         query: {
@@ -900,7 +915,7 @@ describe('buildSocketHandlers()', () => {
 
     test('when "req.server.upgrade" is missing', async () => {
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
         query: {
@@ -921,7 +936,7 @@ describe('buildSocketHandlers()', () => {
     test('when "req.raw" is missing', async () => {
       const upgrade = mock(() => true)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
         query: {
@@ -961,7 +976,7 @@ describe('buildSocketHandlers()', () => {
     test('when the same ticket is redeemed twice', async () => {
       const upgrade = mock(() => true)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
         query: {
@@ -989,7 +1004,7 @@ describe('buildSocketHandlers()', () => {
 
     test('when the ticket has expired', async () => {
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
         query: {
@@ -1009,7 +1024,7 @@ describe('buildSocketHandlers()', () => {
     test('when the upgrade is refused', async () => {
       const upgrade = mock(() => false)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
         query: {
@@ -1036,7 +1051,7 @@ describe('buildSocketHandlers()', () => {
     test('when the ticket is valid', async () => {
       const upgrade = mock(() => true)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const res = createSocket({
         query: {
@@ -1064,7 +1079,7 @@ describe('buildSocketHandlers()', () => {
     test('when "res" is not of type "object"', async () => {
       const upgrade = mock(() => true)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
         query: {
@@ -1083,7 +1098,7 @@ describe('buildSocketHandlers()', () => {
     test('when "res" is NULL', async () => {
       const upgrade = mock(() => true)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const res = createSocket({
         query: {
@@ -1110,7 +1125,7 @@ describe('buildSocketHandlers()', () => {
     test('when "res" is an empty object', async () => {
       const upgrade = mock(() => true)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const res = createSocket({
         query: {
@@ -1137,7 +1152,7 @@ describe('buildSocketHandlers()', () => {
     test('when "res.data" is an empty object', async () => {
       const upgrade = mock(() => true)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const middlewareRes = {
         data: {},
@@ -1168,7 +1183,7 @@ describe('buildSocketHandlers()', () => {
     test('when "res.data" is an object with content', async () => {
       const upgrade = mock(() => true)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const middlewareRes = {
         data: {
@@ -1202,7 +1217,7 @@ describe('buildSocketHandlers()', () => {
     test('when "res" has other top-level properties', async () => {
       const upgrade = mock(() => true)
       const ticketRes = createTicket({}, {})
-      const ticketBody = await ticketRes.json()
+      const ticketBody = await ticketRes.json() as TicketBody
 
       const middlewareRes = {
         headers: new Headers({

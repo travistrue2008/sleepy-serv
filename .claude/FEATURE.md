@@ -302,14 +302,15 @@ convert, so the real contract is not visible until then.
       the `ws-message` integration test)
 - [x] `packages/server/src/messages.test.js`
 - [x] `packages/server/src/socket.js`
-- [ ] `packages/server/src/socket.test.js`. Two known blockers:
-      its `TestError` fixture declares
-      `static get status () { return 999 }`, and static members are
-      inheritance-checked, so 999 will not satisfy the base class's
-      `StatusCode` return type; the fixture needs a real code or an
-      assertion. Its `buildSocket()` helper also returns
-      `data: { clientId }` only, which no longer satisfies `SocketData`
-      now that `superseded`, `reaped`, and `reaperHandle` are required.
+- [x] `packages/server/src/socket.test.js`. Both predicted blockers hit,
+      and the `TestError` one turned out to be a real defect rather than
+      a typing nuisance: its `static get status () { return 999 }` is not
+      a valid HTTP status at all, and `new Response('', {status: 999})`
+      throws `RangeError`. The fixture only worked because the WebSocket
+      path puts the status into a JSON message instead of a `Response`;
+      the same error over HTTP would have crashed the `Bun.serve` error
+      hook. Now `StatusCode.ImATeapot`, which is still distinct from the
+      500 default so the pass-through assertion keeps its meaning.
 - [ ] `packages/server/src/index.js` (no unit test file)
 - [ ] `test-setup.js` (root, cross-cutting Bun test preload)
 
