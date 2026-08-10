@@ -17,18 +17,11 @@ bun test -t "substring"       # run tests matching a name
 bunx eslint .                 # lint
 ```
 
-Run the example app:
-```bash
-cd packages/server && bun link
-cd ../../example && npm link sleepy-serv
-bun --watch run start   # from example/
-```
-
 ## Verification
 
 Run `bun test` from the repo root before considering any change done. Coverage (text + lcov into `./coverage`) is configured in root `bunfig.toml` and is only picked up when run from the repo root.
 
-New functionality must be covered by new tests — see `.claude/rules/writing-tests.md` for test styles and test-writing conventions (auto-loads whenever a `*.test.js` file is in play).
+New functionality must be covered by new tests — see `.claude/rules/writing-tests.md` for test styles and test-writing conventions (auto-loads whenever a `*.test.js` or `*.test.ts` file is in play).
 
 ## Instructions
 

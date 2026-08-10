@@ -1,7 +1,8 @@
 ---
 paths:
-  - **.*.js
-  - **.*.mjs
+  - "**/*.js"
+  - "**/*.mjs"
+  - "**/*.ts"
 ---
 
 # Preservation

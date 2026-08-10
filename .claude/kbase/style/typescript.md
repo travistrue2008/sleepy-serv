@@ -71,6 +71,21 @@ TypeScript migration. Per-file progress lives in
   is pulled in through each package's `include`.
 - **Revisit:** Delete once bun-types ships the declaration upstream.
 
+### Import order: `import type` last
+
+- **Choice:** `import type` statements go below all regular imports,
+  separated by a blank line.
+- **Rationale:** Value imports are what the module actually pulls in at
+  runtime; type imports are erased entirely. Keeping them last puts the
+  runtime dependency list first and makes the erased portion visually
+  separable.
+- **Not enforced by ESLint.** The repo has no import-ordering rule at
+  all, so the existing external-then-internal grouping is convention
+  too. Adding `eslint-plugin-import` for this one rule was considered
+  and rejected: it is a new dependency, and it would conflict with
+  editor "organize imports" behavior, which hoists type imports to the
+  top. Check placement after saving.
+
 ## Typing decisions
 
 ### `executeMiddlewareChain` is generic over the request
@@ -116,6 +131,43 @@ TypeScript migration. Per-file progress lives in
   "did you mean" suggestion.
 - **Note:** `import type` is fully erased, so nothing is added to the
   runtime module graph.
+
+### Explicit return types on exported functions, including `: void`
+
+- **Choice:** Exported functions carry an explicit return type even when
+  it is `void`. Module-internal functions may rely on inference.
+- **Rationale:** Inference is correct here; an unannotated function with
+  no return statements emits `: void` in the declaration file. The
+  annotation is a tripwire, not a correction. Adding a `return value`
+  later is a compile error when annotated (`TS2322`) and completely
+  silent when not, where it instead rewrites the published `.d.ts`
+  signature.
+- **Why it matters here specifically:** `sleepy-serv` ships generated
+  declarations, so an inferred return type means the public contract is
+  derived from whatever the body happens to do today. Annotating turns
+  an accidental API change into a build failure.
+- Applies to all return types, not just `void`. `void` is simply the
+  case where inference is dependable enough that the annotation looks
+  redundant, which is what makes the silent-change risk easy to miss.
+
+### Do not add unreachable defensive fallbacks
+
+- **Choice:** `validateSchemas` uses `validator.errors!.map(...)` rather
+  than `(validator.errors ?? []).map(...)`.
+- **Rationale:** Ajv types `errors` as `null | ErrorObject[] |
+  undefined`, but its contract is narrower: verified that it sets
+  `null` when validation passes and a non-empty array when it fails. The
+  `??` branch is therefore unreachable, and unreachable branches cannot
+  be tested.
+- **The stronger reason:** if that branch *were* somehow reached, it
+  would spread nothing, leave the error array empty, skip the
+  `errors.length > 0` throw, and call `next(res)`. Invalid input would
+  silently pass validation. The non-null assertion instead produces a
+  loud `TypeError`. When an invariant is genuinely guaranteed, asserting
+  it fails safely; papering over it with a default fails dangerously.
+- **General principle:** reach for a fallback only where the fallback
+  value is *correct* for the case it handles. If it is merely a way to
+  satisfy the compiler, assert the invariant instead.
 
 ### `FormattedError.message` is required, not optional
 

@@ -1,7 +1,8 @@
 ---
 paths:
-  - "**.*.js
-  - **.*.mjs
+  - "**/*.js"
+  - "**/*.mjs"
+  - "**/*.ts"
 ---
 
 # Linting
@@ -20,6 +21,7 @@ Flat config lives at root `eslint.config.mjs`. Run with `bunx eslint .` from the
 - **Array layout:** Array formatting is not linted by ESLint rules. Do not force arbitrary array elements onto new lines unless flagged by the `max-len` 80-character boundary limit.
 - **Vertical Whitespace:** Force a blank line before/after any multiline statement, and between a variable declaration and a non-declaration statement. Consecutive single-line declarations do not require a blank line.
 - **Function spacing:** Place a single space between a named function's identifier and its parens: `function foo ()`.
+- **Import order:** `import type` statements go **below** all regular imports, separated by a blank line. Not linted by ESLint rules. Note that editor "organize imports" actions tend to hoist type imports to the top, so check placement after saving.
 
 ## References
 - For detailed engineering rationale, historical design choices, and known tooling gaps, see `@.claude/kbase/style/linting.md`.

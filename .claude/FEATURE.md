@@ -43,6 +43,39 @@ committed.
 Revisit once the work that motivates them is actually done, rather than
 guessing early.
 
+**Timing:** the request-contract items below land *after* all of group 1
+(through `index.ts`) and *before* group 2 (integration tests). Both
+request builders only exist in TypeScript once their own modules
+convert, so the real contract is not visible until then.
+
+- [ ] **Design the request type hierarchy.** Establish a `BaseRequest`
+      with the properties both variants share, and two types extending
+      it. The middleware chain and middleware handlers should accept
+      either.
+
+      `BaseRequest`: `method` (HTTP method), `route` (URL route),
+      `params` (dynamic route param values), `query` (parsed
+      querystring), `headers` (a `Headers` instance), `json` (async,
+      resolves the body to an object).
+
+      `EndpointRequest` adds `server` (the underlying Bun server) and
+      `raw` (the original `BunRequest`, if needed). Built by
+      `buildEndpointRequest` at `index.js:71`.
+
+      `WebSocketRequest` adds `id` and `clientId`. Built by
+      `buildRequest` at `socket.js:208`. (These two fields were read off
+      the current implementation; the spec handed over left the
+      WebSocket-specific list blank, so confirm they are the intended
+      set.)
+
+      Deliberately *not* `BunRequest`: the framework needs less than Bun
+      provides and also attaches fields Bun does not have.
+
+      This replaces `ValidatableRequest` in `middleware.ts`, which is a
+      temporary stand-in covering only what that module happens to
+      touch (`headers`, `params`, `query`, `json`), and it subsumes the
+      `TReq` item below.
+
 - [ ] **Tighten `TReq` in `utils.ts`.** `executeMiddlewareChain` is
       currently generic over an unconstrained `TReq` because `utils` only
       forwards the request and never inspects it. The two callers build
@@ -54,13 +87,29 @@ guessing early.
       `json`. Once `socket.ts` and `index.ts` are converted (last two in
       group 1), that core can become a named base type with the generic
       constrained to it, or the generic can collapse into a union.
-      Deliberately deferred: both shapes only become visible in
-      TypeScript when their own modules convert.
+      Superseded by the request type hierarchy above: `TReq` should end
+      up constrained to `BaseRequest`, or collapse into a
+      `EndpointRequest | WebSocketRequest` union.
       Note: `utils.test.ts` uses `const REQ = { url: '/users' }`, which
       matches neither envelope (neither has a `url` field). It compiles
       today only because `TReq` is unconstrained, so tightening the
       constraint will correctly break it and the fixture will need a
       realistic shape.
+
+- [ ] **Resolve `next` nullability in built-in middleware.**
+      `Middleware` types `next` as `MiddlewareNext | null` because
+      `executeMiddlewareChain` really does pass `null` to the last entry.
+      But `parseJsonBody` and `validateSchemas` call `next`
+      unconditionally, since they are only valid in non-terminal
+      position. That precondition is currently asserted with three
+      `next as MiddlewareNext` casts in `middleware.ts` (lines 112, 121,
+      173) rather than encoded. Options when revisiting: a runtime guard
+      that throws a clear error, or splitting the chain-entry type so
+      terminal handlers and middleware are distinct. Note a naive split
+      fails under `strictFunctionTypes`, since a function taking
+      non-null `next` is not assignable to one taking
+      `MiddlewareNext | null`. Best settled alongside the `TReq`
+      tightening, since both describe the same chain contract.
 
 - [ ] **Revisit error message intent.** All `message` constructor params
       are required, for parity with the original JavaScript rather than
@@ -90,7 +139,7 @@ guessing early.
 - [x] `packages/server/src/status.test.ts` (new, pins codes to literals)
 - [x] `packages/server/src/errors.js` (getters return `StatusCode`)
 - [x] `packages/server/src/errors.test.js`
-- [ ] `packages/server/src/middleware.js`
+- [x] `packages/server/src/middleware.js`
 - [ ] `packages/server/src/middleware.test.js`
 - [ ] `packages/server/src/messages.js` (`TYPES` becomes `MessageType`,
       atomic across `socket.js`, both test files, `tests/helpers.js`, and
