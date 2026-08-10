@@ -1,6 +1,8 @@
 import { UnprocessableContentError } from '../../../../../src/errors'
 
-export default function (_req) {
+import type { Request } from '../../../../../src'
+
+export default function (_req: Request): never {
   throw new UnprocessableContentError([
     {
       path: 'body',

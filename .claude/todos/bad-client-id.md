@@ -75,6 +75,19 @@ success path echoing the client's value, so the two disagreed. An
 inconsistent protocol is worse than either consistent choice, and
 picking between them is a protocol decision, not a conversion one.
 
+## The type system independently surfaced this
+
+Converting the `ws-message` suite hit the same defect from a different
+direction. `MessageFrame` in `packages/server/tests/helpers.ts` had to
+declare `clientId?: string` rather than `clientId: string`, because two
+tests assert a reply that has **no `clientId` key at all**: the frame
+omitted it, so the echoed value was `undefined`, and `JSON.stringify`
+dropped the key.
+
+So the test-side type now records the defect. When this is triaged and
+option 2 or 3 is taken, that `?` should come off, and those two
+assertions should gain a `clientId` they have never had.
+
 ## Options when this gets triaged
 
 1. **Echo everywhere.** Both paths return the client-supplied value.

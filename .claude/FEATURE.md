@@ -291,16 +291,16 @@ convert, so the real contract is not visible until then.
 - [x] `packages/server/tests/errors/request/no-Response-object-returned/integration.test.js`
 - [x] `packages/server/tests/errors/request/not-allowed-method/api/users/post.js`
 - [x] `packages/server/tests/errors/request/not-allowed-method/integration.test.js`
-- [ ] `packages/server/tests/errors/request/not-found-resource/api/users/get.js`
-- [ ] `packages/server/tests/errors/request/not-found-resource/integration.test.js`
-- [ ] `packages/server/tests/errors/request/throws-RequestError/api/get.js`
-- [ ] `packages/server/tests/errors/request/throws-RequestError/integration.test.js`
-- [ ] `packages/server/tests/errors/request/throws-generic-error/api/get.js`
-- [ ] `packages/server/tests/errors/request/throws-generic-error/integration.test.js`
-- [ ] `packages/server/tests/errors/request/ws-endpoints/api/get.js`
-- [ ] `packages/server/tests/errors/request/ws-endpoints/integration.test.js`
-- [ ] `packages/server/tests/errors/request/ws-message/api/get.js`
-- [ ] `packages/server/tests/errors/request/ws-message/integration.test.js`
+- [x] `packages/server/tests/errors/request/not-found-resource/api/users/get.js`
+- [x] `packages/server/tests/errors/request/not-found-resource/integration.test.js`
+- [x] `packages/server/tests/errors/request/throws-RequestError/api/get.js`
+- [x] `packages/server/tests/errors/request/throws-RequestError/integration.test.js`
+- [x] `packages/server/tests/errors/request/throws-generic-error/api/get.js`
+- [x] `packages/server/tests/errors/request/throws-generic-error/integration.test.js`
+- [x] `packages/server/tests/errors/request/ws-endpoints/api/get.js`
+- [x] `packages/server/tests/errors/request/ws-endpoints/integration.test.js`
+- [x] `packages/server/tests/errors/request/ws-message/api/get.js`
+- [x] `packages/server/tests/errors/request/ws-message/integration.test.js`
 - [ ] `packages/server/tests/middleware/all-levels/api/meta.js`
 - [ ] `packages/server/tests/middleware/all-levels/api/users/get.js`
 - [ ] `packages/server/tests/middleware/all-levels/api/users/meta.js`

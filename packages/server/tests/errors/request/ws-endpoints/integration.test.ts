@@ -2,6 +2,10 @@ import { describe, test, expect } from 'bun:test'
 import { createApp } from '../../../../src'
 import { FMT, createRequestor, createSocketClient } from '../../../helpers'
 
+type TicketBody = {
+  ticket: string
+}
+
 import {
   NotFoundError,
   UnauthorizedError,
@@ -289,10 +293,11 @@ describe('GET', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
     const ticketRes = await req.post('/ws', FMT.JSON)
+    const { ticket } = ticketRes.body as TicketBody
 
     const res = await req.get('/ws', FMT.JSON, {
       query: {
-        ticket: ticketRes.body.ticket,
+        ticket,
       },
     })
 
@@ -308,10 +313,11 @@ describe('GET', () => {
     const req = createRequestor(app)
     const ws = await createSocketClient(app)
     const ticketRes = await req.post('/ws', FMT.JSON)
+    const { ticket } = ticketRes.body as TicketBody
 
     const msg = await ws.get('/ws', {
       query: {
-        ticket: ticketRes.body.ticket,
+        ticket,
       },
     })
 

@@ -24,15 +24,20 @@ export type HttpResult = {
   body: unknown
 }
 
-export type ResponseFrame = {
+export type MessageFrame = {
   id: string
-  clientId: string
+  clientId?: string
   type: MessageType
   timestamp: string
+}
+
+export type ResponseFrame = MessageFrame & {
   status: number
   headers: Record<string, string>
   body: unknown
 }
+
+export type Frame = MessageFrame | ResponseFrame
 
 export type MessagePayload = {
   headers?: unknown
@@ -58,11 +63,11 @@ export type SocketTestClient = {
   readonly heartbeatInterval: number
   readonly socket: WebSocket
   close: () => Promise<void>
-  heartbeat: () => Promise<unknown>
+  heartbeat: () => Promise<MessageFrame>
   get: (route: string, opts?: MessagePayload) => Promise<ResponseFrame>
   put: (route: string, opts?: MessagePayload) => Promise<ResponseFrame>
   post: (route: string, opts?: MessagePayload) => Promise<ResponseFrame>
-  sendRaw: (payload: Record<string, unknown>) => Promise<unknown>
+  sendRaw: (payload: Record<string, unknown>) => Promise<Frame>
 }
 
 type WelcomeData = {
@@ -161,7 +166,9 @@ export async function createSocketClient (
     })
   })
 
-  async function sendRaw (payload: Record<string, unknown>): Promise<unknown> {
+  async function sendRaw (
+    payload: Record<string, unknown>,
+  ): Promise<Frame> {
     return new Promise(resolve => {
       const handler = (event: MessageEvent): void => {
         resolve(JSON.parse(event.data))
@@ -177,7 +184,7 @@ export async function createSocketClient (
   async function sendMessage (
     type: MessageType,
     payload: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<Frame> {
     return new Promise(resolve => {
       const handler = (event: MessageEvent): void => {
         resolve(JSON.parse(event.data))
@@ -231,7 +238,7 @@ export async function createSocketClient (
 
       await Promise.resolve() /* revisit this */
     },
-    heartbeat (): Promise<unknown> {
+    heartbeat (): Promise<MessageFrame> {
       return sendMessage(MessageType.Heartbeat, {})
     },
     get (route: string, opts: MessagePayload = {}): Promise<ResponseFrame> {
@@ -243,7 +250,7 @@ export async function createSocketClient (
     post (route: string, opts: MessagePayload = {}): Promise<ResponseFrame> {
       return sendRequest('POST', route, opts)
     },
-    sendRaw (payload: MessagePayload): Promise<unknown> {
+    sendRaw (payload: MessagePayload): Promise<Frame> {
       return sendRaw(payload)
     },
   }
