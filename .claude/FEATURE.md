@@ -380,7 +380,9 @@ convert, so the real contract is not visible until then.
 
 - [x] `packages/client/src/utils.js` (exports an `IdGenerator` type;
       `setIdGenerator` is public API via `export * from './utils'`)
-- [ ] `packages/client/src/utils.test.js`
+- [x] `packages/client/src/utils.test.js` (needed `mock<IdGenerator>()`;
+      a bare `mock()` falls back to its `(...args: any[]) => any`
+      constraint and made the `setIdGenerator` assertion vacuous)
 - [ ] `packages/client/src/messages.js` (`TYPES` becomes `MessageType`,
       a public breaking change, atomic across `index.js`, both test
       files, and the **25** root E2E files in group 4 that import

@@ -375,6 +375,39 @@ TypeScript migration. Per-file progress lives in
   assertions that had pinned `res.body` to `null`. That is the change
   being visible, not a regression.
 
+### A bare `mock()` types as `any`, so pass it a type argument
+
+- **Problem:** `bun:test` declares
+  `mock: <T extends (...args: any[]) => any>(Function?: T) => Mock<T>`.
+  The parameter is optional, so a bare `mock()` has nothing to infer `T`
+  from and it falls back to the *constraint*,
+  `(...args: any[]) => any`. Every downstream assertion on that mock is
+  then unchecked.
+- **How this surfaced:** converting `utils.test.ts`, the file typechecked
+  clean on a pure rename with no annotations at all. That is the signal
+  worth distrusting. Probing the inferred types showed
+  `setIdGenerator(fn)` accepted a mock whose `mockReturnValueOnce` had
+  been handed the number `12345`, even though `setIdGenerator` requires
+  `() => string`.
+- **Choice:** `mock<IdGenerator>()`, naming the contract the mock stands
+  in for.
+- **Rationale:** The point of a test double is to satisfy the same
+  contract as the real thing. Leaving `T` to the constraint means the
+  double is checked against nothing, which is exactly the coverage a
+  typed test is supposed to add. The `any` originates in bun-types, not
+  in our source, so `no-explicit-any` cannot catch it; only an explicit
+  type argument closes it.
+- **The general rule:** when a converted test passes with no annotations,
+  confirm the checks are real before believing them. Feed a deliberately
+  wrong value to each assertion that looks type-guarded, and check it
+  actually fails to compile.
+- **Not every loose-looking spot needs this.** `spyOn(crypto,
+  'randomUUID')` infers from the real object, so it is already precise:
+  it returns
+  `Mock<() => \`${string}-${string}-${string}-${string}-${string}\`>`,
+  and a non-UUID literal fails to compile. Only the argument-less
+  `mock()` degrades.
+
 ## References
 
 - [Linting](./linting.md) for the shared style rules, which the

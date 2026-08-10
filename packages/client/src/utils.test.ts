@@ -10,6 +10,8 @@ import {
   afterEach,
 } from 'bun:test'
 
+import type { IdGenerator } from './utils'
+
 const UUID_DEFAULT = '11111111-1111-1111-1111-111111111111'
 
 beforeEach(() => {
@@ -66,7 +68,7 @@ describe('id()', () => {
 describe('setIdGenerator()', () => {
   test('when invoked', () => {
     const ID = '123'
-    const fn = mock().mockReturnValueOnce(ID)
+    const fn = mock<IdGenerator>().mockReturnValueOnce(ID)
 
     setIdGenerator(fn)
 
