@@ -8,14 +8,81 @@ export const QUEUE = {
   NONE: 'none',
   FIFO: 'fifo',
   LIFO: 'lifo',
+} as const
+
+export type QUEUE = typeof QUEUE[keyof typeof QUEUE]
+
+export type ReconnectOptions = {
+  minDelay?: number
+  maxDelay?: number
+  factor?: number
+  random?: () => number
+}
+
+export type ConnectOptions = {
+  queue?: QUEUE
+  secure?: boolean
+  timeout?: number
+  serverTimeout?: number
+  mountPath?: string
+  reconnect?: ReconnectOptions | false
+}
+
+export type RequestOptions = {
+  headers?: Headers
+  query?: Record<string, unknown>
+  body?: unknown
+}
+
+export type ResponseFrame = {
+  id: string
+  clientId: string
+  type: typeof MessageType.Response
+  timestamp: string
+  status: number
+  headers: Record<string, string>
+  body: unknown
+}
+
+export type NotificationFrame = {
+  id: string
+  clientId: string
+  type: typeof MessageType.Notification
+  timestamp: string
+  event: string
+  headers: Record<string, string>
+  body: unknown
+}
+
+export type EventHandler = (payload: NotificationFrame) => void
+
+export type TicketData = {
+  clientId: string
+  ticket: string
+  data: unknown
+}
+
+type ReconnectConfig = {
+  minDelay: number
+  maxDelay: number
+  factor: number
+}
+
+type DispatchedMessage = {
+  id: string
+  ready: boolean
+  timer: ReturnType<typeof setTimeout>
+  response: ResponseFrame | null
+  resolve: (value: ResponseFrame) => void
+  reject: (reason: Error) => void
 }
 
 const RECONNECT_JITTER = 0.5
 const JSON_CONTENT_TYPE = 'application/json;charset=utf-8'
 
 export default class SleepySocketClient {
-  #id = null
-  #queueType = QUEUE.NONE
+  #id: string | null = null
+  #queueType: QUEUE = QUEUE.NONE
   #ready = false
   #closing = false
   #secure = false
@@ -23,71 +90,78 @@ export default class SleepySocketClient {
   #serverTimeout = 120_000
   #heartbeatInterval = 30_000
   #mountPath = ''
-  #host = null
-  #port = null
-  #token = null
-  #socket = null
-  #random = Math.random
-  #livenessTimer = null
-  #heartbeatTimer = null
-  #reconnectTimer = null
-  #reconnectConfig = null
-  #connectionData = null
-  #listeners = new Map()
-  #dispatchedMessages = []
+  #host: string | null = null
+  #port: number | null = null
+  #token: string | null = null
+  #socket: WebSocket | null = null
+  #random: () => number = Math.random
+  #livenessTimer: ReturnType<typeof setTimeout> | null = null
+  #heartbeatTimer: ReturnType<typeof setInterval> | null = null
+  #reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  #reconnectConfig: ReconnectConfig | null = null
+  #connectionData: unknown = null
+  #listeners = new Map<string, Set<EventHandler>>()
+  #dispatchedMessages: DispatchedMessage[] = []
 
-  get id () {
+  get id (): string | null {
     return this.#id
   }
 
-  get isConnected () {
+  get isConnected (): boolean {
     return this.#ready
   }
 
-  get queueType () {
+  get queueType (): QUEUE {
     return this.#queueType
   }
 
-  get secure () {
+  get secure (): boolean {
     return this.#secure
   }
 
-  get timeout () {
+  get timeout (): number {
     return this.#timeout
   }
 
-  get heartbeatInterval () {
+  get heartbeatInterval (): number {
     return this.#heartbeatInterval
   }
 
-  get serverTimeout () {
+  get serverTimeout (): number {
     return this.#serverTimeout
   }
 
-  get token () {
+  get token (): string | null {
     return this.#token
   }
 
-  get mountPath () {
+  get mountPath (): string {
     return this.#mountPath
   }
 
-  get socket () {
+  get socket (): WebSocket | null {
     return this.#socket
   }
 
-  get connectionData () {
+  get connectionData (): unknown {
     return this.#connectionData
   }
 
-  static async connect (host, port, opts = {}) {
+  static async connect (
+    host: string,
+    port: number,
+    opts: ConnectOptions = {},
+  ): Promise<SleepySocketClient> {
     if (opts.queue && !Object.values(QUEUE).includes(opts.queue)) {
       throw new RangeError(`Invalid queue type: ${opts.queue}`)
     }
 
     const client = new this()
-    const hasReconnect = opts.reconnect && typeof opts.reconnect === 'object'
-    const reconnect = hasReconnect ? opts.reconnect : {}
+
+    const reconnect: ReconnectOptions =
+      opts.reconnect && typeof opts.reconnect === 'object'
+        ? opts.reconnect
+        : {}
 
     client.#host = host
     client.#port = port
@@ -112,13 +186,13 @@ export default class SleepySocketClient {
     return client
   }
 
-  #baseUrl () {
+  #baseUrl (): string {
     const protocol = this.#secure ? 'https' : 'http'
 
     return `${protocol}://${this.#host}:${this.#port}${this.#mountPath}`
   }
 
-  async #createTicket () {
+  async #createTicket (): Promise<TicketData> {
     const response = await fetch(`${this.#baseUrl()}/ws`, {
       method: 'POST',
     })
@@ -126,7 +200,7 @@ export default class SleepySocketClient {
     return response.json()
   }
 
-  async #reclaimTicket () {
+  async #reclaimTicket (): Promise<TicketData | null> {
     const url = `${this.#baseUrl()}/ws/${this.#id}`
 
     const response = await fetch(url, {
@@ -143,7 +217,7 @@ export default class SleepySocketClient {
     return response.json()
   }
 
-  async #requestTicket () {
+  async #requestTicket (): Promise<TicketData> {
     if (this.#id && this.#token) {
       const reclaimed = await this.#reclaimTicket()
 
@@ -155,23 +229,29 @@ export default class SleepySocketClient {
     return this.#createTicket()
   }
 
-  #socketUrl (ticket) {
+  #socketUrl (ticket: string): string {
     const protocol = this.#secure ? 'wss' : 'ws'
     const authority = `${this.#host}:${this.#port}${this.#mountPath}`
 
     return `${protocol}://${authority}/ws?ticket=${ticket}`
   }
 
-  #openSocket (res, succeed, fail) {
-    this.#socket = new WebSocket(this.#socketUrl(res.ticket))
+  #openSocket (
+    res: TicketData,
+    succeed: () => void,
+    fail: (message: string) => void,
+  ): void {
+    const socket = new WebSocket(this.#socketUrl(res.ticket))
+
+    this.#socket = socket
     this.#connectionData = res.data
 
-    const onError = () => fail('Connection failed.')
+    const onError = (): void => fail('Connection failed.')
 
-    const onWelcome = event => {
+    const onWelcome = (event: MessageEvent): void => {
       const message = JSON.parse(event.data)
 
-      this.#socket.removeEventListener('message', onWelcome)
+      socket.removeEventListener('message', onWelcome)
 
       if (message.type !== MessageType.Welcome) {
         fail('Expected a welcome message.')
@@ -183,8 +263,8 @@ export default class SleepySocketClient {
       this.#token = message.body.token
       this.#heartbeatInterval = message.body.heartbeatInterval
 
-      this.#socket.addEventListener('message', ev => this.#handleMessage(ev))
-      this.#socket.addEventListener('close', ev => this.#handleClose(ev))
+      socket.addEventListener('message', ev => this.#handleMessage(ev))
+      socket.addEventListener('close', ev => this.#handleClose(ev))
 
       this.#startHeartbeat()
       this.#armLiveness()
@@ -194,15 +274,15 @@ export default class SleepySocketClient {
       succeed()
     }
 
-    this.#socket.addEventListener('open', () => {
-      this.#socket.removeEventListener('error', onError)
-      this.#socket.addEventListener('message', onWelcome)
+    socket.addEventListener('open', () => {
+      socket.removeEventListener('error', onError)
+      socket.addEventListener('message', onWelcome)
     }, { once: true })
 
-    this.#socket.addEventListener('error', onError)
+    socket.addEventListener('error', onError)
   }
 
-  #establish () {
+  #establish (): Promise<void> {
     return new Promise((resolve, reject) => {
       let settled = false
 
@@ -217,7 +297,7 @@ export default class SleepySocketClient {
         reject(new Error('Connection timed out.'))
       }, this.#timeout)
 
-      const fail = message => {
+      const fail = (message: string): void => {
         if (settled) {
           return
         }
@@ -228,7 +308,7 @@ export default class SleepySocketClient {
         reject(new Error(message))
       }
 
-      const succeed = () => {
+      const succeed = (): void => {
         if (settled) {
           return
         }
@@ -245,16 +325,18 @@ export default class SleepySocketClient {
     })
   }
 
-  #armLiveness () {
-    clearTimeout(this.#livenessTimer)
+  #armLiveness (): void {
+    if (this.#livenessTimer) {
+      clearTimeout(this.#livenessTimer)
+    }
 
     this.#livenessTimer = setTimeout(() => {
       this.#socket?.close()
     }, this.serverTimeout)
   }
 
-  #scheduleReconnect (attempt) {
-    const { minDelay, maxDelay, factor } = this.#reconnectConfig
+  #scheduleReconnect (attempt: number, config: ReconnectConfig): void {
+    const { minDelay, maxDelay, factor } = config
     const base = Math.min(minDelay * factor ** attempt, maxDelay)
     const delay = base * (1 + this.#random() * RECONNECT_JITTER)
 
@@ -272,26 +354,32 @@ export default class SleepySocketClient {
           return
         }
 
-        this.#scheduleReconnect(attempt + 1)
+        this.#scheduleReconnect(attempt + 1, config)
       }
     }, delay)
   }
 
-  #startHeartbeat () {
+  #startHeartbeat (): void {
     this.#heartbeatTimer = setInterval(() => {
-      const message = createMessage(this.#id, MessageType.Heartbeat)
+      const message = createMessage(this.#id!, MessageType.Heartbeat)
 
-      this.#socket.send(JSON.stringify(message))
+      this.#socket!.send(JSON.stringify(message))
     }, this.#heartbeatInterval)
   }
 
-  #stopHeartbeat () {
-    clearInterval(this.#heartbeatTimer)
+  #stopHeartbeat (): void {
+    if (this.#heartbeatTimer) {
+      clearInterval(this.#heartbeatTimer)
+    }
 
     this.#heartbeatTimer = null
   }
 
-  #normalizeRequestOpts (opts) {
+  #normalizeRequestOpts (opts: RequestOptions): {
+    headers: Headers
+    query: Record<string, unknown>
+    body: unknown
+  } {
     if (opts.headers !== undefined && !(opts.headers instanceof Headers)) {
       throw new TypeError('opts.headers must be a Headers instance')
     }
@@ -313,7 +401,11 @@ export default class SleepySocketClient {
     }
   }
 
-  #sendRequest (method, route, opts = {}) {
+  #sendRequest (
+    method: string,
+    route: string,
+    opts: RequestOptions = {},
+  ): Promise<ResponseFrame> {
     if (!this.#ready) {
       throw new Error('Socket is closed')
     }
@@ -321,7 +413,7 @@ export default class SleepySocketClient {
     const { headers, query, body } = this.#normalizeRequestOpts(opts)
     const fullRoute = joinRoute(this.#mountPath, route)
 
-    const message = createMessage(this.#id, MessageType.Request, {
+    const message = createMessage(this.#id!, MessageType.Request, {
       method,
       query,
       body,
@@ -351,15 +443,18 @@ export default class SleepySocketClient {
         response: null,
       })
 
-      this.#socket.send(JSON.stringify(message))
+      this.#socket!.send(JSON.stringify(message))
     })
   }
 
-  #handleClose (event) {
+  #handleClose (event: CloseEvent): void {
     this.#ready = false
 
     this.#stopHeartbeat()
-    clearTimeout(this.#livenessTimer)
+
+    if (this.#livenessTimer) {
+      clearTimeout(this.#livenessTimer)
+    }
 
     for (const entry of this.#dispatchedMessages) {
       clearTimeout(entry.timer)
@@ -381,10 +476,10 @@ export default class SleepySocketClient {
       return
     }
 
-    this.#scheduleReconnect(0)
+    this.#scheduleReconnect(0, this.#reconnectConfig)
   }
 
-  #handleRequest (data) {
+  #handleRequest (data: ResponseFrame): void {
     const entry = this.#dispatchedMessages.find(item => item.id === data.id)
 
     if (!entry) {
@@ -399,11 +494,11 @@ export default class SleepySocketClient {
     this.#drain()
   }
 
-  #handleNotification (data) {
+  #handleNotification (data: NotificationFrame): void {
     this.#emit('notification', data)
   }
 
-  #handleMessage (event) {
+  #handleMessage (event: MessageEvent): void {
     this.#armLiveness()
 
     const data = JSON.parse(event.data)
@@ -423,33 +518,33 @@ export default class SleepySocketClient {
     }
   }
 
-  #processNone () {
+  #processNone (): void {
     this.#dispatchedMessages = this.#dispatchedMessages.filter(entry => {
       if (entry.ready) {
-        entry.resolve(entry.response)
+        entry.resolve(entry.response!)
       }
 
       return !entry.ready
     })
   }
 
-  #processFifo () {
+  #processFifo (): void {
     while (this.#dispatchedMessages[0]?.ready) {
       const [entry] = this.#dispatchedMessages.splice(0, 1)
 
-      entry.resolve(entry.response)
+      entry.resolve(entry.response!)
     }
   }
 
-  #processLifo () {
+  #processLifo (): void {
     while (this.#dispatchedMessages.at(-1)?.ready) {
       const entry = this.#dispatchedMessages.pop()
 
-      entry.resolve(entry.response)
+      entry!.resolve(entry!.response!)
     }
   }
 
-  #drain () {
+  #drain (): void {
     switch (this.#queueType) {
       case QUEUE.NONE:
         return this.#processNone()
@@ -462,7 +557,7 @@ export default class SleepySocketClient {
     }
   }
 
-  #emit (event, payload) {
+  #emit (event: string, payload: NotificationFrame): void {
     const handlers = this.#listeners.get(event)
 
     if (!handlers) {
@@ -478,19 +573,19 @@ export default class SleepySocketClient {
     }
   }
 
-  on (event, handler) {
+  on (event: string, handler: EventHandler): void {
     if (!this.#listeners.has(event)) {
       this.#listeners.set(event, new Set())
     }
 
-    this.#listeners.get(event).add(handler)
+    this.#listeners.get(event)!.add(handler)
   }
 
-  off (event, handler) {
+  off (event: string, handler: EventHandler): void {
     this.#listeners.get(event)?.delete(handler)
   }
 
-  async close () {
+  async close (): Promise<void> {
     if (this.#closing) {
       throw new Error('Socket is closed')
     }
@@ -499,8 +594,14 @@ export default class SleepySocketClient {
     this.#ready = false
 
     this.#stopHeartbeat()
-    clearTimeout(this.#livenessTimer)
-    clearTimeout(this.#reconnectTimer)
+
+    if (this.#livenessTimer) {
+      clearTimeout(this.#livenessTimer)
+    }
+
+    if (this.#reconnectTimer) {
+      clearTimeout(this.#reconnectTimer)
+    }
 
     this.#reconnectTimer = null
 
@@ -511,27 +612,27 @@ export default class SleepySocketClient {
     }
   }
 
-  head (route, opts = {}) {
+  head (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
     return this.#sendRequest('HEAD', route, opts)
   }
 
-  get (route, opts = {}) {
+  get (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
     return this.#sendRequest('GET', route, opts)
   }
 
-  post (route, opts = {}) {
+  post (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
     return this.#sendRequest('POST', route, opts)
   }
 
-  put (route, opts = {}) {
+  put (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
     return this.#sendRequest('PUT', route, opts)
   }
 
-  patch (route, opts = {}) {
+  patch (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
     return this.#sendRequest('PATCH', route, opts)
   }
 
-  delete (route, opts = {}) {
+  delete (route: string, opts: RequestOptions = {}): Promise<ResponseFrame> {
     return this.#sendRequest('DELETE', route, opts)
   }
 }

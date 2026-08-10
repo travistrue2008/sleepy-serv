@@ -375,6 +375,59 @@ TypeScript migration. Per-file progress lives in
   assertions that had pinned `res.body` to `null`. That is the change
   being visible, not a regression.
 
+### Non-null assertions in `SleepySocketClient`, and how they were vetted
+
+- **Situation:** the client is a connection state machine. Fields like
+  `#id`, `#socket`, and `#reconnectConfig` are genuinely null before a
+  connection exists and genuinely non-null once one does, but the
+  invariant lives in `#ready` and in call ordering, which the compiler
+  cannot follow.
+- **Choice:** seven `!` assertions, each at a site where a runtime guard
+  would be unreachable. Adding `if (!this.#socket) return` would violate
+  [the rule against unreachable defensive
+  fallbacks](#do-not-add-unreachable-defensive-fallbacks) and would
+  silently change behaviour if the invariant ever broke, instead of
+  throwing.
+- **Each one was tested for necessity, not assumed.** Removing the
+  assertion and re-running `tsc` proved seven genuinely required and one
+  merely decorative: `const [entry] = arr.splice(0, 1)` already yields a
+  non-optional element, so `entry!` there was noise and was deleted.
+  `arr.pop()` and `arr.at(-1)` really do return `T | undefined`, so the
+  LIFO path keeps its assertion. An unnecessary `!` is worse than none,
+  because it implies a nullability that does not exist.
+- **The invariants, for the record:** `#startHeartbeat` runs only from
+  `onWelcome`, after `#id` is assigned; `#stopHeartbeat` runs in
+  `#handleClose` *before* `#socket = null`, so the interval can never
+  observe a null socket. `#sendRequest` is guarded by `#ready`.
+  `entry.response` is only read under `if (entry.ready)`, and `ready`
+  is set in the same statement pair as `response`.
+
+### Prefer making an invariant structural over asserting it
+
+- **Choice:** `#scheduleReconnect(attempt, config)` takes the reconnect
+  config as a parameter instead of reading `this.#reconnectConfig!`.
+- **Rationale:** the only caller already stands inside
+  `if (!this.#reconnectConfig) { … return }`, so TypeScript has *already
+  narrowed the field* at that point. Passing the narrowed value forwards
+  hands the compiler a proof rather than an assertion, and the recursive
+  call threads the same value. This is the preferred shape whenever a
+  caller has already done the check: an assertion is the fallback for
+  when it has not.
+
+### Aliased conditions do not narrow a property access
+
+- **Problem:** `connect` had
+  `const hasReconnect = opts.reconnect && typeof opts.reconnect === 'object'`
+  followed by `hasReconnect ? opts.reconnect : {}`. Under TS 5.9 the
+  ternary does **not** see through the alias, and `opts.reconnect` stays
+  `ReconnectOptions | false | undefined`.
+- **Verified, not guessed.** Three forms were compiled side by side: the
+  aliased `&&` chain fails, a simpler aliased `typeof` check also fails,
+  and only inlining the condition into the ternary narrows.
+- **Choice:** inline the condition and drop the single-use variable. The
+  alternative was a cast, which would assert exactly what inlining lets
+  the compiler prove.
+
 ### A bare `mock()` types as `any`, so pass it a type argument
 
 - **Problem:** `bun:test` declares

@@ -420,7 +420,30 @@ convert, so the real contract is not visible until then.
       `opts.headers` are all rejected. An arbitrary extra `opts` key is
       accepted, which is the `[key: string]: unknown` passthrough
       working as intended, not a gap.
-- [ ] `packages/client/src/index.js`
+- [x] `packages/client/src/index.js`. Exports the authoring types
+      (`ConnectOptions`, `ReconnectOptions`, `RequestOptions`,
+      `ResponseFrame`, `NotificationFrame`, `EventHandler`,
+      `TicketData`); `ReconnectConfig` and `DispatchedMessage` stay
+      module-private since neither appears in a public signature.
+      `exports` flipped to `./src/index.ts`, without which all 31 E2E
+      suites fail to resolve `sleepy-socket` (confirmed: 31 failures
+      before the flip, 0 after). Seven `!` assertions survive, each
+      individually proven required by removing it and re-running `tsc`;
+      an eighth was decorative and deleted. See
+      [typescript.md](./kbase/style/typescript.md).
+      **Two judgement calls worth review:**
+      (1) `#openSocket` now captures `const socket = new WebSocket(...)`
+      and its handlers close over that local rather than re-reading
+      `this.#socket`. This removes five assertions, but it is a real
+      behaviour change in one narrow case: if a reconnect swapped
+      `this.#socket` between handler registration and the welcome frame,
+      the old code would detach the listener from the *new* socket. The
+      local is more correct, but it is not a pure annotation.
+      (2) `QUEUE` is now `as const` with a derived type, but keeps its
+      SCREAMING_SNAKE members, so it is the last enum-like object out of
+      step with `MessageType`, `StatusCode`, and `Fmt`. Renaming it is a
+      second public breaking change on top of `TYPES` to `MessageType`,
+      so it was left for an explicit decision rather than folded in.
 - [ ] `packages/client/src/index.test.js`
 
 ## 4. E2E tests (root `tests/`)
