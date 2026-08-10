@@ -338,7 +338,10 @@ convert, so the real contract is not visible until then.
 - [x] `packages/client/tsconfig.json` (`types: ["bun"]`, DOM lib, all of
       `src/**/*` including tests)
 - [x] `packages/client/tsconfig.portable.json` (the portability gate:
-      `types: []`, tests excluded). Verified load-bearing by mutation:
+      `types: []`, tests excluded via `src/**/*.test.*`, matching the
+      `files` field's negation so the pattern holds for both extensions
+      during the mixed `.js`/`.ts` window). Verified load-bearing by
+      mutation:
       `node:crypto` → TS2307, `Bun.version` → TS2868, `process.env` →
       TS2591, all three clean under `tsconfig.json`; and the `exclude`
       proven by planting a type error in a `*.test.ts`.
@@ -364,7 +367,19 @@ convert, so the real contract is not visible until then.
 
 ### Source and unit tests
 
-- [ ] `packages/client/src/utils.js`
+> **Do not publish `sleepy-socket` until group 3 finishes.** The moment
+> the first `.ts` file landed, the package entered a transitionally
+> broken publish state: `files` still ships `src`, so the tarball
+> contains `index.js` importing `./utils`, which now resolves to
+> `utils.ts`. Bun consumers transpile that; Node and browsers, the two
+> runtimes this package exists to support, do not. Confirmed with
+> `npm pack --dry-run`. The `dist` build wiring above is what closes
+> this, which is why it lands at the end of the group rather than being
+> dropped. Releases are `workflow_dispatch` only, so nothing publishes
+> by accident, but the window is real.
+
+- [x] `packages/client/src/utils.js` (exports an `IdGenerator` type;
+      `setIdGenerator` is public API via `export * from './utils'`)
 - [ ] `packages/client/src/utils.test.js`
 - [ ] `packages/client/src/messages.js` (`TYPES` becomes `MessageType`,
       a public breaking change, atomic across `index.js`, both test
