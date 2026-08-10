@@ -26,7 +26,7 @@ describe('WebSocket', () => {
   test('when making a request on a dynamic route', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
     const res = await client.get('/users/123')
 
     await client.close()
@@ -34,7 +34,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: 200,
       timestamp: res.timestamp,

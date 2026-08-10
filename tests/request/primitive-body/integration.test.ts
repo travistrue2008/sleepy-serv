@@ -50,7 +50,7 @@ describe('WebSocket', () => {
   test('when request body is NOT an object', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
 
     const res = await client.post('/echo', {
       body: 42,
@@ -61,7 +61,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: 201,
       timestamp: res.timestamp,
@@ -77,7 +77,7 @@ describe('WebSocket', () => {
   test('when request body IS an object', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
 
     const res = await client.post('/echo', {
       body: {
@@ -90,7 +90,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: 201,
       timestamp: res.timestamp,

@@ -20,7 +20,7 @@ export type RequestOptions = {
   mountPath?: string
   query?: Query
   headers?: Headers
-  body?: Bun.BodyInit
+  body?: Bun.BodyInit | number
 }
 
 export type RequestorMethodFn = (
@@ -101,10 +101,14 @@ async function makeRequestMethod (
   const suffix = query ? `?${query}` : ''
   const url = `${app.server.url.origin}${trimmed}${suffix}`
 
+  const body = typeof opts.body === 'number'
+    ? String(opts.body)
+    : opts.body
+
   const res = await fetch(url, {
     method,
     headers: opts.headers ?? new Headers(),
-    body: opts.body ?? undefined /* no-op for clarity */,
+    body: body ?? undefined /* no-op for clarity */,
   })
 
   return {
