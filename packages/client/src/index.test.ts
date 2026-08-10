@@ -11,6 +11,48 @@ import {
   afterEach,
 } from 'bun:test'
 
+import type {
+  ConnectOptions,
+  NotificationMessage,
+  ResponseMessage,
+} from './'
+
+type MockEventType = 'open' | 'close' | 'error' | 'message'
+
+type MockEvent = {
+  wasClean?: boolean
+  code?: number
+  data?: string
+}
+
+type MockListener = (event: MockEvent) => void
+
+type TicketBody = {
+  ticket?: string
+  clientId?: string
+  data?: unknown
+}
+
+type MockResponse = {
+  ok: boolean
+  json: () => Promise<TicketBody>
+}
+
+/*
+  The client always calls fetch with both arguments, so `options` is
+  declared required. That keeps `options.method` readable at the call
+  sites instead of threading `?.` through every stub.
+ */
+
+type FetchMock = ReturnType<
+  typeof mock<
+    (
+      url: unknown,
+      options: { method?: string },
+    ) => Promise<MockResponse>
+  >
+>
+
 const CLIENT_ID = '11111111-1111-4111-8111-111111111111'
 const OTHER_CLIENT_ID = '22222222-2222-4222-8222-222222222222'
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
@@ -20,33 +62,37 @@ const TICKET = 'test-ticket'
 const TOKEN = 'test-token'
 
 class MockWebSocket {
-  static last = null
+  static last: MockWebSocket | null = null
 
   readyState = 0
-  url = null
-  sent = []
+  url: string
+  sent: string[] = []
 
-  #listeners = {
+  #listeners: Record<MockEventType, MockListener[]> = {
     open: [],
     close: [],
     error: [],
     message: [],
   }
 
-  constructor (url) {
+  constructor (url: string) {
     this.url = url
 
     MockWebSocket.last = this
   }
 
-  #emit (type, event) {
+  #emit (type: MockEventType, event: MockEvent): void {
     for (const listener of [...this.#listeners[type]]) {
       listener(event)
     }
   }
 
-  addEventListener (type, callback, options = {}) {
-    const listener = options.once
+  addEventListener (
+    type: MockEventType,
+    callback: MockListener,
+    options: { once?: boolean } = {},
+  ): void {
+    const listener: MockListener = options.once
       ? event => {
         this.removeEventListener(type, listener)
         callback(event)
@@ -56,17 +102,17 @@ class MockWebSocket {
     this.#listeners[type].push(listener)
   }
 
-  removeEventListener (type, callback) {
+  removeEventListener (type: MockEventType, callback: MockListener): void {
     this.#listeners[type] = this.#listeners[type].filter(item => (
       item !== callback
     ))
   }
 
-  send (data) {
+  send (data: string): void {
     this.sent.push(data)
   }
 
-  close () {
+  close (): void {
     this.readyState = 3
 
     this.#emit('close', {
@@ -77,16 +123,16 @@ class MockWebSocket {
 
   /* test controls */
 
-  open () {
+  open (): void {
     this.readyState = 1
     this.#emit('open', {})
   }
 
-  error (event = {}) {
+  error (event: MockEvent = {}): void {
     this.#emit('error', event)
   }
 
-  receive (payload) {
+  receive (payload: unknown): void {
     this.#emit('message', {
       data: JSON.stringify(payload),
     })
@@ -94,7 +140,7 @@ class MockWebSocket {
 
   /* simulate an abnormal closure (e.g. network drop, server crash) */
 
-  drop (code = 1006) {
+  drop (code = 1006): void {
     this.readyState = 3
 
     this.#emit('close', {
@@ -104,7 +150,21 @@ class MockWebSocket {
   }
 }
 
-function sendWelcome (clientId) {
+/*
+  Every caller reaches for the socket only after an action that constructs
+  one, so a null here means the test's arrangement is wrong. Throwing says
+  that plainly instead of failing later on a null property access.
+ */
+
+function lastSocket (): MockWebSocket {
+  if (!MockWebSocket.last) {
+    throw new Error('No MockWebSocket has been constructed')
+  }
+
+  return MockWebSocket.last
+}
+
+function sendWelcome (clientId: string): unknown {
   return {
     id: id(),
     clientId,
@@ -134,7 +194,7 @@ async function settle () {
 
 const flush = () => Promise.resolve()
 
-function mockTicketFetch () {
+function mockTicketFetch (): FetchMock {
   return mock(async () => ({
     ok: true,
     json: async () => ({
@@ -147,40 +207,47 @@ function mockTicketFetch () {
   }))
 }
 
-async function connectAndOpen (opts) {
+async function connectAndOpen (opts?: ConnectOptions): Promise<{
+  client: SleepySocketClient
+  socket: MockWebSocket
+}> {
   const promise = SleepySocketClient.connect('localhost', 3000, opts)
 
   await settle()
 
-  MockWebSocket.last.open()
-  MockWebSocket.last.receive(sendWelcome(CLIENT_ID))
+  lastSocket().open()
+  lastSocket().receive(sendWelcome(CLIENT_ID))
 
   return {
     client: await promise,
-    socket: MockWebSocket.last,
+    socket: lastSocket(),
   }
 }
 
 /* fire the backoff timer, then welcome the new socket */
 
-async function reconnect (delay = 500, clientId = CLIENT_ID) {
+async function reconnect (
+  delay = 500,
+  clientId = CLIENT_ID,
+): Promise<MockWebSocket> {
   jest.advanceTimersByTime(delay)
 
   await settle()
 
-  MockWebSocket.last.open()
-  MockWebSocket.last.receive(sendWelcome(clientId))
+  lastSocket().open()
+  lastSocket().receive(sendWelcome(clientId))
 
   await settle()
 
-  return MockWebSocket.last
+  return lastSocket()
 }
 
 /* build a response frame that correlates to a sent request id */
 
-function response (id, body) {
+function response (id: string, body: unknown): ResponseMessage {
   return {
     id,
+    clientId: CLIENT_ID,
     type: MessageType.Response,
     status: 200,
     timestamp: TIMESTAMP,
@@ -191,7 +258,7 @@ function response (id, body) {
 
 /* build a server-initiated notification frame */
 
-function notification (event, body) {
+function notification (event: string, body: unknown): NotificationMessage {
   return {
     id: id(),
     clientId: CLIENT_ID,
@@ -203,14 +270,34 @@ function notification (event, body) {
   }
 }
 
-let OriginalWebSocket = null
-let OriginalFetch = null
+/*
+  Both doubles implement only the surface the client actually touches, so
+  neither is structurally a `WebSocket` or a `fetch`. The casts are the
+  point of a stub: filling in `preconnect`, `binaryType`, `CONNECTING` and
+  the rest would be dead code that no test can reach.
+ */
+
+function installWebSocketMock (): void {
+  globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket
+}
+
+function installFetchMock (impl: FetchMock): void {
+  globalThis.fetch = impl as unknown as typeof fetch
+}
+
+function fetchMock (): FetchMock {
+  return globalThis.fetch as unknown as FetchMock
+}
+
+let OriginalWebSocket: typeof globalThis.WebSocket
+let OriginalFetch: typeof globalThis.fetch
 
 beforeEach(() => {
   OriginalWebSocket = globalThis.WebSocket
   OriginalFetch = globalThis.fetch
-  globalThis.WebSocket = MockWebSocket
-  globalThis.fetch = mockTicketFetch()
+
+  installWebSocketMock()
+  installFetchMock(mockTicketFetch())
 
   MockWebSocket.last = null
 })
@@ -224,6 +311,8 @@ describe('SleepySocketClient', () => {
   describe('.connect()', () => {
     test('when "opts.queue" is invalid', async () => {
       const promise = SleepySocketClient.connect('localhost', 3000, {
+        /* deliberately invalid: the guard under test is a runtime one */
+        // @ts-expect-error
         queue: 'nope',
       })
 
@@ -233,9 +322,9 @@ describe('SleepySocketClient', () => {
     })
 
     test('when the ticket request fails', async () => {
-      globalThis.fetch = mock(async () => {
+      installFetchMock(mock(async () => {
         throw new Error('Down')
-      })
+      }))
 
       const promise = SleepySocketClient.connect('localhost', 3000)
 
@@ -247,7 +336,7 @@ describe('SleepySocketClient', () => {
 
       await settle()
 
-      MockWebSocket.last.error()
+      lastSocket().error()
 
       await expect(promise).rejects.toThrow(new Error('Connection failed.'))
     })
@@ -265,7 +354,7 @@ describe('SleepySocketClient', () => {
 
       await settle()
 
-      MockWebSocket.last.open()
+      lastSocket().open()
 
       jest.advanceTimersByTime(30_000)
 
@@ -277,9 +366,9 @@ describe('SleepySocketClient', () => {
 
       await settle()
 
-      MockWebSocket.last.open()
+      lastSocket().open()
 
-      MockWebSocket.last.receive({
+      lastSocket().receive({
         type: MessageType.Response,
       })
 
@@ -299,7 +388,7 @@ describe('SleepySocketClient', () => {
       expect(client.serverTimeout).toBe(120_000)
       expect(client.id).toBe(CLIENT_ID)
       expect(client.token).toBe(TOKEN)
-      expect(client.socket).toBe(socket)
+      expect(client.socket).toBe(socket as unknown as WebSocket)
 
       expect(client.connectionData).toStrictEqual({
         token: 'Bearer abc',
@@ -594,13 +683,13 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      globalThis.fetch = mock(async (_url, options) => ({
+      installFetchMock(mock(async (_url, options) => ({
         ok: options.method === 'POST',
         json: async () => ({
           ticket: TICKET,
           clientId: OTHER_CLIENT_ID,
         }),
-      }))
+      })))
 
       socket.drop()
 
@@ -609,12 +698,12 @@ describe('SleepySocketClient', () => {
       await settle()
       await settle()
 
-      MockWebSocket.last.open()
-      MockWebSocket.last.receive(sendWelcome(OTHER_CLIENT_ID))
+      lastSocket().open()
+      lastSocket().receive(sendWelcome(OTHER_CLIENT_ID))
 
       await settle()
 
-      const methods = globalThis.fetch.mock.calls.map(
+      const methods = fetchMock().mock.calls.map(
         ([, opts]) => opts.method,
       )
 
@@ -663,7 +752,7 @@ describe('SleepySocketClient', () => {
 
       await settle()
 
-      MockWebSocket.last.open()
+      lastSocket().open()
 
       const attempted = MockWebSocket.last
 
@@ -706,7 +795,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      const before = globalThis.fetch.mock.calls.length
+      const before = fetchMock().mock.calls.length
 
       socket.drop()
 
@@ -714,13 +803,13 @@ describe('SleepySocketClient', () => {
 
       await settle()
 
-      expect(globalThis.fetch.mock.calls.length).toBe(before)
+      expect(fetchMock().mock.calls.length).toBe(before)
 
       jest.advanceTimersByTime(1)
 
       await settle()
 
-      expect(globalThis.fetch.mock.calls.length).toBe(before + 1)
+      expect(fetchMock().mock.calls.length).toBe(before + 1)
     })
 
     test('when an attempt fails', async () => {
@@ -732,9 +821,9 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      globalThis.fetch = mock(async () => {
+      installFetchMock(mock(async () => {
         throw new Error('Down')
-      })
+      }))
 
       socket.drop()
 
@@ -742,19 +831,19 @@ describe('SleepySocketClient', () => {
 
       await settle()
 
-      const after = globalThis.fetch.mock.calls.length
+      const after = fetchMock().mock.calls.length
 
       jest.advanceTimersByTime(999)
 
       await settle()
 
-      expect(globalThis.fetch.mock.calls.length).toBe(after)
+      expect(fetchMock().mock.calls.length).toBe(after)
 
       jest.advanceTimersByTime(1)
 
       await settle()
 
-      expect(globalThis.fetch.mock.calls.length).toBe(after + 1)
+      expect(fetchMock().mock.calls.length).toBe(after + 1)
     })
 
     test('when the backoff exceeds maxDelay, it is capped', async () => {
@@ -767,9 +856,9 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      globalThis.fetch = mock(async () => {
+      installFetchMock(mock(async () => {
         throw new Error('Down')
-      })
+      }))
 
       socket.drop()
 
@@ -781,13 +870,13 @@ describe('SleepySocketClient', () => {
 
       await settle()
 
-      const after = globalThis.fetch.mock.calls.length
+      const after = fetchMock().mock.calls.length
 
       jest.advanceTimersByTime(1_000)
 
       await settle()
 
-      expect(globalThis.fetch.mock.calls.length).toBe(after + 1)
+      expect(fetchMock().mock.calls.length).toBe(after + 1)
     })
 
     test('when jitter is applied, the delay stays within bounds', async () => {
@@ -798,7 +887,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      const before = globalThis.fetch.mock.calls.length
+      const before = fetchMock().mock.calls.length
 
       socket.drop()
 
@@ -806,13 +895,13 @@ describe('SleepySocketClient', () => {
 
       await settle()
 
-      expect(globalThis.fetch.mock.calls.length).toBe(before)
+      expect(fetchMock().mock.calls.length).toBe(before)
 
       jest.advanceTimersByTime(1)
 
       await settle()
 
-      expect(globalThis.fetch.mock.calls.length).toBe(before + 1)
+      expect(fetchMock().mock.calls.length).toBe(before + 1)
     })
   })
 
@@ -820,7 +909,7 @@ describe('SleepySocketClient', () => {
     test('when a notification arrives', async () => {
       const { client, socket } = await connectAndOpen()
       const message = notification('state_changed', { score: 1 })
-      const received = []
+      const received: NotificationMessage[] = []
 
       client.on('notification', message => received.push(message))
       socket.receive(message)
@@ -830,8 +919,10 @@ describe('SleepySocketClient', () => {
 
     test('when a handler is removed with off()', async () => {
       const { client, socket } = await connectAndOpen()
-      const handler = message => received.push(message)
-      const received = []
+      const received: NotificationMessage[] = []
+
+      const handler = (message: NotificationMessage): number =>
+        received.push(message)
 
       const notifications = [
         notification('state_changed', { score: 1 }),
@@ -985,6 +1076,8 @@ describe('SleepySocketClient', () => {
     test('when opts.headers is not a Headers instance', async () => {
       const { client } = await connectAndOpen()
 
+      /* deliberately invalid: the guard under test is a runtime one */
+      // @ts-expect-error
       const fn = () => client.get('/', { headers: {} })
 
       await expect(fn).toThrow(
@@ -1087,6 +1180,7 @@ describe('SleepySocketClient', () => {
 
       expect(res).toStrictEqual({
         id: sent.id,
+        clientId: CLIENT_ID,
         type: MessageType.Response,
         status: 200,
         timestamp: TIMESTAMP,
@@ -1198,7 +1292,7 @@ describe('SleepySocketClient', () => {
 
     test('when calls respond out-of-order (queue = NONE)', async () => {
       const { client, socket } = await connectAndOpen({ queue: Queue.None })
-      const order = []
+      const order: number[] = []
 
       const p1 = client.get('/a').then(() => order.push(1))
       const p2 = client.get('/b').then(() => order.push(2))
@@ -1220,7 +1314,7 @@ describe('SleepySocketClient', () => {
     test('when calls respond out-of-order (queue = FIFO)', async () => {
       const { client, socket } = await connectAndOpen({ queue: Queue.Fifo })
 
-      const order = []
+      const order: number[] = []
 
       const p1 = client.get('/a').then(() => order.push(1))
       const p2 = client.get('/b').then(() => order.push(2))
@@ -1242,7 +1336,7 @@ describe('SleepySocketClient', () => {
     test('when calls respond out-of-order (queue = LIFO)', async () => {
       const { client, socket } = await connectAndOpen({ queue: Queue.Lifo })
 
-      const order = []
+      const order: number[] = []
 
       const p1 = client.get('/a').then(() => order.push(1))
       const p2 = client.get('/b').then(() => order.push(2))

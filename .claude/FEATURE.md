@@ -376,14 +376,11 @@ convert, so the real contract is not visible until then.
 
 ### Follow-ups raised during group 3
 
-- [ ] **`packages/server/tests/helpers.ts` still uses `Frame` naming**
-      (`MessageFrame`, `ResponseFrame`, `Frame`, 17 references). The
-      client's equivalents were renamed to `ResponseMessage` /
-      `NotificationMessage` to match the `...Message` convention both
-      packages' source already uses. These are a *separate* symbol set
-      in a test double, not the protocol types, so they were left alone
-      rather than swept. Decide whether the convention should reach test
-      helpers too.
+- [x] **`packages/server/tests/helpers.ts` `Frame` naming** is resolved:
+      `MessageFrame` became `BaseMessage`, `ResponseFrame` became
+      `ResponseMessage`, and `Frame` was replaced by `AnyMessage`
+      (`BaseMessage | ResponseMessage`), which is what `sendRaw` can
+      return: an ack or a full response.
 - [ ] **Nothing pins the `Queue` values.** Mutating `Fifo: 'fifo'` to
       `'fifoo'` fails zero tests, since every test reaches them through
       the constant. `MessageType` fails 46 under the same treatment.
@@ -460,7 +457,20 @@ convert, so the real contract is not visible until then.
       renamed to `Queue` with PascalCase members in the follow-up
       commit, bringing the last enum-like object in line with
       `MessageType`, `StatusCode`, and `Fmt`.
-- [ ] `packages/client/src/index.test.js`
+- [x] `packages/client/src/index.test.js`. 154 initial errors, resolved
+      structurally rather than site by site: typing `connectAndOpen`'s
+      return cleared 52 at once, and a `lastSocket()` accessor that
+      throws on a missing socket cleared the rest of the null noise.
+      `MockWebSocket` and the fetch stub implement only the surface the
+      client touches, so both are installed through explicit casts;
+      filling in `preconnect`, `binaryType`, and `CONNECTING` would be
+      dead code no test can reach. Two `@ts-expect-error` markers cover
+      the tests that deliberately pass invalid input (`queue: 'nope'`,
+      `headers: {}`) to exercise runtime guards, so they now fail if
+      those inputs ever become type-legal. One fidelity fix: the
+      `response()` double omitted `clientId`, which a real server
+      response always carries, so it was added rather than making
+      `ResponseMessage.clientId` optional.
 
 ## 4. E2E tests (root `tests/`)
 

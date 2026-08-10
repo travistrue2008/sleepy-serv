@@ -38,6 +38,7 @@ export type ResponseMessage = BaseMessage & {
 }
 
 export type HeartbeatMessage = BaseMessage
+export type AnyMessage = BaseMessage | ResponseMessage
 
 export type MessagePayload = {
   headers?: unknown
@@ -48,7 +49,7 @@ export type MessagePayload = {
 export type RequestorMethod = (
   route: string,
   fmt: Fmt | null,
-  opts: RequestOptions,
+  opts?: RequestOptions,
 ) => Promise<HttpResult>
 
 export type Requestor = {
@@ -64,10 +65,10 @@ export type SocketTestClient = {
   readonly socket: WebSocket
   close: () => Promise<void>
   heartbeat: () => Promise<BaseMessage>
-  get: (route: string, opts: MessagePayload) => Promise<ResponseMessage>
-  put: (route: string, opts: MessagePayload) => Promise<ResponseMessage>
-  post: (route: string, opts: MessagePayload) => Promise<ResponseMessage>
-  sendRaw: (payload: Record<string, unknown>) => Promise<unknown>
+  get: (route: string, opts?: MessagePayload) => Promise<ResponseMessage>
+  put: (route: string, opts?: MessagePayload) => Promise<ResponseMessage>
+  post: (route: string, opts?: MessagePayload) => Promise<ResponseMessage>
+  sendRaw: (payload: Record<string, unknown>) => Promise<AnyMessage>
 }
 
 type WelcomeData = {
@@ -168,7 +169,7 @@ export async function createSocketClient (
 
   async function sendRaw (
     payload: Record<string, unknown>,
-  ): Promise<unknown> {
+  ): Promise<AnyMessage> {
     return new Promise(resolve => {
       const handler = (event: MessageEvent): void => {
         resolve(JSON.parse(event.data))
@@ -250,7 +251,7 @@ export async function createSocketClient (
     post (route: string, opts: MessagePayload = {}): Promise<ResponseMessage> {
       return sendRequest('POST', route, opts)
     },
-    sendRaw (payload: MessagePayload): Promise<unknown> {
+    sendRaw (payload: MessagePayload): Promise<AnyMessage> {
       return sendRaw(payload)
     },
   }
