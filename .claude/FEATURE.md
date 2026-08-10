@@ -218,12 +218,14 @@ convert, so the real contract is not visible until then.
       single `as unknown as SocketMock` inside the existing `buildSocket`
       factory, rather than stubbing 16 unused members.
 
-      **The `as WebSocketHandler<SocketData>` on the returned literal is
-      redundant.** Verified by removing it: the object is already
-      assignable, and drift still fails without it (a wrong `open`
-      parameter type gives `TS2352` plus `TS2339`; a deleted `message`
-      member gives `TS2352`). Left as written, but it is not what
-      provides the checking.
+      **The returned literal carries no `as` cast.** One was tried and
+      removed: the object is already assignable, so it bought nothing,
+      and it made the diagnostics worse. A wrong `open` parameter type
+      reports `TS2322` naming both signatures without the cast, versus a
+      vague `TS2352` with it; a deleted `message` member reports
+      `TS2741` naming the property, versus `TS2352`. Annotating the
+      return type and letting assignment do the check is what provides
+      the enforcement.
 
       One caution for anyone revisiting: parameter *count* is not
       checked in either direction. Dropping `code` from

@@ -531,7 +531,7 @@ export function buildSocketServer (
         ws.send(JSON.stringify(res))
       }
     },
-  } as WebSocketHandler<SocketData>
+  }
 }
 
 export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {

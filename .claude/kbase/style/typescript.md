@@ -429,12 +429,23 @@ handlers are returned in is typed the other way, deriving from Bun. See
   (`close (ws, code)`). A function accepting fewer parameters is
   assignable to one accepting more, so this compiles, and it is not a
   hole: the handler genuinely ignores `reason`.
-- **The `as WebSocketHandler<SocketData>` on the returned literal is
-  redundant.** Verified by removing it: the object is already assignable,
-  and both drift probes still fail without it (a wrong `open` parameter
-  type gives `TS2352` plus `TS2339`; a deleted `message` member gives
-  `TS2352`, since `message` is required). It is retained as written
-  rather than removed, but it is not what provides the checking.
+- **The returned object literal carries no `as` cast, deliberately.** An
+  `as WebSocketHandler<SocketData>` was tried and removed: the object is
+  already assignable, so the cast bought nothing, and it *degraded* the
+  diagnostics. Plain assignability reports the actual defect, while a
+  cast collapses every mismatch into `TS2352` "neither type sufficiently
+  overlaps", which names nothing:
+
+  | Mutation | With cast | Without |
+  |---|---|---|
+  | `open` takes a wrong param type | `TS2352` | `TS2322`, naming both signatures |
+  | `message` member deleted | `TS2352` | `TS2741`, naming the property |
+
+  **General principle:** a type assertion on a value that already
+  satisfies its target is not free. It converts precise structural
+  errors into a single vague one, and it will keep compiling after the
+  value stops satisfying the target in ways the overlap heuristic
+  tolerates. Annotate the destination and let assignment do the check.
 - **Naming wart to be aware of:** `buildSocketHandlers()` returns
   `SocketEndpoint[]`, the HTTP handshake terminals, not WebSocket
   handlers. `buildSocketServer()` is what returns the handler object.
