@@ -359,20 +359,26 @@ convert, so the real contract is not visible until then.
 - [x] `typecheck` script on the client, running both configs.
 - [x] Root `typecheck` script (`bun run --filter '*' typecheck`).
       Confirmed to propagate a nonzero exit code.
-- [ ] `dist` build wiring: `tsconfig.build.json`, a `build` script,
-      `dist/` in `.gitignore`, `files: ["dist"]`, and conditional
-      `exports`. **Deliberately deferred to the end of group 3**, not
-      skipped. Flipping `exports` to `./dist/index.js` while the source
-      is still `.js` would break all 31 root E2E files, which resolve
-      `sleepy-socket` by package name. When `index.js` converts,
-      `exports` first moves to `./src/index.ts` (mirroring what the
-      server did) to keep the workspace running.
-      **Open question for that step:** the client cannot ship `.ts`
-      source the way the server does, so if `files` becomes `["dist"]`
-      and `exports.default` points into `dist`, the E2E suites need a
-      build before `bun test`. Either accept that, or keep a `bun`
-      condition on `./src/index.ts` and ship `src` alongside `dist`.
-      That is a real tradeoff and needs a decision, not a default.
+- [x] `dist` build wiring. Resolved by shipping **both** trees under a
+      conditional `exports`: `bun` resolves `./src/index.ts`, `default`
+      resolves `./dist/index.js`, `types` resolves
+      `./dist/index.d.ts`. The alternative, `dist` only, would have put
+      a build step in front of every `bun test` and let a stale `dist`
+      pass silently.
+      Landed: `tsconfig.build.json` (extends the **portable** config, so
+      the compiled subset is the portable one), a `build` script,
+      `dist/` in `.gitignore` and in the ESLint ignore list, and
+      `Typecheck` + `Build client` steps in `publish.yml` ahead of the
+      registry pre-flight.
+      **One source change was forced by this:** relative imports in
+      `packages/client/src` now carry `.js` extensions. TypeScript emits
+      specifiers verbatim, so extensionless imports produced a `dist`
+      that Node rejects with `ERR_MODULE_NOT_FOUND`, which is the exact
+      failure the compiled output exists to prevent. Verified against
+      Node 24 both before and after.
+      Verified end to end: the packed tarball was extracted and
+      typechecked from a simulated consumer under `strict` with
+      `types: []`, and mutations confirm the declarations bite.
 
 ### Follow-ups raised during group 3
 
@@ -390,16 +396,14 @@ convert, so the real contract is not visible until then.
 
 ### Source and unit tests
 
-> **Do not publish `sleepy-socket` until group 3 finishes.** The moment
-> the first `.ts` file landed, the package entered a transitionally
-> broken publish state: `files` still ships `src`, so the tarball
-> contains `index.js` importing `./utils`, which now resolves to
-> `utils.ts`. Bun consumers transpile that; Node and browsers, the two
-> runtimes this package exists to support, do not. Confirmed with
-> `npm pack --dry-run`. The `dist` build wiring above is what closes
-> this, which is why it lands at the end of the group rather than being
-> dropped. Releases are `workflow_dispatch` only, so nothing publishes
-> by accident, but the window is real.
+> **Publish hazard: CLOSED.** For most of group 3 the client was in a
+> transitionally broken publish state, shipping a `src` tree whose
+> entry point imported a `.ts` file that Node and browsers cannot
+> resolve. The `dist` build wiring above closes it, and a simulated
+> consumer now typechecks against the packed tarball. Kept here because
+> the shape of the hazard recurs: any window where `files` ships a tree
+> the target runtime cannot load is invisible to `bun test`, since Bun
+> resolves everything happily. `npm pack --dry-run` is what catches it.
 
 - [x] `packages/client/src/utils.js` (exports an `IdGenerator` type;
       `setIdGenerator` is public API via `export * from './utils'`)

@@ -4,9 +4,16 @@
   "author": "Travis J True",
   "license": "MIT",
   "version": "0.6.2",
-  "exports": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "type": "module",
   "files": [
+    "dist",
     "src",
     "!src/**/*.test.*"
   ],
@@ -27,6 +34,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.portable.json"
   },
   "dependencies": {}

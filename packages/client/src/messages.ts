@@ -1,4 +1,4 @@
-import { id } from './utils'
+import { id } from './utils.js'
 
 export const MessageType = {
   Welcome: 'welcome',

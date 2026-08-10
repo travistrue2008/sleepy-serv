@@ -77,6 +77,16 @@ jobs:
       - name: Lint
         run: bunx eslint .
 
+      - name: Typecheck
+        run: bun run typecheck
+
+      # `sleepy-socket` ships compiled output, so a failed build must block the
+      # release rather than publish a tarball whose `dist` is stale or missing.
+      # `sleepy-serv` needs no equivalent: it ships its `.ts` source, which is
+      # safe because `Bun.serve` guarantees every consumer runs Bun.
+      - name: Build client
+        run: bun run --filter sleepy-socket build
+
       # Writes to the runner's working tree only. Nothing is committed, pushed, or
       # published until the registry pre-flight below passes.
       - name: Compute next version

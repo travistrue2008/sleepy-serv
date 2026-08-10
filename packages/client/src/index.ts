@@ -1,8 +1,8 @@
-import { MessageType, createMessage } from './messages'
-import { joinRoute } from './utils'
+import { MessageType, createMessage } from './messages.js'
+import { joinRoute } from './utils.js'
 
-export * from './messages'
-export * from './utils'
+export * from './messages.js'
+export * from './utils.js'
 
 export type TimeoutHandle = ReturnType<typeof setTimeout>
 export type IntervalHandle = ReturnType<typeof setInterval>

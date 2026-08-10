@@ -8,6 +8,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `sleepy-socket` now ships TypeScript declarations. The package compiles to `dist/` and
+  exposes `ConnectOptions`, `ReconnectOptions`, `RequestOptions`, `ResponseMessage`,
+  `NotificationMessage`, `EventHandler`, `TicketData`, `Queue`, `MessageType`, and
+  `IdGenerator`.
+
+  Resolution is conditional: Bun loads the TypeScript source directly, while Node and
+  browser bundlers get the compiled ESM output. Both trees ship, so source maps and
+  declaration maps resolve to real sources for consumers. `engines.node` is now `>=22`,
+  which is where global `WebSocket` stabilized.
+
 ### Changed
 
 - **Breaking (`sleepy-socket`):** the exported `TYPES` object is now `MessageType`, and its

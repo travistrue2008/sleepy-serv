@@ -55,6 +55,55 @@ TypeScript migration. Per-file progress lives in
   for the whole migration. Untouched `.js` files are parsed but never
   type-checked, so they keep running with zero errors.
 
+### Relative imports in the client carry a `.js` extension
+
+- **Rule:** every relative specifier in `packages/client/src` is written
+  `./utils.js`, not `./utils`, even though the file on disk is
+  `utils.ts`.
+- **Why:** TypeScript emits module specifiers *verbatim*. Extensionless
+  imports compile to extensionless imports, and Node's ESM resolver
+  requires the extension, so `dist/index.js` fails at import time with
+  `ERR_MODULE_NOT_FOUND`. Confirmed against Node 24 before the fix.
+  That failure is precisely what the compiled `dist` exists to prevent,
+  so shipping it would have defeated the build.
+- **This does not affect Bun.** `Bun.resolveSync('./messages.js', …)`
+  returns `messages.ts`; the `.js` specifier is the standard way to
+  refer to a TypeScript file that will be compiled.
+- **Scope:** source only. The `*.test.ts` files keep extensionless
+  imports, since they are excluded from the build and only ever run
+  under Bun.
+- The server needs none of this, because it ships `.ts` source and never
+  compiles.
+
+### The client compiles, the server does not
+
+- **Choice:** `sleepy-socket` builds to `dist/` via
+  `tsconfig.build.json`, and publishes both `dist` and `src` under a
+  conditional `exports` map: `bun` resolves the TypeScript source,
+  `default` resolves the compiled ESM, `types` resolves the emitted
+  declarations.
+- **Why the asymmetry with the server.** `sleepy-serv` calls
+  `Bun.serve`, so every consumer necessarily runs Bun and shipping `.ts`
+  carries no risk. The client's whole point is browser and Node support,
+  and neither transpiles TypeScript out of `node_modules`.
+- **Why both trees ship.** Pointing `default` at `dist` alone would mean
+  the workspace's own E2E suites resolve compiled output, so `bun test`
+  would need a build first and a stale `dist` could silently pass. The
+  `bun` condition keeps the dev loop on source. It also makes the
+  emitted `.js.map` and `.d.ts.map` useful, since both reference
+  `../src/index.ts`, which is present in the tarball.
+- **`tsconfig.build.json` extends `tsconfig.portable.json`,** not the
+  editor config. The thing being compiled must be the portable subset:
+  no Bun globals, no test files.
+- **Verified end to end**, not assumed: the packed tarball was extracted
+  and typechecked from a simulated consumer under `strict` with
+  `types: []`. Mutations confirm the declarations are real, with
+  `queue: 'nope'`, `client.secure`, and the old `TYPES` export each
+  failing to compile.
+- **`dist/` is gitignored and ESLint-ignored.** The lint ignore matters:
+  without `**/dist/**`, `bunx eslint .` reports 798 style errors against
+  generated output.
+
 ### The client ships two configs, the server one
 
 - **Problem:** `sleepy-socket` must run in a browser, in Node, and in

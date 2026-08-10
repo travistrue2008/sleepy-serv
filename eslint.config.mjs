@@ -12,6 +12,8 @@ const multilineTypes = [
 
 const ignores = [
   'coverage/**',
+  'dist/**',
+  '**/dist/**',
   'node_modules/**',
 ]
 
