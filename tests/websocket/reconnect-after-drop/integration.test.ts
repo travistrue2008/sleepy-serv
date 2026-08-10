@@ -15,7 +15,7 @@ test('when the socket drops AND the client reconnects', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
 
-  const client = await SleepySocketClient.connect(host, app.server.port, {
+  const client = await SleepySocketClient.connect(host, app.server.port!, {
     reconnect: {
       minDelay: 20,
       random: () => 0,
@@ -25,7 +25,7 @@ test('when the socket drops AND the client reconnects', async () => {
   const id = client.id
   const oldSocket = client.socket
 
-  client.socket.close(4000)
+  client.socket!.close(4000)
 
   /*
     isConnected flips true only once the reconnect welcome is processed, so
