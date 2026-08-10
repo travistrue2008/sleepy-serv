@@ -62,6 +62,21 @@ guessing early.
       constraint will correctly break it and the fixture will need a
       realistic shape.
 
+- [ ] **Revisit error message intent.** All `message` constructor params
+      are required, for parity with the original JavaScript rather than
+      as a designed contract. Four sites construct without one and will
+      fail to compile when `socket.js` converts: `socket.js:402`
+      (`ServiceUnavailableError`), `socket.js:502` (`UnauthorizedError`),
+      and the matching assertions at `socket.test.js:1249` and `:1413`.
+      At that point decide per class: either those throw sites should
+      carry a message, or 401 and 503 belong in the no-message group with
+      `NotFoundError`, `MethodNotAllowedError`, `NotImplementedError`,
+      and `GatewayTimeoutError`, whose empty message makes `output` null
+      so no response body is emitted. Also worth settling then: whether
+      `UnsupportedMediaTypeError(subject)` and
+      `InternalServerError(message, ctx)` keep their bespoke signatures,
+      and whether `ctx` (written, never read) is vestigial.
+
 ## 1. `server` implementation and unit tests
 
 - [x] `packages/server/src/utils.js`
@@ -74,7 +89,7 @@ guessing early.
 - [x] `packages/server/src/status.ts` (new module, not a conversion)
 - [x] `packages/server/src/status.test.ts` (new, pins codes to literals)
 - [x] `packages/server/src/errors.js` (getters return `StatusCode`)
-- [ ] `packages/server/src/errors.test.js`
+- [x] `packages/server/src/errors.test.js`
 - [ ] `packages/server/src/middleware.js`
 - [ ] `packages/server/src/middleware.test.js`
 - [ ] `packages/server/src/messages.js` (`TYPES` becomes `MessageType`,

@@ -4,6 +4,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
+import { StatusCode } from './status'
 
 import {
   RequestError,
@@ -83,7 +84,7 @@ describe('BadRequestError', () => {
       throw new BadRequestError('Bad')
     }
 
-    expect(BadRequestError.status).toBe(400)
+    expect(BadRequestError.status).toBe(StatusCode.BadRequest)
     expect(fn).toThrow(new BadRequestError('Bad'))
   })
 })
@@ -94,7 +95,7 @@ describe('UnauthorizedError', () => {
       throw new UnauthorizedError('Bad')
     }
 
-    expect(UnauthorizedError.status).toBe(401)
+    expect(UnauthorizedError.status).toBe(StatusCode.Unauthorized)
     expect(fn).toThrow(new UnauthorizedError('Bad'))
   })
 })
@@ -105,7 +106,7 @@ describe('PaymentRequiredError', () => {
       throw new PaymentRequiredError('Bad')
     }
 
-    expect(PaymentRequiredError.status).toBe(402)
+    expect(PaymentRequiredError.status).toBe(StatusCode.PaymentRequired)
     expect(fn).toThrow(new PaymentRequiredError('Bad'))
   })
 })
@@ -116,7 +117,7 @@ describe('ForbiddenError', () => {
       throw new ForbiddenError('Bad')
     }
 
-    expect(ForbiddenError.status).toBe(403)
+    expect(ForbiddenError.status).toBe(StatusCode.Forbidden)
     expect(fn).toThrow(new ForbiddenError('Bad'))
   })
 })
@@ -124,22 +125,22 @@ describe('ForbiddenError', () => {
 describe('NotFoundError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new NotFoundError('Bad')
+      throw new NotFoundError()
     }
 
-    expect(NotFoundError.status).toBe(404)
-    expect(fn).toThrow(new NotFoundError('Bad'))
+    expect(NotFoundError.status).toBe(StatusCode.NotFound)
+    expect(fn).toThrow(new NotFoundError())
   })
 })
 
 describe('MethodNotAllowedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new MethodNotAllowedError('Bad')
+      throw new MethodNotAllowedError()
     }
 
-    expect(MethodNotAllowedError.status).toBe(405)
-    expect(fn).toThrow(new MethodNotAllowedError('Bad'))
+    expect(MethodNotAllowedError.status).toBe(StatusCode.MethodNotAllowed)
+    expect(fn).toThrow(new MethodNotAllowedError())
   })
 })
 
@@ -149,7 +150,7 @@ describe('NotAcceptableError', () => {
       throw new NotAcceptableError('Bad')
     }
 
-    expect(NotAcceptableError.status).toBe(406)
+    expect(NotAcceptableError.status).toBe(StatusCode.NotAcceptable)
     expect(fn).toThrow(new NotAcceptableError('Bad'))
   })
 })
@@ -160,7 +161,9 @@ describe('ProxyAuthenticationRequiredError', () => {
       throw new ProxyAuthenticationRequiredError('Bad')
     }
 
-    expect(ProxyAuthenticationRequiredError.status).toBe(407)
+    expect(ProxyAuthenticationRequiredError.status)
+      .toBe(StatusCode.ProxyAuthenticationRequired)
+
     expect(fn).toThrow(new ProxyAuthenticationRequiredError('Bad'))
   })
 })
@@ -171,7 +174,7 @@ describe('RequestTimeoutError', () => {
       throw new UnauthorizedError('Bad')
     }
 
-    expect(RequestTimeoutError.status).toBe(408)
+    expect(RequestTimeoutError.status).toBe(StatusCode.RequestTimeout)
     expect(fn).toThrow(new RequestTimeoutError('Bad'))
   })
 })
@@ -182,7 +185,7 @@ describe('ConflictError', () => {
       throw new ConflictError('Bad')
     }
 
-    expect(ConflictError.status).toBe(409)
+    expect(ConflictError.status).toBe(StatusCode.Conflict)
     expect(fn).toThrow(new ConflictError('Bad'))
   })
 })
@@ -193,7 +196,7 @@ describe('GoneError', () => {
       throw new GoneError('Bad')
     }
 
-    expect(GoneError.status).toBe(410)
+    expect(GoneError.status).toBe(StatusCode.Gone)
     expect(fn).toThrow(new GoneError('Bad'))
   })
 })
@@ -204,7 +207,7 @@ describe('LengthRequiredError', () => {
       throw new LengthRequiredError('Bad')
     }
 
-    expect(LengthRequiredError.status).toBe(411)
+    expect(LengthRequiredError.status).toBe(StatusCode.LengthRequired)
     expect(fn).toThrow(new LengthRequiredError('Bad'))
   })
 })
@@ -215,7 +218,7 @@ describe('PreconditionFailedError', () => {
       throw new PreconditionFailedError('Bad')
     }
 
-    expect(PreconditionFailedError.status).toBe(412)
+    expect(PreconditionFailedError.status).toBe(StatusCode.PreconditionFailed)
     expect(fn).toThrow(new PreconditionFailedError('Bad'))
   })
 })
@@ -226,7 +229,7 @@ describe('PayloadTooLargeError', () => {
       throw new PayloadTooLargeError('Bad')
     }
 
-    expect(PayloadTooLargeError.status).toBe(413)
+    expect(PayloadTooLargeError.status).toBe(StatusCode.PayloadTooLarge)
     expect(fn).toThrow(new PayloadTooLargeError('Bad'))
   })
 })
@@ -237,7 +240,7 @@ describe('UriTooLongError', () => {
       throw new UriTooLongError('Bad')
     }
 
-    expect(UriTooLongError.status).toBe(414)
+    expect(UriTooLongError.status).toBe(StatusCode.UriTooLong)
     expect(fn).toThrow(new UriTooLongError('Bad'))
   })
 })
@@ -248,7 +251,9 @@ describe('UnsupportedMediaTypeError', () => {
       throw new UnsupportedMediaTypeError('Bad')
     }
 
-    expect(UnsupportedMediaTypeError.status).toBe(415)
+    expect(UnsupportedMediaTypeError.status)
+      .toBe(StatusCode.UnsupportedMediaType)
+
     expect(fn).toThrow(new UnsupportedMediaTypeError('Bad'))
   })
 })
@@ -259,7 +264,7 @@ describe('RangeNotSatisfiableError', () => {
       throw new RangeNotSatisfiableError('Bad')
     }
 
-    expect(RangeNotSatisfiableError.status).toBe(416)
+    expect(RangeNotSatisfiableError.status).toBe(StatusCode.RangeNotSatisfiable)
     expect(fn).toThrow(new RangeNotSatisfiableError('Bad'))
   })
 })
@@ -270,7 +275,7 @@ describe('ExpectationFailedError', () => {
       throw new ExpectationFailedError('Bad')
     }
 
-    expect(ExpectationFailedError.status).toBe(417)
+    expect(ExpectationFailedError.status).toBe(StatusCode.ExpectationFailed)
     expect(fn).toThrow(new ExpectationFailedError('Bad'))
   })
 })
@@ -282,7 +287,7 @@ describe('ImATeapotError', () => {
     }
 
     expect(fn).toThrow(new ImATeapotError('Bad'))
-    expect(ImATeapotError.status).toBe(418)
+    expect(ImATeapotError.status).toBe(StatusCode.ImATeapot)
   })
 })
 
@@ -292,7 +297,7 @@ describe('MisdirectedRequestError', () => {
       throw new MisdirectedRequestError('Bad')
     }
 
-    expect(MisdirectedRequestError.status).toBe(421)
+    expect(MisdirectedRequestError.status).toBe(StatusCode.MisdirectedRequest)
     expect(fn).toThrow(new MisdirectedRequestError('Bad'))
   })
 })
@@ -316,7 +321,9 @@ describe('UnprocessableContentError', () => {
       throw new UnprocessableContentError(ERRORS)
     }
 
-    expect(UnprocessableContentError.status).toBe(422)
+    expect(UnprocessableContentError.status)
+      .toBe(StatusCode.UnprocessableContent)
+
     expect(fn).toThrow(new UnprocessableContentError(ERRORS))
   })
 })
@@ -327,7 +334,7 @@ describe('LockedError', () => {
       throw new LockedError('Bad')
     }
 
-    expect(LockedError.status).toBe(423)
+    expect(LockedError.status).toBe(StatusCode.Locked)
     expect(fn).toThrow(new LockedError('Bad'))
   })
 })
@@ -338,7 +345,7 @@ describe('FailedDependencyError', () => {
       throw new FailedDependencyError('Bad')
     }
 
-    expect(FailedDependencyError.status).toBe(424)
+    expect(FailedDependencyError.status).toBe(StatusCode.FailedDependency)
     expect(fn).toThrow(new FailedDependencyError('Bad'))
   })
 })
@@ -349,7 +356,7 @@ describe('TooEarlyError', () => {
       throw new TooEarlyError('Bad')
     }
 
-    expect(TooEarlyError.status).toBe(425)
+    expect(TooEarlyError.status).toBe(StatusCode.TooEarly)
     expect(fn).toThrow(new TooEarlyError('Bad'))
   })
 })
@@ -360,7 +367,7 @@ describe('UpgradeRequiredError', () => {
       throw new UpgradeRequiredError('Bad')
     }
 
-    expect(UpgradeRequiredError.status).toBe(426)
+    expect(UpgradeRequiredError.status).toBe(StatusCode.UpgradeRequired)
     expect(fn).toThrow(new UpgradeRequiredError('Bad'))
   })
 })
@@ -371,7 +378,9 @@ describe('PreconditionRequiredError', () => {
       throw new PreconditionRequiredError('Bad')
     }
 
-    expect(PreconditionRequiredError.status).toBe(428)
+    expect(PreconditionRequiredError.status)
+      .toBe(StatusCode.PreconditionRequired)
+
     expect(fn).toThrow(new PreconditionRequiredError('Bad'))
   })
 })
@@ -382,7 +391,7 @@ describe('TooManyRequestsError', () => {
       throw new TooManyRequestsError('Bad')
     }
 
-    expect(TooManyRequestsError.status).toBe(429)
+    expect(TooManyRequestsError.status).toBe(StatusCode.TooManyRequests)
     expect(fn).toThrow(new TooManyRequestsError('Bad'))
   })
 })
@@ -393,7 +402,9 @@ describe('RequestHeaderFieldsTooLargeError', () => {
       throw new RequestHeaderFieldsTooLargeError('Bad')
     }
 
-    expect(RequestHeaderFieldsTooLargeError.status).toBe(431)
+    expect(RequestHeaderFieldsTooLargeError.status)
+      .toBe(StatusCode.RequestHeaderFieldsTooLarge)
+
     expect(fn).toThrow(new RequestHeaderFieldsTooLargeError('Bad'))
   })
 })
@@ -404,7 +415,9 @@ describe('UnavailableForLegalReasonsError', () => {
       throw new UnavailableForLegalReasonsError('Bad')
     }
 
-    expect(UnavailableForLegalReasonsError.status).toBe(451)
+    expect(UnavailableForLegalReasonsError.status)
+      .toBe(StatusCode.UnavailableForLegalReasons)
+
     expect(fn).toThrow(new UnavailableForLegalReasonsError('Bad'))
   })
 })
@@ -417,7 +430,7 @@ describe('InternalServerError', () => {
       throw new InternalServerError('Bad')
     }
 
-    expect(InternalServerError.status).toBe(500)
+    expect(InternalServerError.status).toBe(StatusCode.InternalServerError)
     expect(fn).toThrow(new InternalServerError('Bad'))
   })
 })
@@ -425,11 +438,11 @@ describe('InternalServerError', () => {
 describe('NotImplementedError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new NotImplementedError('Bad')
+      throw new NotImplementedError()
     }
 
-    expect(NotImplementedError.status).toBe(501)
-    expect(fn).toThrow(new NotImplementedError('Bad'))
+    expect(NotImplementedError.status).toBe(StatusCode.NotImplemented)
+    expect(fn).toThrow(new NotImplementedError())
   })
 })
 
@@ -439,7 +452,7 @@ describe('BadGatewayError', () => {
       throw new BadGatewayError('Bad')
     }
 
-    expect(BadGatewayError.status).toBe(502)
+    expect(BadGatewayError.status).toBe(StatusCode.BadGateway)
     expect(fn).toThrow(new BadGatewayError('Bad'))
   })
 })
@@ -450,7 +463,7 @@ describe('ServiceUnavailableError', () => {
       throw new ServiceUnavailableError('Bad')
     }
 
-    expect(ServiceUnavailableError.status).toBe(503)
+    expect(ServiceUnavailableError.status).toBe(StatusCode.ServiceUnavailable)
     expect(fn).toThrow(new ServiceUnavailableError('Bad'))
   })
 })
@@ -458,11 +471,11 @@ describe('ServiceUnavailableError', () => {
 describe('GatewayTimeoutError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new GatewayTimeoutError('Bad')
+      throw new GatewayTimeoutError()
     }
 
-    expect(GatewayTimeoutError.status).toBe(504)
-    expect(fn).toThrow(new GatewayTimeoutError('Bad'))
+    expect(GatewayTimeoutError.status).toBe(StatusCode.GatewayTimeout)
+    expect(fn).toThrow(new GatewayTimeoutError())
   })
 })
 
@@ -472,7 +485,9 @@ describe('HTTPVersionNotSupportedError', () => {
       throw new HTTPVersionNotSupportedError('Bad')
     }
 
-    expect(HTTPVersionNotSupportedError.status).toBe(505)
+    expect(HTTPVersionNotSupportedError.status)
+      .toBe(StatusCode.HTTPVersionNotSupported)
+
     expect(fn).toThrow(new HTTPVersionNotSupportedError('Bad'))
   })
 })
@@ -483,7 +498,9 @@ describe('VariantAlsoNegotiatesError', () => {
       throw new VariantAlsoNegotiatesError('Bad')
     }
 
-    expect(VariantAlsoNegotiatesError.status).toBe(506)
+    expect(VariantAlsoNegotiatesError.status)
+      .toBe(StatusCode.VariantAlsoNegotiates)
+
     expect(fn).toThrow(new VariantAlsoNegotiatesError('Bad'))
   })
 })
@@ -494,7 +511,7 @@ describe('InsufficientStorageError', () => {
       throw new InsufficientStorageError('Bad')
     }
 
-    expect(InsufficientStorageError.status).toBe(507)
+    expect(InsufficientStorageError.status).toBe(StatusCode.InsufficientStorage)
     expect(fn).toThrow(new InsufficientStorageError('Bad'))
   })
 })
@@ -505,7 +522,7 @@ describe('LoopDetectedError', () => {
       throw new LoopDetectedError('Bad')
     }
 
-    expect(LoopDetectedError.status).toBe(508)
+    expect(LoopDetectedError.status).toBe(StatusCode.LoopDetected)
     expect(fn).toThrow(new LoopDetectedError('Bad'))
   })
 })
@@ -516,7 +533,7 @@ describe('NotExtendedError', () => {
       throw new NotExtendedError('Bad')
     }
 
-    expect(NotExtendedError.status).toBe(510)
+    expect(NotExtendedError.status).toBe(StatusCode.NotExtended)
     expect(fn).toThrow(new NotExtendedError('Bad'))
   })
 })
@@ -527,7 +544,9 @@ describe('NetworkAuthenticationRequiredError', () => {
       throw new NetworkAuthenticationRequiredError('Bad')
     }
 
-    expect(NetworkAuthenticationRequiredError.status).toBe(511)
+    expect(NetworkAuthenticationRequiredError.status)
+      .toBe(StatusCode.NetworkAuthenticationRequired)
+
     expect(fn).toThrow(new NetworkAuthenticationRequiredError('Bad'))
   })
 })
