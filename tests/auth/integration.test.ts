@@ -3,9 +3,11 @@ import { Fmt, createRequestor } from '../helpers'
 import { UnauthorizedError, createApp } from 'sleepy-serv'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
+import type { ConnectionData } from './auth'
+
 /*
   End-to-end example of JWT auth layered on the middleware system. A single
-  `authenticate` guard (see ./auth.js) sits on the `/protected` route's meta
+  `authenticate` guard (see ./auth.ts) sits on the `/protected` route's meta
   chain and enforces a bearer token identically for REST requests and WebSocket
   request frames, because both share the same middleware chain. The `/public`
   route carries no guard, so it stays open to either transport.
@@ -73,7 +75,7 @@ describe('WebSocket', () => {
   test('when invoking a protected route omits the token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
     const res = await client.get('/protected')
 
     await client.close()
@@ -81,7 +83,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: UnauthorizedError.status,
       timestamp: res.timestamp,
@@ -97,7 +99,7 @@ describe('WebSocket', () => {
   test('when invoking a protected route with INVALID token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
 
     const res = await client.get('/protected', {
       headers: new Headers({
@@ -110,7 +112,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: UnauthorizedError.status,
       timestamp: res.timestamp,
@@ -126,8 +128,8 @@ describe('WebSocket', () => {
   test('when invoking a protected route with a VALID token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
-    const { token } = client.connectionData
+    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const { token } = client.connectionData as ConnectionData
 
     const res = await client.get('/protected', {
       headers: new Headers({
@@ -140,7 +142,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: 200,
       timestamp: res.timestamp,
@@ -156,7 +158,7 @@ describe('WebSocket', () => {
   test('when invoking a public route without a token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
     const res = await client.get('/public')
 
     await client.close()
@@ -164,7 +166,7 @@ describe('WebSocket', () => {
 
     expect(res).toStrictEqual({
       id: res.id,
-      clientId: client.id,
+      clientId: client.id!,
       type: MessageType.Response,
       status: 200,
       timestamp: res.timestamp,

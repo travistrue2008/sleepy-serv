@@ -1,6 +1,9 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { UnauthorizedError } from 'sleepy-serv'
 
+import type { JWTPayload } from 'jose'
+import type { NextFn, Request } from 'sleepy-serv'
+
 /*
   A working example of authentication through the middleware system. The JWT
   bits below are deliberately self-contained: `jose` signs and verifies an
@@ -15,13 +18,30 @@ import { UnauthorizedError } from 'sleepy-serv'
   no transport-specific code.
  */
 
+/* what `authenticate` contributes to the middleware accumulator */
+
+export type Authenticated = {
+  user: JWTPayload
+}
+
+export type Accum = Record<string, unknown>
+
+/*
+  What the `/ws` handshake middleware leaves in the accumulator, which
+  the terminal surfaces to the client as `client.connectionData`.
+ */
+
+export type ConnectionData = {
+  token: string
+}
+
 const SECRET = new TextEncoder().encode('sleepy-serv-example-secret')
 
 const CLAIMS = {
   sub: 'user-123',
 }
 
-export async function authorToken () {
+export async function authorToken (): Promise<string> {
   return new SignJWT(CLAIMS)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -29,7 +49,11 @@ export async function authorToken () {
     .sign(SECRET)
 }
 
-export async function authenticate (req, res, next) {
+export async function authenticate (
+  req: Request,
+  res: Accum | null,
+  next: NextFn,
+): Promise<Response> {
   const header = req.headers.get('authorization')
 
   if (!header?.startsWith('Bearer ')) {
@@ -38,7 +62,7 @@ export async function authenticate (req, res, next) {
 
   const token = header.slice('Bearer '.length)
 
-  let payload
+  let payload: JWTPayload
 
   try {
     ({ payload } = await jwtVerify(token, SECRET))
