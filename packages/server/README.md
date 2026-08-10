@@ -315,7 +315,7 @@ export default [
 This function returns a middleware function that validates request data against provided schemas. The returned middleware function has the signature `(req, res, next)` and forwards `res` via `next(res)` after successful validation.
 
 The `schemas` object can contain these optional properties:
-- `headers`: takes a string formatter schema to evaluate `req.headers`
+- `headers`: takes a string formatter schema to evaluate `req.headers`. Header names are case-insensitive, so schema keys are lowercased to match; validation errors report the lowercased name (e.g. `headers.userid`).
 - `params`: takes a string formatter schema to evaluate `req.params`
 - `query`: takes a string formatter schema to evaluate `req.query`
 - `body`: takes a JSON validation schema to evaluate `res` (the body value passed in via `next`)

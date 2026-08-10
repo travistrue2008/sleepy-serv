@@ -96,6 +96,30 @@ convert, so the real contract is not visible until then.
       constraint will correctly break it and the fixture will need a
       realistic shape.
 
+- [ ] **Extract a validation-source builder in `validateSchemas`.**
+      Low priority cleanup, not blocking anything. The per-key
+      conditionals currently sit inline in the reduce
+      (`middleware.ts:182-183`):
+
+      ```ts
+      const raw = key === 'body' ? res : req[key]
+      const data = raw instanceof Headers
+        ? Object.fromEntries(raw)
+        : raw
+      ```
+
+      Replace with a helper that loops the keys actually present in
+      `schemas` and returns an object already in validation-ready form:
+      `body` pulled from `res`, `headers` as a POJO built from the
+      request's `Headers` instance, `params` and `query` passed through.
+      The validation loop then just reads `source[key]`, with no
+      type-sniffing per iteration.
+
+      Note the `instanceof Headers` check exists because the value's
+      shape is not known statically. Doing this after the `BaseRequest`
+      work may let the conversion key off the schema key alone, since
+      `headers` will be typed as `Headers` on every request variant.
+
 - [ ] **Resolve `next` nullability in built-in middleware.**
       `Middleware` types `next` as `MiddlewareNext | null` because
       `executeMiddlewareChain` really does pass `null` to the last entry.
@@ -140,7 +164,7 @@ convert, so the real contract is not visible until then.
 - [x] `packages/server/src/errors.js` (getters return `StatusCode`)
 - [x] `packages/server/src/errors.test.js`
 - [x] `packages/server/src/middleware.js`
-- [ ] `packages/server/src/middleware.test.js`
+- [x] `packages/server/src/middleware.test.js`
 - [ ] `packages/server/src/messages.js` (`TYPES` becomes `MessageType`,
       atomic across `socket.js`, both test files, `tests/helpers.js`, and
       the `ws-message` integration test)

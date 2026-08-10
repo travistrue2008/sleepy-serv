@@ -28,7 +28,7 @@ describe('parseJsonBody()', () => {
     const req = {
       method: 'POST',
       headers: new Headers({}),
-      json: mock().mockResolvedValue(),
+      json: mock().mockResolvedValue(undefined),
     }
 
     const next = mock()
@@ -45,7 +45,7 @@ describe('parseJsonBody()', () => {
       headers: new Headers({
         'content-type': 'application/xml',
       }),
-      json: mock().mockResolvedValue(),
+      json: mock().mockResolvedValue(undefined),
     }
 
     const next = mock()
@@ -169,7 +169,7 @@ describe('setValidationFormats()', () => {
     const next = mock()
 
     const fn = () => middleware({
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {},
     }, null, next)
@@ -221,7 +221,7 @@ describe('validateSchemas()', () => {
     const middleware = validateSchemas({})
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {},
     }
@@ -240,9 +240,9 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {
+      headers: new Headers({
         userId: '123',
-      },
+      }),
       params: {},
       query: {},
     }
@@ -253,7 +253,7 @@ describe('validateSchemas()', () => {
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
-        path: 'headers.userId',
+        path: 'headers.userid',
         message: 'must match format "uuid"',
       },
     ]))
@@ -267,9 +267,9 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {
+      headers: new Headers({
         userId: UUID,
-      },
+      }),
       params: {},
       query: {},
     }
@@ -283,15 +283,42 @@ describe('validateSchemas()', () => {
     expect(next).toHaveBeenCalledWith(res)
   })
 
+  test('when a header schema key casing differs from the header', () => {
+    const middleware = validateSchemas({
+      headers: SCHEMA_FORMAT,
+    })
+
+    const req = {
+      headers: new Headers({
+        USERID: '123',
+      }),
+      params: {},
+      query: {},
+    }
+
+    const res = { a: 1 }
+    const next = mock()
+    const fn = () => middleware(req, res, next)
+
+    expect(fn).toThrow(new UnprocessableContentError([
+      {
+        path: 'headers.userid',
+        message: 'must match format "uuid"',
+      },
+    ]))
+
+    expect(next).not.toHaveBeenCalled()
+  })
+
   test('when headers FAIL validation (pattern)', () => {
     const middleware = validateSchemas({
       headers: SCHEMA_PATTERN,
     })
 
     const req = {
-      headers: {
+      headers: new Headers({
         userId: '123',
-      },
+      }),
       params: {},
       query: {},
     }
@@ -303,7 +330,7 @@ describe('validateSchemas()', () => {
 
     expect(fn).toThrow(new UnprocessableContentError([
       {
-        path: 'headers.userId',
+        path: 'headers.userid',
         message: `must match pattern "${PATTERN_UUID}"`,
       },
     ]))
@@ -317,9 +344,9 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {
+      headers: new Headers({
         userId: UUID,
-      },
+      }),
       params: {},
       query: {},
     }
@@ -338,7 +365,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {
         userId: '123',
       },
@@ -365,7 +392,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {
         userId: UUID,
       },
@@ -387,7 +414,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {
         userId: '123',
       },
@@ -414,7 +441,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {
         userId: UUID,
       },
@@ -436,7 +463,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {
         userId: '123',
@@ -463,7 +490,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {
         userId: UUID,
@@ -484,7 +511,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {
         userId: '123',
@@ -511,7 +538,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {
         userId: UUID,
@@ -532,7 +559,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {},
     }
@@ -565,7 +592,7 @@ describe('validateSchemas()', () => {
     })
 
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {},
     }
@@ -592,12 +619,12 @@ describe('validateSchemas()', () => {
 
   test('when body contains extra fields (root)', () => {
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {},
     }
 
-    const res = {
+    const res: Record<string, unknown> = {
       firstName: 'Some',
       lastName: 'One',
       middleName: 'Else',
@@ -627,12 +654,12 @@ describe('validateSchemas()', () => {
 
   test('when body contains extra fields (sub-key)', () => {
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {},
     }
 
-    const res = {
+    const res: Record<string, unknown> = {
       stats: {
         strength: 12,
         defense: 8,
@@ -670,7 +697,7 @@ describe('validateSchemas()', () => {
 
   test('when a null value for a nullable field is provided', () => {
     const req = {
-      headers: {},
+      headers: new Headers(),
       params: {},
       query: {},
     }

@@ -28,17 +28,21 @@ export type ValidationSchemas = {
 
 export type SchemaKey = keyof ValidationSchemas
 
+export type ParsableRequest = {
+  headers: Headers
+  json: () => Promise<unknown>
+}
+
 export type ValidatableRequest = {
   headers: Headers
-  params: Record<string, string>
-  query: Record<string, unknown>
-  json: () => Promise<unknown>
+  params: unknown
+  query: unknown
 }
 
 let _schemasCompiled = false
 let _customFormats: Record<string, Format> | null = null
 
-async function parseBody (req: ValidatableRequest): Promise<unknown> {
+async function parseBody (req: ParsableRequest): Promise<unknown> {
   try {
     const result = await req.json()
 
@@ -69,6 +73,14 @@ function buildFormatterSchema (schema: FormatterSchema): Schema {
   }
 }
 
+function normalizeHeaderKeys (schema: FormatterSchema): FormatterSchema {
+  return Object.fromEntries(
+    Object
+      .entries(schema)
+      .map(([field, config]) => [field.toLowerCase(), config]),
+  )
+}
+
 function compileSchemas (
   schemas: ValidationSchemas,
 ): [SchemaKey, ValidateFunction][] {
@@ -77,8 +89,12 @@ function compileSchemas (
       accum: [SchemaKey, Schema][],
       [key, schema],
     ): [SchemaKey, Schema][] => {
+      const formatterSchema = key === 'headers'
+        ? normalizeHeaderKeys(schema as FormatterSchema)
+        : schema as FormatterSchema
+
       const formattedSchema = key !== 'body'
-        ? buildFormatterSchema(schema as FormatterSchema)
+        ? buildFormatterSchema(formatterSchema)
         : schema as Schema
 
       return [
@@ -104,9 +120,9 @@ function compileSchemas (
     })
 }
 
-export function parseJsonBody (): Middleware<ValidatableRequest> {
+export function parseJsonBody (): Middleware<ParsableRequest> {
   return async (
-    req: ValidatableRequest,
+    req: ParsableRequest,
     res: unknown,
     next: MiddlewareNext | null,
   ): Promise<unknown> => {
@@ -163,7 +179,8 @@ export function validateSchemas (
       key,
       validator,
     ]) => {
-      const data = key === 'body' ? res : req[key]
+      const raw = key === 'body' ? res : req[key]
+      const data = raw instanceof Headers ? Object.fromEntries(raw) : raw
       const valid = validator(data)
 
       return !valid
