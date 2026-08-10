@@ -135,6 +135,13 @@ convert, so the real contract is not visible until then.
       `InternalServerError(message, ctx)` keep their bespoke signatures,
       and whether `ctx` (written, never read) is vestigial.
 
+- [ ] **Rename `FMT` to `Fmt`.** Deferred to "much later" on purpose:
+      the members are already correct, only the alias name is off. It is
+      an atomic rename across `packages/server/tests`, so it is cheapest
+      once group 2 is fully converted and every call site is already
+      being touched. Note the root `tests/helpers.js` declares a
+      *separate* `FMT`, so group 4 is an independent decision.
+
 - [ ] **Adopt Bun's own WebSocket types for `buildSocketServer`.**
       Lands with `index.ts`, since that is where `Bun.serve` is called.
       The names, confirmed against `bun-types@1.3.14`:
@@ -247,7 +254,18 @@ convert, so the real contract is not visible until then.
 
 ## 2. `server` integration tests (`packages/server/tests/`)
 
-- [ ] `packages/server/tests/helpers.js` (shared)
+- [x] `packages/server/tests/helpers.js` (shared). `FMT` gained
+      `as const` plus a derived type, which surfaced that `FMT.NONE` was
+      both unused across all 84 call sites and non-functional:
+      `res['none']()` would throw, since `Response` has no `none`
+      method. Removed. "Use the default" is now expressed by passing
+      `null`, so `deserializeBody` takes `FMT | null`; verified all 28
+      requestor calls already pass an explicit format, so making it
+      required cost no call-site churn.
+      `HttpResult.body` is `unknown`, so each suite narrows as it
+      converts. `Bun.BodyInit` for the same reason `Bun.HeadersInit` was
+      needed: the bare DOM globals are out of scope under
+      `lib: ["ESNext"]`.
 - [ ] `packages/server/tests/errors/initialization/leaf-directory-has-no-method-file/api/users/meta.js`
 - [ ] `packages/server/tests/errors/initialization/leaf-directory-has-no-method-file/integration.test.js`
 - [ ] `packages/server/tests/errors/initialization/method-file-has-no-default-export/api/get.js`

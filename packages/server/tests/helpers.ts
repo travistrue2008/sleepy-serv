@@ -1,20 +1,86 @@
 import crypto from 'node:crypto'
 import { MessageType } from '../src/messages'
 
+import type { App, HttpMethod } from '../src'
+
 export const FMT = {
-  NONE: 'none',
   TEXT: 'text',
   JSON: 'json',
+} as const
+
+export type FMT = typeof FMT[keyof typeof FMT]
+
+export type Query = Record<string, string>
+
+export type RequestOptions = {
+  mountPath?: string
+  query?: Query
+  headers?: Headers
+  body?: Bun.BodyInit
 }
 
-async function deserializeBody (fmt, res) {
-  const methodName = fmt ?? 'json'
-  const body = await res[methodName]()
+export type HttpResult = {
+  status: number
+  body: unknown
+}
+
+export type MessagePayload = {
+  headers?: unknown
+  query?: unknown
+  body?: unknown
+}
+
+export type RequestorMethod = (
+  route: string,
+  fmt: FMT | null,
+  opts?: RequestOptions,
+) => Promise<HttpResult>
+
+export type Requestor = {
+  get: RequestorMethod
+  put: RequestorMethod
+  post: RequestorMethod
+}
+
+export type SocketTestClient = {
+  readonly clientId: string
+  readonly token: string
+  readonly heartbeatInterval: number
+  readonly socket: WebSocket
+  close: () => Promise<void>
+  heartbeat: () => Promise<unknown>
+  get: (route: string, opts?: MessagePayload) => Promise<unknown>
+  put: (route: string, opts?: MessagePayload) => Promise<unknown>
+  post: (route: string, opts?: MessagePayload) => Promise<unknown>
+  sendRaw: (payload: Record<string, unknown>) => Promise<unknown>
+}
+
+type WelcomeData = {
+  clientId: string
+  token: string
+  heartbeatInterval: number
+}
+
+async function deserializeBody (
+  fmt: FMT | null,
+  res: Response,
+): Promise<unknown> {
+  if (!fmt) {
+    return undefined
+  }
+
+  const body = await res[fmt]()
 
   return body
 }
 
-async function makeRequestMethod (app, method, route, fmt, opts = {}) {
+async function makeRequestMethod (
+  app: App,
+  method: HttpMethod,
+  route: string,
+  fmt: FMT | null,
+  opts: RequestOptions = {},
+): Promise<HttpResult> {
   const query = new URLSearchParams(opts.query ?? {}).toString()
   const mountPath = opts.mountPath ?? ''
   const suffix = query ? `?${query}` : ''
@@ -32,29 +98,33 @@ async function makeRequestMethod (app, method, route, fmt, opts = {}) {
   }
 }
 
-export function createRequestor (app) {
+export function createRequestor (app: App): Requestor {
   return {
-    get (route, fmt, opts) {
+    get (route, fmt = null, opts = {}) {
       return makeRequestMethod(app, 'GET', route, fmt, opts)
     },
-    put (route, fmt, opts = {}) {
+    put (route, fmt = null, opts = {}) {
       return makeRequestMethod(app, 'PUT', route, fmt, opts)
     },
-    post (route, fmt, opts = {}) {
+    post (route, fmt = null, opts = {}) {
       return makeRequestMethod(app, 'POST', route, fmt, opts)
     },
   }
 }
 
-export async function createSocketClient (app, opts = {}) {
+export async function createSocketClient (
+  app: App,
+  opts: RequestOptions = {},
+): Promise<SocketTestClient> {
   const mountPath = opts.mountPath ?? ''
   const hostRoot = `${app.server.url.host}${mountPath}/ws`
   const req = createRequestor(app)
   const res = await req.post('/ws', FMT.JSON, { mountPath })
-  const url = `ws://${hostRoot}?ticket=${res.body.ticket}`
+  const { ticket } = res.body as { ticket: string }
+  const url = `ws://${hostRoot}?ticket=${ticket}`
   const socket = new WebSocket(url)
 
-  const data = await new Promise((resolve, reject) => {
+  const data = await new Promise<WelcomeData>((resolve, reject) => {
     socket.addEventListener('error', event => {
       console.error(event)
       reject(event)
@@ -81,9 +151,9 @@ export async function createSocketClient (app, opts = {}) {
     })
   })
 
-  async function sendRaw (payload) {
+  async function sendRaw (payload: Record<string, unknown>): Promise<unknown> {
     return new Promise(resolve => {
-      const handler = event => {
+      const handler = (event: MessageEvent): void => {
         resolve(JSON.parse(event.data))
 
         socket.removeEventListener('message', handler)
@@ -94,9 +164,12 @@ export async function createSocketClient (app, opts = {}) {
     })
   }
 
-  async function sendMessage (type, payload) {
+  async function sendMessage (
+    type: MessageType,
+    payload: Record<string, unknown>,
+  ): Promise<unknown> {
     return new Promise(resolve => {
-      const handler = event => {
+      const handler = (event: MessageEvent): void => {
         resolve(JSON.parse(event.data))
 
         socket.removeEventListener('message', handler)
@@ -114,7 +187,11 @@ export async function createSocketClient (app, opts = {}) {
     })
   }
 
-  async function sendRequest (method, route, payload) {
+  async function sendRequest (
+    method: HttpMethod,
+    route: string,
+    payload: MessagePayload,
+  ): Promise<unknown> {
     const message = await sendMessage(MessageType.Request, {
       method,
       route,
@@ -127,34 +204,36 @@ export async function createSocketClient (app, opts = {}) {
   }
 
   return {
-    get clientId () {
+    get clientId (): string {
       return data.clientId
     },
-    get token () {
+    get token (): string {
       return data.token
     },
-    get heartbeatInterval () {
+    get heartbeatInterval (): number {
       return data.heartbeatInterval
     },
-    get socket () {
+    get socket (): WebSocket {
       return socket
     },
     async close () {
-      await socket.close()
+      socket.close()
+
+      await Promise.resolve() /* revisit this */
     },
-    heartbeat () {
+    heartbeat (): Promise<unknown> {
       return sendMessage(MessageType.Heartbeat, {})
     },
-    get (route, opts = {}) {
+    get (route: string, opts: MessagePayload = {}): Promise<unknown> {
       return sendRequest('GET', route, opts)
     },
-    put (route, opts = {}) {
+    put (route: string, opts: MessagePayload = {}): Promise<unknown> {
       return sendRequest('PUT', route, opts)
     },
-    post (route, opts = {}) {
+    post (route: string, opts: MessagePayload = {}): Promise<unknown> {
       return sendRequest('POST', route, opts)
     },
-    sendRaw (payload) {
+    sendRaw (payload: MessagePayload): Promise<unknown> {
       return sendRaw(payload)
     },
   }
