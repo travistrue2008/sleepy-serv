@@ -1,12 +1,12 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../../../../src'
 import { NotFoundError } from '../../../../src/errors'
-import { FMT, createRequestor, createSocketClient } from '../../../helpers'
+import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when requested resource is not found (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const req = createRequestor(app)
-  const res = await req.get('/users/123/photos', FMT.JSON)
+  const res = await req.get('/users/123/photos', Fmt.JSON)
 
   await app.server.stop(true)
 

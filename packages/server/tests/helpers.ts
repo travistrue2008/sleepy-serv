@@ -3,12 +3,12 @@ import { MessageType } from '../src/messages'
 
 import type { App, HttpMethod } from '../src'
 
-export const FMT = {
+export const Fmt = {
   TEXT: 'text',
   JSON: 'json',
 } as const
 
-export type FMT = typeof FMT[keyof typeof FMT]
+export type Fmt = typeof Fmt[keyof typeof Fmt]
 
 export type Query = Record<string, string>
 
@@ -47,7 +47,7 @@ export type MessagePayload = {
 
 export type RequestorMethod = (
   route: string,
-  fmt: FMT | null,
+  fmt: Fmt | null,
   opts?: RequestOptions,
 ) => Promise<HttpResult>
 
@@ -77,7 +77,7 @@ type WelcomeData = {
 }
 
 async function deserializeBody (
-  fmt: FMT | null,
+  fmt: Fmt | null,
   res: Response,
 ): Promise<unknown> {
   if (!fmt) {
@@ -93,7 +93,7 @@ async function makeRequestMethod (
   app: App,
   method: HttpMethod,
   route: string,
-  fmt: FMT | null,
+  fmt: Fmt | null,
   opts: RequestOptions = {},
 ): Promise<HttpResult> {
   const query = new URLSearchParams(opts.query ?? {}).toString()
@@ -134,7 +134,7 @@ export async function createSocketClient (
   const mountPath = opts.mountPath ?? ''
   const hostRoot = `${app.server.url.host}${mountPath}/ws`
   const req = createRequestor(app)
-  const res = await req.post('/ws', FMT.JSON, { mountPath })
+  const res = await req.post('/ws', Fmt.JSON, { mountPath })
   const { ticket } = res.body as { ticket: string }
   const url = `ws://${hostRoot}?ticket=${ticket}`
   const socket = new WebSocket(url)

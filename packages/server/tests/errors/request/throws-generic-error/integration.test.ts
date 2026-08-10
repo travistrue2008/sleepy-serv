@@ -1,12 +1,12 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../../../../src'
 import { InternalServerError } from '../../../../src/errors'
-import { FMT, createRequestor, createSocketClient } from '../../../helpers'
+import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when a generic error is thrown (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const req = createRequestor(app)
-  const res = await req.get('/', FMT.TEXT)
+  const res = await req.get('/', Fmt.TEXT)
 
   await app.server.stop(true)
 

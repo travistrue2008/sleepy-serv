@@ -1,11 +1,11 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../../../src'
-import { FMT, createRequestor, createSocketClient } from '../../helpers'
+import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 test('when sibling-level meta middleware is defined (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const req = createRequestor(app)
-  const res = await req.get('/users', FMT.TEXT)
+  const res = await req.get('/users', Fmt.TEXT)
 
   await app.server.stop(true)
 

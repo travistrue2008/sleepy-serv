@@ -1,11 +1,11 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../../../src'
-import { FMT, createRequestor, createSocketClient } from '../../helpers'
+import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 test('when making a root-level request (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const req = createRequestor(app)
-  const res = await req.get('/', FMT.TEXT)
+  const res = await req.get('/', Fmt.TEXT)
 
   await app.server.stop(true)
 

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
 import { createApp } from '../../../../src'
-import { FMT, createRequestor, createSocketClient } from '../../../helpers'
+import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 type TicketBody = {
   ticket: string
@@ -20,7 +20,7 @@ describe('POST', () => {
   test('when requested (REST)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.post('/ws', FMT.JSON)
+    const res = await req.post('/ws', Fmt.JSON)
 
     await app.server.stop(true)
 
@@ -57,7 +57,7 @@ describe('PUT', () => {
     const ws = await createSocketClient(app)
     const req = createRequestor(app)
 
-    const res = await req.put(`/ws/${ws.clientId}`, FMT.JSON, {
+    const res = await req.put(`/ws/${ws.clientId}`, Fmt.JSON, {
       headers: new Headers({}),
     })
 
@@ -98,7 +98,7 @@ describe('PUT', () => {
     const ws = await createSocketClient(app)
     const req = createRequestor(app)
 
-    const res = await req.put(`/ws/${CLIENT_ID_INVALID}`, FMT.JSON, {
+    const res = await req.put(`/ws/${CLIENT_ID_INVALID}`, Fmt.JSON, {
       headers: new Headers({
         authorization: `Bearer ${ws.token}`,
       }),
@@ -137,7 +137,7 @@ describe('PUT', () => {
     const ws = await createSocketClient(app)
     const req = createRequestor(app)
 
-    const res = await req.put(`/ws/${ws.clientId}`, FMT.JSON, {
+    const res = await req.put(`/ws/${ws.clientId}`, Fmt.JSON, {
       headers: new Headers({
         authorization: `Bearer ${TOKEN_INVALID}`,
       }),
@@ -179,7 +179,7 @@ describe('PUT', () => {
     const ws = await createSocketClient(app)
     const req = createRequestor(app)
 
-    const res = await req.put(`/ws/${ws.clientId}`, FMT.JSON, {
+    const res = await req.put(`/ws/${ws.clientId}`, Fmt.JSON, {
       headers: new Headers({
         authorization: `Bearer ${ws.token}`,
       }),
@@ -223,7 +223,7 @@ describe('GET', () => {
   test('when NO "ticket" querystring (REST)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/ws', FMT.JSON)
+    const res = await req.get('/ws', Fmt.JSON)
 
     await app.server.stop(true)
 
@@ -258,7 +258,7 @@ describe('GET', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
 
-    const res = await req.get('/ws', FMT.JSON, {
+    const res = await req.get('/ws', Fmt.JSON, {
       query: {
         ticket: TICKET_INVALID,
       },
@@ -292,10 +292,10 @@ describe('GET', () => {
   test('when providing a "ticket" querystring (REST)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const ticketRes = await req.post('/ws', FMT.JSON)
+    const ticketRes = await req.post('/ws', Fmt.JSON)
     const { ticket } = ticketRes.body as TicketBody
 
-    const res = await req.get('/ws', FMT.JSON, {
+    const res = await req.get('/ws', Fmt.JSON, {
       query: {
         ticket,
       },
@@ -312,7 +312,7 @@ describe('GET', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
     const ws = await createSocketClient(app)
-    const ticketRes = await req.post('/ws', FMT.JSON)
+    const ticketRes = await req.post('/ws', Fmt.JSON)
     const { ticket } = ticketRes.body as TicketBody
 
     const msg = await ws.get('/ws', {

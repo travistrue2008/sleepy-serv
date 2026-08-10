@@ -1,12 +1,12 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../../../../src'
 import { UnprocessableContentError } from '../../../../src/errors'
-import { FMT, createRequestor, createSocketClient } from '../../../helpers'
+import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when a RequestError sub-type is thrown (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const req = createRequestor(app)
-  const res = await req.get('/', FMT.JSON)
+  const res = await req.get('/', Fmt.JSON)
 
   await app.server.stop(true)
 

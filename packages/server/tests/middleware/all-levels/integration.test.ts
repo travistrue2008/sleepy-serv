@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../../../src'
-import { FMT, createRequestor, createSocketClient } from '../../helpers'
+import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 import type { NextFn, Request } from '../../../src'
 
@@ -19,7 +19,7 @@ test('when all levels of middleware are defined (REST)', async () => {
   })
 
   const req = createRequestor(app)
-  const res = await req.get('/users', FMT.TEXT)
+  const res = await req.get('/users', Fmt.TEXT)
 
   await app.server.stop(true)
 

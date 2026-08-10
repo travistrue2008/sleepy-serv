@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../../../src'
-import { FMT, createRequestor, createSocketClient } from '../../helpers'
+import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 test('when adding a mount path (REST)', async () => {
   const app = await createApp(0, import.meta.dirname, {
@@ -8,7 +8,7 @@ test('when adding a mount path (REST)', async () => {
   })
 
   const req = createRequestor(app)
-  const res = await req.get('/test-mount-path/users', FMT.TEXT)
+  const res = await req.get('/test-mount-path/users', Fmt.TEXT)
 
   await app.server.stop(true)
 

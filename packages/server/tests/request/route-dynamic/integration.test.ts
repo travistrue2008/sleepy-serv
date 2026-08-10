@@ -1,11 +1,11 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../../../src'
-import { FMT, createRequestor, createSocketClient } from '../../helpers'
+import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 test('when making a request with dynamic route param (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const req = createRequestor(app)
-  const res = await req.get('/users/123', FMT.TEXT)
+  const res = await req.get('/users/123', Fmt.TEXT)
 
   await app.server.stop(true)
 
