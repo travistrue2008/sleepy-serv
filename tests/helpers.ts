@@ -14,6 +14,12 @@ export type HttpResult = {
   body: unknown
 }
 
+export type TicketBody = {
+  clientId: string
+  ticket: string
+  data: unknown
+}
+
 export type Query = Record<string, string>
 
 export type RequestOptions = {

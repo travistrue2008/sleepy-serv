@@ -3,6 +3,8 @@ import { InternalServerError, createApp } from 'sleepy-serv'
 import { createRequestor, Fmt } from '../../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
+import type { TicketBody } from '../../../helpers'
+
 describe('POST', () => {
   test('when middleware errors (lvl 1)', async () => {
     const app = await createApp(0, import.meta.dirname)
@@ -48,7 +50,7 @@ describe('PUT', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
     const res = await req.put(`/ws/${client.id}?err=lvl_1`, Fmt.Text)
 
     await client.close()
@@ -62,7 +64,7 @@ describe('PUT', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
     const res = await req.put(`/ws/${client.id}?err=lvl_2`, Fmt.Text)
 
     await client.close()
@@ -76,7 +78,7 @@ describe('PUT', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
     const res = await req.put(`/ws/${client.id}?err=lvl_3`, Fmt.Text)
 
     await client.close()
@@ -90,7 +92,7 @@ describe('PUT', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port)
+    const client = await SleepySocketClient.connect(host, app.server.port!)
 
     const res = await req.put(`/ws/${client.id}`, Fmt.Json, {
       headers: new Headers({
@@ -139,7 +141,8 @@ describe('GET', () => {
     const { host } = app.server.url
     const req = createRequestor(app)
     const res = await req.post('/ws', Fmt.Json)
-    const ws = new WebSocket(`ws://${host}/ws?ticket=${res.body.ticket}`)
+    const { ticket } = res.body as TicketBody
+    const ws = new WebSocket(`ws://${host}/ws?ticket=${ticket}`)
 
     const data = await new Promise(resolve => {
       ws.addEventListener('message', event =>
