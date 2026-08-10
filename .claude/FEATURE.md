@@ -285,8 +285,8 @@ convert, so the real contract is not visible until then.
       `createApp` reject outright; the test still reported 1 pass. The
       dead `whitelist` option rode along because plain JavaScript
       ignores unknown keys, so only the `AppOptions` check surfaced it.
-- [ ] `packages/server/tests/errors/request/middleware-throws-error/api/get.js`
-- [ ] `packages/server/tests/errors/request/middleware-throws-error/integration.test.js`
+- [x] `packages/server/tests/errors/request/middleware-throws-error/api/get.js`
+- [x] `packages/server/tests/errors/request/middleware-throws-error/integration.test.js`
 - [ ] `packages/server/tests/errors/request/no-Response-object-returned/api/get.js`
 - [ ] `packages/server/tests/errors/request/no-Response-object-returned/integration.test.js`
 - [ ] `packages/server/tests/errors/request/not-allowed-method/api/users/post.js`
