@@ -50,9 +50,13 @@ committed.
 - [x] Swap `.npmignore` for a `files` allowlist in both packages
       (verified with `npm pack --dry-run`: server 10 files, client 6,
       both identical to their pre-change baselines)
-- [ ] Client `tsconfig.json` and `tsconfig.portable.json`, `engines`,
-      `dist` build wiring (start of group 3). When `dist` lands, the
-      client's `files` becomes `["dist"]`.
+- [x] Client `tsconfig.json` and `tsconfig.portable.json`, `engines`,
+      `dist` build wiring. `files` became `["dist", "src",
+      "!src/**/*.test.*"]` rather than `["dist"]`: shipping both trees
+      lets the `bun` export condition resolve source, so `bun test`
+      needs no build and a stale `dist` cannot be silently tested.
+- [x] Root `tsconfig.json` covering `tests/**/*`, wired into the root
+      `typecheck` script (group 4 setup).
 
 ## Deferred refinements
 
@@ -478,6 +482,46 @@ convert, so the real contract is not visible until then.
 
 ## 4. E2E tests (root `tests/`)
 
+**COMPLETE.** 82 files. With this group the whole repo is TypeScript:
+no `.js` remains outside `node_modules`, `dist`, and `.github`.
+
+### Conventions this group settled
+
+- **Every `!` is proven, not assumed.** The rule is to write an
+  assertion only at a line `tsc` actually flagged, then verify by
+  stripping them all and confirming the error count matches. An earlier
+  parallel attempt applied `client.id!` blanket-style and produced 13
+  decorative assertions, which the audit removed. A decorative `!` is
+  worse than none: it implies a nullability the compiler never objected
+  to, and in `` `/ws/${client.id!}` `` it hides that a broken invariant
+  yields the URL `/ws/null` rather than failing.
+- **`next` is nullable only where it can actually be null.** Middleware
+  passed into `createApp({ middleware: [...] })` is checked against the
+  exported `Middleware`, whose `next: NextFn | null` forces `next!`.
+  Fixtures in a `/ws` chain always have the built-in terminal appended
+  after them, so they take `next: NextFn` and call it plainly. The one
+  fixture that genuinely is last (`middleware/ws/root-level/api/get.ts`)
+  keeps `NextFn | null` with `next!()` so the hazard stays visible.
+- **`satisfies Middleware[]` where it is free, precise types where it is
+  not.** `validation/*` arrays satisfy the contract cleanly, so
+  `satisfies` verifies them and infers handler params for free. Where a
+  fixture needs a narrower `res` to spread or read (`auth`,
+  `middleware/ws/meta-level`), `satisfies` cannot apply: parameter
+  contravariance rejects anything narrower than `res: unknown`. Those
+  take precise parameter types, trading structural verification for an
+  accurate description of what flows.
+- **Repeated casts are named once.** `HttpResult.body` is `unknown`,
+  which is correct for a network response, so the cast stays visible at
+  the boundary; but `TicketBody` in `tests/helpers.ts` declares the
+  shape in one place instead of four anonymous casts.
+- **Widen a wrong type rather than cast around it.**
+  `RequestOptions.body` excluded `number`, so `primitive-body` could not
+  express the case it exists to test. `fetch` coerces a numeric body to
+  a string, verified at runtime, so the helper's type was simply
+  narrower than what it supports. Widened it and coerced explicitly in
+  the helper, instead of `42 as unknown as Bun.BodyInit` at the call
+  site.
+
 ### Group 4 setup
 
 - [x] Root `tsconfig.json` covering `tests/**/*`, wired into the root
@@ -507,33 +551,33 @@ convert, so the real contract is not visible until then.
       ever serve it; it is typed through a local
       `RequestMethod = HttpMethod | 'OPTIONS'` that says so. Worth a
       decision, but deleting them is not part of a conversion.
-- [ ] `tests/auth/auth.js`
-- [ ] `tests/auth/api/auth/post.js`
-- [ ] `tests/auth/api/protected/get.js`
-- [ ] `tests/auth/api/protected/meta.js`
-- [ ] `tests/auth/api/public/get.js`
-- [ ] `tests/auth/api/ws/:clientId/put.js`
-- [ ] `tests/auth/api/ws/post.js`
-- [ ] `tests/auth/integration.test.js`
-- [ ] `tests/middleware/app-level/api/get.js`
-- [ ] `tests/middleware/app-level/api/post.js`
-- [ ] `tests/middleware/app-level/integration.test.js`
-- [ ] `tests/middleware/meta-level/api/get.js`
-- [ ] `tests/middleware/meta-level/api/meta.js`
-- [ ] `tests/middleware/meta-level/integration.test.js`
-- [ ] `tests/middleware/ws/endpoint-level/api/ws/:clientId/put.js`
-- [ ] `tests/middleware/ws/endpoint-level/api/ws/get.js`
-- [ ] `tests/middleware/ws/endpoint-level/api/ws/post.js`
-- [ ] `tests/middleware/ws/endpoint-level/integration.test.js`
-- [ ] `tests/middleware/ws/meta-level/api/meta.js`
-- [ ] `tests/middleware/ws/meta-level/api/ws/:clientId/head.js`
-- [ ] `tests/middleware/ws/meta-level/api/ws/:clientId/meta.js`
-- [ ] `tests/middleware/ws/meta-level/api/ws/meta.js`
-- [ ] `tests/middleware/ws/meta-level/integration.test.js`
-- [ ] `tests/middleware/ws/root-level/api/get.js`
-- [ ] `tests/middleware/ws/root-level/integration.test.js`
-- [ ] `tests/mount-path/api/get.js`
-- [ ] `tests/mount-path/integration.test.js`
+- [x] `tests/auth/auth.js`
+- [x] `tests/auth/api/auth/post.js`
+- [x] `tests/auth/api/protected/get.js`
+- [x] `tests/auth/api/protected/meta.js`
+- [x] `tests/auth/api/public/get.js`
+- [x] `tests/auth/api/ws/:clientId/put.js`
+- [x] `tests/auth/api/ws/post.js`
+- [x] `tests/auth/integration.test.js`
+- [x] `tests/middleware/app-level/api/get.js`
+- [x] `tests/middleware/app-level/api/post.js`
+- [x] `tests/middleware/app-level/integration.test.js`
+- [x] `tests/middleware/meta-level/api/get.js`
+- [x] `tests/middleware/meta-level/api/meta.js`
+- [x] `tests/middleware/meta-level/integration.test.js`
+- [x] `tests/middleware/ws/endpoint-level/api/ws/:clientId/put.js`
+- [x] `tests/middleware/ws/endpoint-level/api/ws/get.js`
+- [x] `tests/middleware/ws/endpoint-level/api/ws/post.js`
+- [x] `tests/middleware/ws/endpoint-level/integration.test.js`
+- [x] `tests/middleware/ws/meta-level/api/meta.js`
+- [x] `tests/middleware/ws/meta-level/api/ws/:clientId/head.js`
+- [x] `tests/middleware/ws/meta-level/api/ws/:clientId/meta.js`
+- [x] `tests/middleware/ws/meta-level/api/ws/meta.js`
+- [x] `tests/middleware/ws/meta-level/integration.test.js`
+- [x] `tests/middleware/ws/root-level/api/get.js`
+- [x] `tests/middleware/ws/root-level/integration.test.js`
+- [x] `tests/mount-path/api/get.js`
+- [x] `tests/mount-path/integration.test.js`
 - [x] `tests/request-errors/handler-throws/api/boom/get.js`
 - [x] `tests/request-errors/handler-throws/api/conflict/get.js`
 - [x] `tests/request-errors/handler-throws/integration.test.js`
@@ -541,50 +585,50 @@ convert, so the real contract is not visible until then.
 - [x] `tests/request-errors/not-allowed-method/integration.test.js`
 - [x] `tests/request-errors/not-found-resource/api/get.js`
 - [x] `tests/request-errors/not-found-resource/integration.test.js`
-- [ ] `tests/request/headers-passthrough/api/whoami/get.js`
-- [ ] `tests/request/headers-passthrough/integration.test.js`
-- [ ] `tests/request/message-concurrency/api/get.js`
-- [ ] `tests/request/message-concurrency/integration.test.js`
-- [ ] `tests/request/other-verbs/api/resource/delete.js`
-- [ ] `tests/request/other-verbs/api/resource/patch.js`
-- [ ] `tests/request/other-verbs/api/resource/put.js`
-- [ ] `tests/request/other-verbs/integration.test.js`
-- [ ] `tests/request/post-with-body/api/echo/post.js`
-- [ ] `tests/request/post-with-body/integration.test.js`
-- [ ] `tests/request/primitive-body/api/echo/post.js`
-- [ ] `tests/request/primitive-body/integration.test.js`
-- [ ] `tests/request/query-passthrough/api/search/get.js`
-- [ ] `tests/request/query-passthrough/integration.test.js`
-- [ ] `tests/request/response-json/api/get.js`
-- [ ] `tests/request/response-json/integration.test.js`
-- [ ] `tests/request/response-text/api/get.js`
-- [ ] `tests/request/response-text/integration.test.js`
-- [ ] `tests/request/route-dynamic/api/users/:userId/get.js`
-- [ ] `tests/request/route-dynamic/integration.test.js`
-- [ ] `tests/request/route-static/api/users/get.js`
-- [ ] `tests/request/route-static/integration.test.js`
-- [ ] `tests/validation/dynamic-route/api/users/:userId/meta.js`
-- [ ] `tests/validation/dynamic-route/api/users/:userId/put.js`
-- [ ] `tests/validation/dynamic-route/integration.test.js`
-- [ ] `tests/validation/handlers-meta/api/users/meta.js`
-- [ ] `tests/validation/handlers-meta/api/users/post.js`
-- [ ] `tests/validation/handlers-meta/integration.test.js`
-- [ ] `tests/validation/handlers-method/api/users/post.js`
-- [ ] `tests/validation/handlers-method/integration.test.js`
-- [ ] `tests/websocket/connect/api/ok/get.js`
-- [ ] `tests/websocket/connect/integration.test.js`
-- [ ] `tests/websocket/heartbeat-ack/api/ok/get.js`
-- [ ] `tests/websocket/heartbeat-ack/integration.test.js`
-- [ ] `tests/websocket/late-response-dropped/api/ok/get.js`
-- [ ] `tests/websocket/late-response-dropped/api/slow-reply/get.js`
-- [ ] `tests/websocket/late-response-dropped/integration.test.js`
-- [ ] `tests/websocket/reconnect-after-drop/api/ok/get.js`
-- [ ] `tests/websocket/reconnect-after-drop/integration.test.js`
-- [ ] `tests/websocket/reconnect-reclaim/api/ok/get.js`
-- [ ] `tests/websocket/reconnect-reclaim/integration.test.js`
-- [ ] `tests/websocket/request-timeout/api/hang/get.js`
-- [ ] `tests/websocket/request-timeout/integration.test.js`
-- [ ] `tests/websocket/server-notification/api/ok/get.js`
-- [ ] `tests/websocket/server-notification/integration.test.js`
-- [ ] `tests/websocket/willing-close-terminal/api/ok/get.js`
-- [ ] `tests/websocket/willing-close-terminal/integration.test.js`
+- [x] `tests/request/headers-passthrough/api/whoami/get.js`
+- [x] `tests/request/headers-passthrough/integration.test.js`
+- [x] `tests/request/message-concurrency/api/get.js`
+- [x] `tests/request/message-concurrency/integration.test.js`
+- [x] `tests/request/other-verbs/api/resource/delete.js`
+- [x] `tests/request/other-verbs/api/resource/patch.js`
+- [x] `tests/request/other-verbs/api/resource/put.js`
+- [x] `tests/request/other-verbs/integration.test.js`
+- [x] `tests/request/post-with-body/api/echo/post.js`
+- [x] `tests/request/post-with-body/integration.test.js`
+- [x] `tests/request/primitive-body/api/echo/post.js`
+- [x] `tests/request/primitive-body/integration.test.js`
+- [x] `tests/request/query-passthrough/api/search/get.js`
+- [x] `tests/request/query-passthrough/integration.test.js`
+- [x] `tests/request/response-json/api/get.js`
+- [x] `tests/request/response-json/integration.test.js`
+- [x] `tests/request/response-text/api/get.js`
+- [x] `tests/request/response-text/integration.test.js`
+- [x] `tests/request/route-dynamic/api/users/:userId/get.js`
+- [x] `tests/request/route-dynamic/integration.test.js`
+- [x] `tests/request/route-static/api/users/get.js`
+- [x] `tests/request/route-static/integration.test.js`
+- [x] `tests/validation/dynamic-route/api/users/:userId/meta.js`
+- [x] `tests/validation/dynamic-route/api/users/:userId/put.js`
+- [x] `tests/validation/dynamic-route/integration.test.js`
+- [x] `tests/validation/handlers-meta/api/users/meta.js`
+- [x] `tests/validation/handlers-meta/api/users/post.js`
+- [x] `tests/validation/handlers-meta/integration.test.js`
+- [x] `tests/validation/handlers-method/api/users/post.js`
+- [x] `tests/validation/handlers-method/integration.test.js`
+- [x] `tests/websocket/connect/api/ok/get.js`
+- [x] `tests/websocket/connect/integration.test.js`
+- [x] `tests/websocket/heartbeat-ack/api/ok/get.js`
+- [x] `tests/websocket/heartbeat-ack/integration.test.js`
+- [x] `tests/websocket/late-response-dropped/api/ok/get.js`
+- [x] `tests/websocket/late-response-dropped/api/slow-reply/get.js`
+- [x] `tests/websocket/late-response-dropped/integration.test.js`
+- [x] `tests/websocket/reconnect-after-drop/api/ok/get.js`
+- [x] `tests/websocket/reconnect-after-drop/integration.test.js`
+- [x] `tests/websocket/reconnect-reclaim/api/ok/get.js`
+- [x] `tests/websocket/reconnect-reclaim/integration.test.js`
+- [x] `tests/websocket/request-timeout/api/hang/get.js`
+- [x] `tests/websocket/request-timeout/integration.test.js`
+- [x] `tests/websocket/server-notification/api/ok/get.js`
+- [x] `tests/websocket/server-notification/integration.test.js`
+- [x] `tests/websocket/willing-close-terminal/api/ok/get.js`
+- [x] `tests/websocket/willing-close-terminal/integration.test.js`
