@@ -115,6 +115,14 @@ So the realistic failure is a parse error, not silent corruption. The rule stand
 
 For the same reason, `createSocketClient` in `packages/server/tests/helpers.js` still exposes a `clientId` getter: it is a hand-rolled test double over a raw `WebSocket`, not a `SleepySocketClient`, so it was out of scope (see [Testing](./testing.md)).
 
+## Open: inbound frames are not bound to their socket
+
+The server validates an inbound frame's `clientId` for *shape* (`format: 'uuid'` in `validateMessage`) but never compares it against `ws.data.clientId`, the identity the socket actually authenticated as when it redeemed its ticket. A connected client can therefore send a frame carrying somebody else's `clientId` and have it accepted.
+
+Routing is unaffected, since replies go back out over the socket the frame arrived on and the field has never routed anything. The exposure is in what handlers and logs trust.
+
+Open and untriaged, deliberately left alone during the TypeScript conversion because the fix is half of a protocol decision rather than a typing cleanup. Full analysis, including the attempted fix and why it was reverted, is in [`.claude/todos/bad-client-id.md`](../../todos/bad-client-id.md).
+
 ## Resource bounding (sweeps + cap)
 
 The stores accumulate abandoned entries: a minted-but-never-redeemed ticket is only removed on redemption, and a reaped session that is never reclaimed is retained for its whole `reclaimTtl` with nothing scheduled to delete it. Reclamation happens **at acquisition time** (sweep when a new resource of the same kind is requested) rather than on a standing background timer, which would add a tuning knob and drift under large operations. Sweeps stay **synchronous and inline**: a single-threaded runtime cannot offload the work to a microtask (same thread, the stall is only deferred), and synchronous sweeps cannot overlap, so there is no concurrent-sweep hazard to guard against.

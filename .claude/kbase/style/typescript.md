@@ -1,8 +1,9 @@
 # TypeScript
 
-Conventions and per-decision rationale for the incremental JavaScript to
-TypeScript migration. Per-file progress lives in
-[`.claude/FEATURE.md`](../../FEATURE.md).
+Conventions and per-decision rationale for the JavaScript to TypeScript
+migration, which is complete. The per-file checklist that tracked it
+(`.claude/FEATURE.md`) was deleted once every entry was closed; the
+decisions worth keeping were moved here.
 
 ## Toolchain
 
