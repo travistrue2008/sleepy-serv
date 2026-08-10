@@ -4,7 +4,7 @@ For test styles, the boot model, and the server integration helpers, see [Testin
 
 ## Time
 
-- `test-setup.js` (repo root, preloaded via `bunfig.toml`) wraps tests in
+- `test-setup.ts` (repo root, preloaded via `bunfig.toml`) wraps tests in
   `jest.useFakeTimers()` + `setSystemTime(EPOCH)` (`beforeEach`) and resets both
   (`afterEach`), but **only** for files whose `Bun.main` path starts with `/packages`.
   Package unit/integration tests thus get the frozen clock; root `tests/**` E2E run on

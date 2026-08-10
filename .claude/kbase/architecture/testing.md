@@ -24,4 +24,4 @@ See also [Testing Patterns](../guides/testing-patterns.md) for timer and mocking
 
 ## Timers
 
-Fake timers are **not** global. `test-setup.js` (root preload) gates `jest.useFakeTimers()` + `setSystemTime(EPOCH)` on `Bun.main` starting with `/packages`, so package unit/integration tests get the frozen clock while root `tests/**` E2E run on **real** timers. E2E tests therefore use small server/client thresholds (~100ms) instead of advancing a fake clock.
+Fake timers are **not** global. `test-setup.ts` (root preload) gates `jest.useFakeTimers()` + `setSystemTime(EPOCH)` on `Bun.main` starting with `/packages`, so package unit/integration tests get the frozen clock while root `tests/**` E2E run on **real** timers. E2E tests therefore use small server/client thresholds (~100ms) instead of advancing a fake clock.

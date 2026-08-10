@@ -5,6 +5,7 @@
     "types": ["bun"]
   },
   "include": [
+    "../../test-setup.ts",
     "../../types/**/*",
     "src/**/*",
     "tests/**/*"

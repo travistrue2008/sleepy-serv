@@ -237,7 +237,13 @@ convert, so the real contract is not visible until then.
       hook. Now `StatusCode.ImATeapot`, which is still distinct from the
       500 default so the pass-through assertion keeps its meaning.
 - [x] `packages/server/src/index.js` (no unit test file)
-- [ ] `test-setup.js` (root, cross-cutting Bun test preload)
+- [x] `test-setup.js` (root, cross-cutting Bun test preload). Also
+      updated its two `bunfig.toml` references (`preload` and the
+      coverage ignore entry) and added it to the server tsconfig's
+      `include`, alongside `types/`, so it is actually type-checked;
+      being at the repo root it fell outside every `include` otherwise.
+      Verified the preload is load-bearing: pointed at a nonexistent
+      path, the suite produces no results at all.
 
 ## 2. `server` integration tests (`packages/server/tests/`)
 

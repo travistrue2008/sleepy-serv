@@ -2,7 +2,7 @@ import { jest, expect, setSystemTime, beforeEach, afterEach } from 'bun:test'
 
 const EPOCH = new Date('2000-01-01T00:00:00.000Z')
 
-function getRelativePath () {
+function getRelativePath (): string {
   return Bun.main.replace(process.cwd(), '')
 }
 
