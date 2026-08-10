@@ -289,8 +289,8 @@ convert, so the real contract is not visible until then.
 - [x] `packages/server/tests/errors/request/middleware-throws-error/integration.test.js`
 - [x] `packages/server/tests/errors/request/no-Response-object-returned/api/get.js`
 - [x] `packages/server/tests/errors/request/no-Response-object-returned/integration.test.js`
-- [ ] `packages/server/tests/errors/request/not-allowed-method/api/users/post.js`
-- [ ] `packages/server/tests/errors/request/not-allowed-method/integration.test.js`
+- [x] `packages/server/tests/errors/request/not-allowed-method/api/users/post.js`
+- [x] `packages/server/tests/errors/request/not-allowed-method/integration.test.js`
 - [ ] `packages/server/tests/errors/request/not-found-resource/api/users/get.js`
 - [ ] `packages/server/tests/errors/request/not-found-resource/integration.test.js`
 - [ ] `packages/server/tests/errors/request/throws-RequestError/api/get.js`
