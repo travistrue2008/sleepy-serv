@@ -24,6 +24,9 @@ committed.
 - [x] `packages/server/tsconfig.json`
 - [x] `typecheck` script in `packages/server/package.json`
 - [x] `**/*.ts` ESLint block with `no-explicit-any: error`
+- [x] `types/bun-test.d.ts` augmenting bun-types with the missing
+      `toHaveBeenCalledOnce` matcher (shared by both packages; remove
+      once bun-types ships it upstream)
 - [ ] `packages/server/tsconfig.build.json` and `build:types` script
       (deferred until `index.ts` exists)
 - [ ] Server `exports` conditions and `publish.yml` build step
@@ -53,11 +56,16 @@ guessing early.
       constrained to it, or the generic can collapse into a union.
       Deliberately deferred: both shapes only become visible in
       TypeScript when their own modules convert.
+      Note: `utils.test.ts` uses `const REQ = { url: '/users' }`, which
+      matches neither envelope (neither has a `url` field). It compiles
+      today only because `TReq` is unconstrained, so tightening the
+      constraint will correctly break it and the fixture will need a
+      realistic shape.
 
 ## 1. `server` implementation and unit tests
 
 - [x] `packages/server/src/utils.js`
-- [ ] `packages/server/src/utils.test.js`
+- [x] `packages/server/src/utils.test.js`
 - [ ] `packages/server/src/meta.js`
 - [ ] `packages/server/src/meta.test.js`
 - [ ] `packages/server/src/status.ts` (new module, not a conversion)

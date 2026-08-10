@@ -128,6 +128,17 @@ describe('formatError()', () => {
     })
   })
 
+  test('when message is missing', () => {
+    const result = formatError('body', {
+      instancePath: '/id',
+    })
+
+    expect(result).toStrictEqual({
+      path: 'body.id',
+      message: '',
+    })
+  })
+
   test('when the input carries extra Ajv keys (ignored)', () => {
     const result = formatError('query', {
       schemaPath: '#/properties/page/type',
@@ -152,7 +163,7 @@ describe('executeMiddlewareChain()', () => {
   test('when NO middleware is provided', async () => {
     const fn = () => executeMiddlewareChain({}, [])
 
-    await expect(fn).toThrow(new RangeError('Middleware chain is empty'))
+    expect(fn).toThrow(new RangeError('Middleware chain is empty'))
   })
 
   test('when a single middleware is provided', async () => {
@@ -166,7 +177,7 @@ describe('executeMiddlewareChain()', () => {
   })
 
   test('when multiple middleware are provided', async () => {
-    const order = []
+    const order: string[] = []
 
     const chain = [
       mock().mockImplementationOnce((_req, res, next) => {
@@ -278,7 +289,7 @@ describe('executeMiddlewareChain()', () => {
   })
 
   test('when a middleware returns a Response', async () => {
-    const order = []
+    const order: string[] = []
 
     const chain = [
       mock().mockImplementationOnce((_req, res, next) => {

@@ -24,6 +24,7 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 ## Style
 
 - [Linting](./style/linting.md): `eslint.config.mjs` rationale and per-rule decisions.
+- [TypeScript](./style/typescript.md): migration conventions, why `typescript` is a dependency despite Bun, the `any` ban, config layout, and per-decision typing rationale.
 
 ## Ideas
 

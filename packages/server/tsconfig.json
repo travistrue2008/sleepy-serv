@@ -5,6 +5,7 @@
     "types": ["bun"]
   },
   "include": [
+    "../../types/**/*",
     "src/**/*",
     "tests/**/*"
   ]

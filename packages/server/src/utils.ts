@@ -1,20 +1,13 @@
-export type ValidationError = {
-  instancePath?: string
-  message?: string
-}
+import type { ErrorObject } from 'ajv'
+
+export type ValidationError = Partial<ErrorObject>
 
 export type FormattedError = {
   path: string
-  message?: string
+  message: string
 }
 
 export type MiddlewareNext = (data?: unknown) => Promise<Response>
-
-/*
- * Middleware is user-authored, so its return value is deliberately
- * `unknown`: the runtime check in executeMiddlewareChain() is what
- * enforces that a Response actually came back.
- */
 
 export type Middleware<TReq = unknown> = (
   req: TReq,
@@ -46,7 +39,7 @@ export function formatError (
 
   return {
     path: [prefix, suffixPath].filter(item => item).join('.'),
-    message: input.message,
+    message: input.message ?? '',
   }
 }
 
