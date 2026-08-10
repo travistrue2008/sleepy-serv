@@ -1,4 +1,9 @@
-import { id, joinRoute, setIdGenerator } from './utils'
+import {
+  defaultIdGenerator,
+  id,
+  joinRoute,
+  setIdGenerator,
+} from './utils'
 
 import {
   mock,
@@ -20,7 +25,7 @@ beforeEach(() => {
 
 afterEach(() => {
   mock.restore()
-  setIdGenerator(() => crypto.randomUUID())
+  setIdGenerator(defaultIdGenerator)
 })
 
 describe('joinRoute()', () => {

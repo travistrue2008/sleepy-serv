@@ -1,6 +1,8 @@
 export type IdGenerator = () => string
 
-let _uuidFn: IdGenerator = () => crypto.randomUUID()
+export const defaultIdGenerator: IdGenerator = () => crypto.randomUUID()
+
+let _uuidFn: IdGenerator = defaultIdGenerator
 
 export function joinRoute (...segments: string[]): string {
   const joined = segments
@@ -10,7 +12,6 @@ export function joinRoute (...segments: string[]): string {
 
   return joined.startsWith('/') ? joined : `/${joined}`
 }
-
 
 export function id (): string {
   return _uuidFn()
