@@ -54,7 +54,8 @@ describe('WebSocket', () => {
     })
 
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
 
     const res = await client.get('/', {
       query: {
@@ -84,7 +85,8 @@ describe('WebSocket', () => {
     })
 
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
     const res = await client.get('/')
 
     await client.close()

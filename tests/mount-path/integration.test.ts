@@ -31,8 +31,9 @@ describe('WebSocket', () => {
     })
 
     const host = app.server.url.hostname
+    const port = app.server.port!
 
-    const client = await SleepySocketClient.connect(host, app.server.port!, {
+    const client = await SleepySocketClient.connect(host, port, {
       mountPath: MOUNT_PATH,
     })
 

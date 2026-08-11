@@ -50,7 +50,8 @@ describe('WebSocket', () => {
   test('when request body is NOT an object', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
 
     const res = await client.post('/echo', {
       body: 42,
@@ -77,7 +78,8 @@ describe('WebSocket', () => {
   test('when request body IS an object', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
 
     const res = await client.post('/echo', {
       body: {

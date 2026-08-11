@@ -18,7 +18,8 @@ describe('WebSocket', () => {
   test('when default "queue" is used', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
     const results = await makeRequests(client)
 
     await client.close()
@@ -30,8 +31,9 @@ describe('WebSocket', () => {
   test('when multiple calls respond out-of-order (queue = NONE)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
+    const port = app.server.port!
 
-    const client = await SleepySocketClient.connect(host, app.server.port!, {
+    const client = await SleepySocketClient.connect(host, port, {
       queue: Queue.None,
     })
 
@@ -46,8 +48,9 @@ describe('WebSocket', () => {
   test('when multiple calls respond out-of-order (queue = FIFO)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
+    const port = app.server.port!
 
-    const client = await SleepySocketClient.connect(host, app.server.port!, {
+    const client = await SleepySocketClient.connect(host, port, {
       queue: Queue.Fifo,
     })
 
@@ -62,8 +65,9 @@ describe('WebSocket', () => {
   test('when multiple calls respond out-of-order (queue = LIFO)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
+    const port = app.server.port!
 
-    const client = await SleepySocketClient.connect(host, app.server.port!, {
+    const client = await SleepySocketClient.connect(host, port, {
       queue: Queue.Lifo,
     })
 
