@@ -28,7 +28,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       id: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -57,7 +57,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       id: 'invalid',
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -86,7 +86,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       clientId: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -114,7 +114,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       clientId: 'invalid',
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -143,7 +143,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       type: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -172,7 +172,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       type: 'invalid',
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -201,7 +201,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       timestamp: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -230,7 +230,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       timestamp: '2000-01-01',
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -273,7 +273,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -302,7 +302,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: 'invalid',
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -331,7 +331,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       clientId: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -359,7 +359,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       clientId: 'invalid',
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -388,7 +388,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       type: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -417,7 +417,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       type: 'invalid',
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -446,7 +446,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       method: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -475,7 +475,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       method: 'invalid',
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -504,7 +504,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       route: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -533,7 +533,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       route: 'hello world',
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -562,7 +562,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       timestamp: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -591,7 +591,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       timestamp: '2000-01-01',
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -620,7 +620,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       headers: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -649,7 +649,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       headers: null,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -678,7 +678,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       headers: [],
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -707,7 +707,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       query: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,
@@ -736,7 +736,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       body: undefined,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg).toStrictEqual({
       id: msg.id,

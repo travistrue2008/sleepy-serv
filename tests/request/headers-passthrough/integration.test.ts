@@ -25,7 +25,8 @@ describe('WebSocket', () => {
   test('when a request carries headers', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
 
     const res = await client.get('/whoami', {
       headers: new Headers({
@@ -34,7 +35,7 @@ describe('WebSocket', () => {
     })
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,

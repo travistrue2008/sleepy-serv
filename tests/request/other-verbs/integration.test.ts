@@ -21,7 +21,7 @@ describe('REST', () => {
 
     console.log('res:', res)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ method })
@@ -36,12 +36,13 @@ describe('WebSocket', () => {
   ])('when making a %s request', async method => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
     const verb = method.toLowerCase() as Lowercase<typeof method>
     const res = await client[verb]('/resource')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,

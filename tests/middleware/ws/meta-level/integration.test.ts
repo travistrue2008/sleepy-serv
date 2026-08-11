@@ -11,7 +11,7 @@ describe('POST', () => {
     const req = createRequestor(app)
     const res = await req.post('/ws?err=lvl_1', Fmt.Text)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Error Lvl 1')
@@ -22,7 +22,7 @@ describe('POST', () => {
     const req = createRequestor(app)
     const res = await req.post('/ws?err=lvl_2', Fmt.Text)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Error Lvl 2')
@@ -33,7 +33,7 @@ describe('POST', () => {
     const req = createRequestor(app)
     const res = await req.post('/ws', Fmt.Json)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(201)
 
@@ -50,11 +50,12 @@ describe('PUT', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
     const res = await req.put(`/ws/${client.id}?err=lvl_1`, Fmt.Text)
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Error Lvl 1')
@@ -64,11 +65,12 @@ describe('PUT', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
     const res = await req.put(`/ws/${client.id}?err=lvl_2`, Fmt.Text)
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Error Lvl 2')
@@ -78,11 +80,12 @@ describe('PUT', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
     const res = await req.put(`/ws/${client.id}?err=lvl_3`, Fmt.Text)
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Error Lvl 3')
@@ -92,7 +95,8 @@ describe('PUT', () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
 
     const res = await req.put(`/ws/${client.id}`, Fmt.Json, {
       headers: new Headers({
@@ -101,7 +105,7 @@ describe('PUT', () => {
     })
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
 
@@ -119,7 +123,7 @@ describe('GET', () => {
     const req = createRequestor(app)
     const res = await req.get('/ws?ticket=asdf&err=lvl_1', Fmt.Text)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Error Lvl 1')
@@ -130,7 +134,7 @@ describe('GET', () => {
     const req = createRequestor(app)
     const res = await req.get('/ws?ticket=asdf&err=lvl_2', Fmt.Text)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Error Lvl 2')
@@ -150,7 +154,7 @@ describe('GET', () => {
       )
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(data).toStrictEqual({
       id: expect.any(String),

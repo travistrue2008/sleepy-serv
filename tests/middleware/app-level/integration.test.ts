@@ -26,7 +26,7 @@ describe('REST', () => {
     const req = createRequestor(app)
     const res = await req.get('/?err', Fmt.Text)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Error from root middleware')
@@ -40,7 +40,7 @@ describe('REST', () => {
     const req = createRequestor(app)
     const res = await req.get('/', Fmt.Text)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual('GET - successful')
@@ -54,7 +54,8 @@ describe('WebSocket', () => {
     })
 
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
 
     const res = await client.get('/', {
       query: {
@@ -63,7 +64,7 @@ describe('WebSocket', () => {
     })
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
 
@@ -84,11 +85,12 @@ describe('WebSocket', () => {
     })
 
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
     const res = await client.get('/')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
 

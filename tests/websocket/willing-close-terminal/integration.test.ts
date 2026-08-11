@@ -6,7 +6,8 @@ import SleepySocketClient from 'sleepy-socket'
 test('when a willingly-closed clientId is reclaimed', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port!)
+  const port = app.server.port!
+  const client = await SleepySocketClient.connect(host, port)
   const req = createRequestor(app)
 
   await client.close()
@@ -17,7 +18,7 @@ test('when a willingly-closed clientId is reclaimed', async () => {
     }),
   })
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(NotFoundError.status)
   expect(res.body).toBe(null)

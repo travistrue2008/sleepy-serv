@@ -5,8 +5,9 @@ import SleepySocketClient from 'sleepy-socket'
 test('when the server never replies', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
+  const port = app.server.port!
 
-  const client = await SleepySocketClient.connect(host, app.server.port!, {
+  const client = await SleepySocketClient.connect(host, port, {
     timeout: 100,
   })
 
@@ -15,5 +16,5 @@ test('when the server never replies', async () => {
   await expect(promise).rejects.toThrow(new Error('Request timed out.'))
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 })

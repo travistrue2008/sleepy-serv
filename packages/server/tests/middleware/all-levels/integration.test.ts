@@ -21,7 +21,7 @@ test('when all levels of middleware are defined (REST)', async () => {
   const req = createRequestor(app)
   const res = await req.get('/users', Fmt.Text)
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(200)
   expect(res.body).toBe('root|parent-meta|sibling-meta|module')
@@ -40,7 +40,7 @@ test('when all levels of middleware are defined (ws)', async () => {
   const ws = await createSocketClient(app)
   const msg = await ws.get('/users')
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(msg.status).toBe(200)
   expect(msg.body).toBe('root|parent-meta|sibling-meta|module')

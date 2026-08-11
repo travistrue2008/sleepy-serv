@@ -8,7 +8,7 @@ test('when requested resource is not found (REST)', async () => {
   const req = createRequestor(app)
   const res = await req.get('/users/123/photos', Fmt.Json)
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(NotFoundError.status)
   expect(res.body).toBe(null)
@@ -19,7 +19,7 @@ test('when requested resource is not found (ws)', async () => {
   const ws = await createSocketClient(app)
   const msg = await ws.get('/users/123/photos')
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(msg.status).toBe(NotFoundError.status)
   expect(msg.body).toBe(null)

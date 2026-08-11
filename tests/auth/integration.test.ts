@@ -19,7 +19,7 @@ describe('REST', () => {
     const req = createRequestor(app)
     const res = await req.get('/protected', Fmt.Json)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(UnauthorizedError.status)
     expect(res.body).toStrictEqual({ message: 'Missing bearer token' })
@@ -35,7 +35,7 @@ describe('REST', () => {
       }),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(UnauthorizedError.status)
     expect(res.body).toStrictEqual({ message: 'Invalid token' })
@@ -53,7 +53,7 @@ describe('REST', () => {
       }),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ sub: 'user-123' })
@@ -64,7 +64,7 @@ describe('REST', () => {
     const req = createRequestor(app)
     const res = await req.get('/public', Fmt.Json)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ ok: true })
@@ -75,11 +75,12 @@ describe('WebSocket', () => {
   test('when invoking a protected route omits the token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
     const res = await client.get('/protected')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,
@@ -99,7 +100,8 @@ describe('WebSocket', () => {
   test('when invoking a protected route with INVALID token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
 
     const res = await client.get('/protected', {
       headers: new Headers({
@@ -108,7 +110,7 @@ describe('WebSocket', () => {
     })
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,
@@ -128,7 +130,8 @@ describe('WebSocket', () => {
   test('when invoking a protected route with a VALID token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
     const { token } = client.connectionData as ConnectionData
 
     const res = await client.get('/protected', {
@@ -138,7 +141,7 @@ describe('WebSocket', () => {
     })
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,
@@ -158,11 +161,12 @@ describe('WebSocket', () => {
   test('when invoking a public route without a token', async () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
-    const client = await SleepySocketClient.connect(host, app.server.port!)
+    const port = app.server.port!
+    const client = await SleepySocketClient.connect(host, port)
     const res = await client.get('/public')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,

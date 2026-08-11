@@ -8,7 +8,7 @@ test('when endpoint does not return a "Response" object (REST)', async () => {
   const req = createRequestor(app)
   const res = await req.get('/', Fmt.Text)
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(InternalServerError.status)
   expect(res.body).toBe('Handler does not return a Response object')
@@ -19,7 +19,7 @@ test('when endpoint does not return a "Response" object (ws)', async () => {
   const ws = await createSocketClient(app)
   const msg = await ws.get('/')
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(msg.status).toBe(InternalServerError.status)
   expect(msg.body).toBe('Handler does not return a Response object')

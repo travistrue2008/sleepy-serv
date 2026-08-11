@@ -17,7 +17,7 @@ describe('REST', () => {
       mountPath: MOUNT_PATH,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ ok: true })
@@ -31,15 +31,16 @@ describe('WebSocket', () => {
     })
 
     const host = app.server.url.hostname
+    const port = app.server.port!
 
-    const client = await SleepySocketClient.connect(host, app.server.port!, {
+    const client = await SleepySocketClient.connect(host, port, {
       mountPath: MOUNT_PATH,
     })
 
     const res = await client.get('/')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
 

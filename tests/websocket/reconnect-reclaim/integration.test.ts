@@ -8,7 +8,8 @@ import type { TicketBody } from '../../helpers'
 test('when reclaiming with a valid token', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port!)
+  const port = app.server.port!
+  const client = await SleepySocketClient.connect(host, port)
   const req = createRequestor(app)
 
   const res = await req.put(`/ws/${client.id}`, Fmt.Json, {
@@ -18,7 +19,7 @@ test('when reclaiming with a valid token', async () => {
   })
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(client.id).toBe((res.body as TicketBody).clientId)
 })
@@ -28,7 +29,8 @@ test('when the token is wrong', async () => {
 
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port!)
+  const port = app.server.port!
+  const client = await SleepySocketClient.connect(host, port)
   const req = createRequestor(app)
 
   const res = await req.put(`/ws/${client.id}`, Fmt.Json, {
@@ -38,7 +40,7 @@ test('when the token is wrong', async () => {
   })
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(UnauthorizedError.status)
 

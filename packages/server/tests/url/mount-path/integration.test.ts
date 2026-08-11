@@ -10,7 +10,7 @@ test('when adding a mount path (REST)', async () => {
   const req = createRequestor(app)
   const res = await req.get('/test-mount-path/users', Fmt.Text)
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(200)
   expect(res.body).toBe('Hello world')
@@ -27,7 +27,7 @@ test('when adding a mount path (ws)', async () => {
 
   const msg = await ws.get('/test-mount-path/users')
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(msg.status).toBe(200)
   expect(msg.body).toBe('Hello world')

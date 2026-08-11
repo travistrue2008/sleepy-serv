@@ -14,7 +14,7 @@ test('when adding a hostname', async () => {
     hostname: HOSTNAME,
   })
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(Bun.serve).toHaveBeenCalledWith(
     expect.objectContaining({

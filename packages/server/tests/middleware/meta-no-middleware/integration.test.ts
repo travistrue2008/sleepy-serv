@@ -7,7 +7,7 @@ test('when meta file does not export middleware (REST)', async () => {
   const req = createRequestor(app)
   const res = await req.get('/users', Fmt.Text)
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(200)
   expect(res.body).toBe('Hello world')
@@ -18,7 +18,7 @@ test('when meta file does not export middleware (ws)', async () => {
   const ws = await createSocketClient(app)
   const msg = await ws.get('/users')
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(msg.status).toBe(200)
   expect(msg.body).toBe('Hello world')

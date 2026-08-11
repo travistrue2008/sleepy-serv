@@ -8,7 +8,7 @@ test('when middleware throws an error (REST)', async () => {
   const req = createRequestor(app)
   const res = await req.get('/', Fmt.Text)
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(InternalServerError.status)
   expect(res.body).toBe('Bad')
@@ -19,7 +19,7 @@ test('when middleware throws an error (ws)', async () => {
   const ws = await createSocketClient(app)
   const msg = await ws.get('/')
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(msg.status).toBe(InternalServerError.status)
   expect(msg.body).toBe('Bad')

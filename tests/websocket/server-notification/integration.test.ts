@@ -9,14 +9,15 @@ test('when the server broadcasts', async () => {
   const received: NotificationMessage[] = []
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port!)
+  const port = app.server.port!
+  const client = await SleepySocketClient.connect(host, port)
 
   client.on('notification', message => received.push(message))
   app.commands.broadcast('state_changed', { score: 1 })
 
   await waitFor(() => received.length > 0)
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(received[0]).toStrictEqual({
     id: received[0].id,
@@ -33,14 +34,15 @@ test('when the server sends to a clientId', async () => {
   const received: NotificationMessage[] = []
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port!)
+  const port = app.server.port!
+  const client = await SleepySocketClient.connect(host, port)
 
   client.on('notification', message => received.push(message))
   app.commands.send(client.id!, 'player_joined', { name: 'x' })
 
   await waitFor(() => received.length > 0)
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(received[0]).toStrictEqual({
     id: received[0].id,
@@ -59,7 +61,8 @@ test('when the server sends to an unknown clientId', async () => {
   const received: NotificationMessage[] = []
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port!)
+  const port = app.server.port!
+  const client = await SleepySocketClient.connect(host, port)
 
   client.on('notification', message => received.push(message))
 
@@ -74,7 +77,7 @@ test('when the server sends to an unknown clientId', async () => {
   )
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(received).toStrictEqual([])
 })

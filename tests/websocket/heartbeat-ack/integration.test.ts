@@ -32,13 +32,14 @@ test('when a heartbeat is sent', async () => {
   })
 
   const host = app.server.url.hostname
-  const client = await SleepySocketClient.connect(host, app.server.port!)
+  const port = app.server.port!
+  const client = await SleepySocketClient.connect(host, port)
   const sendSpy = spyOn(client.socket!, 'send')
   const nextMessagePromise = nextMessage(client)
   const ack = await nextMessagePromise as HeartbeatAck
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   const sent = sendSpy.mock.calls[0][0] as string
   const heartbeatMessage = JSON.parse(sent) as Message
