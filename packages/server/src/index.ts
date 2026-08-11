@@ -109,10 +109,13 @@ type AppRoutes = {
   socket: SocketRoute[]
 }
 
+type CloseFn = (force?: boolean) => Promise<void>
+
 export type App = {
   server: Server
   commands: SocketCommands
   routes: OutputRoutes
+  close: CloseFn
 }
 
 const ALLOWED_FILES_META = ['meta.js', 'meta.ts']
@@ -131,16 +134,6 @@ const ALLOWED_FILES_METHODS = [
   'delete.js',
   'delete.ts',
 ]
-
-/* istanbul ignore if */
-if (process.stdin.isTTY) {
-  process.stdin.setRawMode(true)
-}
-
-const rl = readline.createInterface({
-  input: stdin,
-  output: stdout,
-})
 
 function methodNotAllowedHandler (_req: unknown): never {
   throw new MethodNotAllowedError()
@@ -382,8 +375,8 @@ function buildSocketRoutes (mergedRoutes: ChainRoute[]): SocketRoute[] {
   }))
 }
 
-function buildModuleRoutes (routePaths: SocketRoute[]): ModuleRoute[] {
-  return routePaths.map(route => {
+function buildModuleRoutes (socketRoutes: SocketRoute[]): ModuleRoute[] {
+  return socketRoutes.map(route => {
     const handler: EndpointHandler = async (bunReq, server) => {
       const req = buildEndpointRequest(bunReq, server)
 
@@ -494,7 +487,7 @@ function processIO (
   port: number,
   server: Server,
   opts: AppOptions,
-): void {
+): CloseFn {
   const onClose = opts.onClose || (() => {})
 
   console.info(`Running on port: ${port}`)
@@ -502,12 +495,37 @@ function processIO (
   console.info('Press Ctrl+D to gracefully shutdown')
   console.info('')
 
-  /* istanbul ignore next */
-  rl.on('close', async () => {
-    await server.stop()
+  const shutdown = async (force = false): Promise<void> => {
+    await server.stop(force)
     await onClose()
-    process.exit(0)
+  }
+
+  if (!stdin.isTTY) {
+    return shutdown
+  }
+
+  stdin.setRawMode(true)
+
+  const rl = readline.createInterface({
+    input: stdin,
+    output: stdout,
   })
+
+  /* istanbul ignore next */
+  const handleClose = async (): Promise<void> => {
+    await shutdown()
+    process.exit(0)
+  }
+
+  rl.on('close', handleClose)
+
+  return async (force = false) => {
+    rl.off('close', handleClose)
+    rl.close()
+    stdin.setRawMode(false)
+
+    await shutdown(force)
+  }
 }
 
 export async function createApp (
@@ -519,12 +537,12 @@ export async function createApp (
   const routes = await buildRoutes(rootPath, state, opts)
   const server = buildServer(port, routes, state, opts)
   const commands = buildSocketCommands(state)
-
-  processIO(port, server, opts)
+  const close = processIO(port, server, opts)
 
   return {
     routes: routes.output,
     server,
     commands,
+    close,
   }
 }

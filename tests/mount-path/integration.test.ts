@@ -17,7 +17,7 @@ describe('REST', () => {
       mountPath: MOUNT_PATH,
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ ok: true })
@@ -39,7 +39,7 @@ describe('WebSocket', () => {
     const res = await client.get('/')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
 

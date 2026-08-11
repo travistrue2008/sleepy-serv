@@ -16,7 +16,7 @@ test('when the server broadcasts', async () => {
 
   await waitFor(() => received.length > 0)
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(received[0]).toStrictEqual({
     id: received[0].id,
@@ -40,7 +40,7 @@ test('when the server sends to a clientId', async () => {
 
   await waitFor(() => received.length > 0)
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(received[0]).toStrictEqual({
     id: received[0].id,
@@ -74,7 +74,7 @@ test('when the server sends to an unknown clientId', async () => {
   )
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(received).toStrictEqual([])
 })

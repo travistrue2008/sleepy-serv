@@ -38,7 +38,7 @@ test('when a heartbeat is sent', async () => {
   const ack = await nextMessagePromise as HeartbeatAck
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   const sent = sendSpy.mock.calls[0][0] as string
   const heartbeatMessage = JSON.parse(sent) as Message

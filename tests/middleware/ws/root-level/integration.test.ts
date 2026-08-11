@@ -27,7 +27,7 @@ describe('POST', () => {
     const req = createRequestor(app)
     const res = await req.post('/ws?err', Fmt.Text)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Middleware error triggered')
@@ -41,7 +41,7 @@ describe('POST', () => {
     const req = createRequestor(app)
     const res = await req.post('/ws', Fmt.Json)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(201)
 
@@ -65,7 +65,7 @@ describe('PUT', () => {
     const res = await req.put(`/ws/${client.id}?err`, Fmt.Text)
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Middleware error triggered')
@@ -87,7 +87,7 @@ describe('PUT', () => {
     })
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
 
@@ -108,7 +108,7 @@ describe('GET', () => {
     const req = createRequestor(app)
     const res = await req.get('/ws?ticket=asdf&err', Fmt.Text)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Middleware error triggered')
@@ -131,7 +131,7 @@ describe('GET', () => {
       )
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(data).toStrictEqual({
       id: expect.any(String),

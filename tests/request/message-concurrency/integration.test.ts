@@ -22,7 +22,7 @@ describe('WebSocket', () => {
     const results = await makeRequests(client)
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(results).toStrictEqual([2, 3, 1])
   })
@@ -38,7 +38,7 @@ describe('WebSocket', () => {
     const results = await makeRequests(client)
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(results).toEqual([2, 3, 1])
   })
@@ -54,7 +54,7 @@ describe('WebSocket', () => {
     const results = await makeRequests(client)
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(results).toEqual([1, 2, 3])
   })
@@ -70,7 +70,7 @@ describe('WebSocket', () => {
     const results = await makeRequests(client)
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(results).toEqual([3, 2, 1])
   })

@@ -39,7 +39,7 @@ test('when the socket drops AND the client reconnects', async () => {
   const res = await client.get('/ok')
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(client.id).toBe(id)
   expect(res.status).toBe(200)

@@ -14,7 +14,7 @@ describe('REST', () => {
     const req = createRequestor(app)
     const res = await req.get('/boom', Fmt.Text)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(InternalServerError.status)
     expect(res.body).toBe('Boom')
@@ -25,7 +25,7 @@ describe('REST', () => {
     const req = createRequestor(app)
     const res = await req.get('/conflict', Fmt.Json)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(ConflictError.status)
     expect(res.body).toStrictEqual({ message: 'nope' })
@@ -40,7 +40,7 @@ describe('WebSocket', () => {
     const res = await client.get('/boom')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,
@@ -60,7 +60,7 @@ describe('WebSocket', () => {
     const res = await client.get('/conflict')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,

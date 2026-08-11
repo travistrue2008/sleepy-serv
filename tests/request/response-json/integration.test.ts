@@ -26,7 +26,7 @@ describe('WebSocket', () => {
     const res = await client.get('/')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,

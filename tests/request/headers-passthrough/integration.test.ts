@@ -34,7 +34,7 @@ describe('WebSocket', () => {
     })
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,

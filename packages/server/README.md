@@ -26,9 +26,25 @@ The parameter for `import.meta.dirname` can be any directory you prefer, but it'
 
 ### Return Value
 
-`sleepy-serv` was originally built for NodeJS, but it was ported to `bun` recently (before the initial release). The `createApp()` function merely calls `Bun.serve()` under-the-hood, and returns the `app` object that contains two properties:
+`sleepy-serv` was originally built for NodeJS, but it was ported to `bun` recently (before the initial release). The `createApp()` function merely calls `Bun.serve()` under-the-hood, and returns the `app` object that contains these properties:
 - `routes`: Contains a list of all of the routes defined by the file structure. This is useful for debugging.
-- `server`: this is the object that's returned from `Bun.serve()`. The `server` object has an `async` `.stop()` method on it, which can also be used for graceful shutdowns.
+- `server`: this is the object that's returned from `Bun.serve()`. The `server` object has an `async` `.stop()` method on it, but prefer `app.close()` (see [Shutting Down](#shutting-down)), which stops the server and releases everything else the app holds.
+- `commands`: WebSocket helpers for pushing messages out to connected clients: `send(clientId, event, body)` and `broadcast(event, body)`.
+- `close`: an `async` function that shuts the app down. See [Shutting Down](#shutting-down).
+
+### Shutting Down
+
+`app.close()` shuts the app down and releases everything it holds:
+
+```js
+const app = await createApp(PORT, import.meta.dirname)
+
+await app.close()
+```
+
+It stops the server, tears down the Ctrl+D shutdown handler, and calls [`onClose`](#onclose). Pass `close(true)` to force-close active connections rather than waiting for in-flight requests to finish. That argument is handed straight to `server.stop()`, so it behaves exactly as it does in `Bun.serve()`.
+
+This matters most for tests that start and stop an app per case. Calling `server.stop()` on its own stops the HTTP listener but leaves the Ctrl+D shutdown handler attached to `stdin`, which holds an open handle and can keep the process from exiting. `app.close()` does not have that problem.
 
 ### Adding Routes
 
@@ -465,7 +481,7 @@ Yields these routes:
 
 ### `onClose`
 
-When the app is started, the app can be shutdown gracefully by pressing Ctrl+D in the terminal. The `onClose` hook will be called during that shutdown if it's defined. `onClose` can also be `async` as well.
+When the app is started, the app can be shutdown gracefully by pressing Ctrl+D in the terminal. That handler is only wired up when `stdin` is a TTY, so it's skipped in CI, in test runners, and anywhere `stdin` is piped. The `onClose` hook will be called during that shutdown if it's defined, and it's also called by [`app.close()`](#shutting-down). `onClose` can also be `async` as well.
 
 ```js
 const app = await createApp(PORT, import.meta.dirname, {

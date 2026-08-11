@@ -12,7 +12,7 @@ test('when making a request with querystring (REST)', async () => {
     },
   })
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(200)
   expect(res.body).toBe('Hello world')
@@ -28,7 +28,7 @@ test('when making a request with querystring (ws)', async () => {
     },
   })
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(msg.status).toBe(200)
   expect(msg.body).toBe('Hello world')

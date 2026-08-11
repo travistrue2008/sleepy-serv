@@ -24,7 +24,7 @@ test('when a reply arrives for an already-timed-out request', async () => {
   const res = await client.get('/ok')
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(200)
   expect(res.body).toStrictEqual({ ok: true })

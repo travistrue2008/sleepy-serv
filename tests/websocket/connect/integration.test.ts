@@ -15,7 +15,7 @@ test('when the client connects', async () => {
   const client = await SleepySocketClient.connect(host, app.server.port!)
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(client.id).toBeTruthy()
   expect(client.heartbeatInterval).toBe(HEARTBEAT_INTERVAL)
@@ -28,7 +28,7 @@ test('when a request carries the cached clientId', async () => {
   const res = await client.get('/ok')
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res).toStrictEqual({
     id: res.id,

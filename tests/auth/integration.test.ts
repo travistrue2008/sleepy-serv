@@ -19,7 +19,7 @@ describe('REST', () => {
     const req = createRequestor(app)
     const res = await req.get('/protected', Fmt.Json)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(UnauthorizedError.status)
     expect(res.body).toStrictEqual({ message: 'Missing bearer token' })
@@ -35,7 +35,7 @@ describe('REST', () => {
       }),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(UnauthorizedError.status)
     expect(res.body).toStrictEqual({ message: 'Invalid token' })
@@ -53,7 +53,7 @@ describe('REST', () => {
       }),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ sub: 'user-123' })
@@ -64,7 +64,7 @@ describe('REST', () => {
     const req = createRequestor(app)
     const res = await req.get('/public', Fmt.Json)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ ok: true })
@@ -79,7 +79,7 @@ describe('WebSocket', () => {
     const res = await client.get('/protected')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,
@@ -108,7 +108,7 @@ describe('WebSocket', () => {
     })
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,
@@ -138,7 +138,7 @@ describe('WebSocket', () => {
     })
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,
@@ -162,7 +162,7 @@ describe('WebSocket', () => {
     const res = await client.get('/public')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,

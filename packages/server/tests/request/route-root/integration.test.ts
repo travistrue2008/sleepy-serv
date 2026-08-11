@@ -7,7 +7,7 @@ test('when making a root-level request (REST)', async () => {
   const req = createRequestor(app)
   const res = await req.get('/', Fmt.Text)
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(200)
   expect(res.body).toBe('Hello world')
@@ -18,7 +18,7 @@ test('when making a root-level request (ws)', async () => {
   const ws = await createSocketClient(app)
   const msg = await ws.get('/')
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(msg.status).toBe(200)
   expect(msg.body).toBe('Hello world')

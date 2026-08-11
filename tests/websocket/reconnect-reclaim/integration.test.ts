@@ -18,7 +18,7 @@ test('when reclaiming with a valid token', async () => {
   })
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(client.id).toBe((res.body as TicketBody).clientId)
 })
@@ -38,7 +38,7 @@ test('when the token is wrong', async () => {
   })
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(UnauthorizedError.status)
 

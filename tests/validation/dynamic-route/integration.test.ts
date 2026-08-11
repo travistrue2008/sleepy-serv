@@ -25,7 +25,7 @@ describe('REST', () => {
         }),
       })
 
-      await app.server.stop(true)
+      await app.close(true)
 
       expect(res.status).toBe(UnprocessableContentError.status)
 
@@ -51,7 +51,7 @@ describe('REST', () => {
         }),
       })
 
-      await app.server.stop(true)
+      await app.close(true)
 
       expect(res.status).toBe(UnprocessableContentError.status)
 
@@ -74,7 +74,7 @@ describe('REST', () => {
         body: JSON.stringify(BODY_VALID),
       })
 
-      await app.server.stop(true)
+      await app.close(true)
 
       expect(res.status).toBe(201)
 
@@ -101,7 +101,7 @@ describe('WebSocket', () => {
       })
 
       await client.close()
-      await app.server.stop(true)
+      await app.close(true)
 
       expect(res).toStrictEqual({
         id: res.id,
@@ -137,7 +137,7 @@ describe('WebSocket', () => {
       })
 
       await client.close()
-      await app.server.stop(true)
+      await app.close(true)
 
       expect(res).toStrictEqual({
         id: res.id,
@@ -170,7 +170,7 @@ describe('WebSocket', () => {
       })
 
       await client.close()
-      await app.server.stop(true)
+      await app.close(true)
 
       expect(res).toStrictEqual({
         id: res.id,

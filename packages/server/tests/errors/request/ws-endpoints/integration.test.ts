@@ -22,7 +22,7 @@ describe('POST', () => {
     const req = createRequestor(app)
     const res = await req.post('/ws', Fmt.Json)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(201)
 
@@ -38,7 +38,7 @@ describe('POST', () => {
     const ws = await createSocketClient(app)
     const msg = await ws.post('/ws')
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg.status).toBe(UnprocessableContentError.status)
 
@@ -61,7 +61,7 @@ describe('PUT', () => {
       headers: new Headers({}),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(UnprocessableContentError.status)
 
@@ -81,7 +81,7 @@ describe('PUT', () => {
       headers: new Headers({}),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg.status).toBe(UnprocessableContentError.status)
 
@@ -104,7 +104,7 @@ describe('PUT', () => {
       }),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(NotFoundError.status)
     expect(res.body).toBe(null)
@@ -120,7 +120,7 @@ describe('PUT', () => {
       }),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg.status).toBe(UnprocessableContentError.status)
 
@@ -143,7 +143,7 @@ describe('PUT', () => {
       }),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(UnauthorizedError.status)
 
@@ -162,7 +162,7 @@ describe('PUT', () => {
       }),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg.status).toBe(UnprocessableContentError.status)
 
@@ -185,7 +185,7 @@ describe('PUT', () => {
       }),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
 
@@ -206,7 +206,7 @@ describe('PUT', () => {
       }),
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg.status).toBe(UnprocessableContentError.status)
 
@@ -225,7 +225,7 @@ describe('GET', () => {
     const req = createRequestor(app)
     const res = await req.get('/ws', Fmt.Json)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(UnprocessableContentError.status)
 
@@ -242,7 +242,7 @@ describe('GET', () => {
     const ws = await createSocketClient(app)
     const msg = await ws.get('/ws')
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg.status).toBe(UnprocessableContentError.status)
 
@@ -264,7 +264,7 @@ describe('GET', () => {
       },
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(NotFoundError.status)
 
@@ -277,7 +277,7 @@ describe('GET', () => {
     const ws = await createSocketClient(app)
     const msg = await ws.get(url)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg.status).toBe(UnprocessableContentError.status)
 
@@ -301,7 +301,7 @@ describe('GET', () => {
       },
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(NotFoundError.status)
 
@@ -321,7 +321,7 @@ describe('GET', () => {
       },
     })
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(msg.status).toBe(UnprocessableContentError.status)
 

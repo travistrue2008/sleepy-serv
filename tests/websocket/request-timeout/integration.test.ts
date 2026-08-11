@@ -15,5 +15,5 @@ test('when the server never replies', async () => {
   await expect(promise).rejects.toThrow(new Error('Request timed out.'))
 
   await client.close()
-  await app.server.stop(true)
+  await app.close(true)
 })

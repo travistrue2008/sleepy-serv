@@ -21,7 +21,7 @@ describe('REST', () => {
 
     console.log('res:', res)
 
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res.status).toBe(200)
     expect(res.body).toStrictEqual({ method })
@@ -41,7 +41,7 @@ describe('WebSocket', () => {
     const res = await client[verb]('/resource')
 
     await client.close()
-    await app.server.stop(true)
+    await app.close(true)
 
     expect(res).toStrictEqual({
       id: res.id,

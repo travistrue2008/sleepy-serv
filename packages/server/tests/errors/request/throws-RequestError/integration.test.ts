@@ -8,7 +8,7 @@ test('when a RequestError sub-type is thrown (REST)', async () => {
   const req = createRequestor(app)
   const res = await req.get('/', Fmt.Json)
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(UnprocessableContentError.status)
 
@@ -25,7 +25,7 @@ test('when a RequestError sub-type is thrown (ws)', async () => {
   const ws = await createSocketClient(app)
   const msg = await ws.get('/')
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(msg.status).toBe(UnprocessableContentError.status)
 

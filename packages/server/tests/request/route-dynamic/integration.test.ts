@@ -7,7 +7,7 @@ test('when making a request with dynamic route param (REST)', async () => {
   const req = createRequestor(app)
   const res = await req.get('/users/123', Fmt.Text)
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(200)
   expect(res.body).toBe('Fetching user: 123')
@@ -18,7 +18,7 @@ test('when making a request with dynamic route param (ws)', async () => {
   const ws = await createSocketClient(app)
   const msg = await ws.get('/users/123')
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(msg.status).toBe(200)
   expect(msg.body).toBe('Fetching user: 123')

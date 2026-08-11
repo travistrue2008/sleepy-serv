@@ -17,7 +17,7 @@ test('when a willingly-closed clientId is reclaimed', async () => {
     }),
   })
 
-  await app.server.stop(true)
+  await app.close(true)
 
   expect(res.status).toBe(NotFoundError.status)
   expect(res.body).toBe(null)
