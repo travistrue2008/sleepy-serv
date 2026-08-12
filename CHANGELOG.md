@@ -8,6 +8,45 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `sleepy-serv` apps now expose `close(force?)`, an `async` teardown that shuts the app
+  down and releases everything it holds: it detaches and closes the Ctrl+D shutdown
+  handler, restores the terminal's raw mode, stops the server, and awaits `onClose`.
+
+  `force` is passed straight through to `server.stop()`, so it behaves exactly as it does
+  in `Bun.serve()` and defaults to `false`. Prefer this over `app.server.stop()`, which
+  stops the HTTP listener but leaves the app's `stdin` handler attached.
+
+### Changed
+
+- `sleepy-serv` only installs the Ctrl+D shutdown handler when `stdin` is a TTY.
+
+  Reaching EOF on a piped `stdin` previously ran that same graceful shutdown, ending in
+  the `process.exit(0)` that closes it out, so anything signalling shutdown by closing
+  `stdin` needs a different signal now. Inside a test runner the old behaviour was a
+  hazard rather than a feature: a process that hit EOF on `stdin` part way through a run
+  exited 0 and still reported passing.
+
+### Fixed
+
+- `sleepy-serv` no longer leaks a `readline` handle on `stdin`.
+
+  The interface was created at module scope, so it was a side effect of importing the
+  package rather than of `createApp()`, and nothing ever closed it. Creating it attaches
+  to `stdin` and resumes it, which keeps the handle referenced and the process alive, and
+  `app.server.stop()` was never related to it. Importing the package and calling nothing
+  at all was enough to hold a process open for as long as `stdin` stayed open, which is
+  why suites that start and stop a server per test saw handles left open at exit.
+
+  The interface now belongs to the app that creates it, and `app.close()` releases it.
+
+- `sleepy-serv` no longer accumulates `close` listeners across `createApp()` calls.
+
+  Every call attached another handler to the one shared module-scope interface, so a
+  suite that opened and closed an app per test emitted a `MaxListenersExceededWarning` on
+  the eleventh.
+
 ## [0.7.0] - 2026-08-10
 
 ### Added
