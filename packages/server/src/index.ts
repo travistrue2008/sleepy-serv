@@ -4,7 +4,7 @@ import querystring from 'querystring'
 import readline from 'node:readline'
 
 import { stdin, stdout } from 'node:process'
-import { StatusCode, toSegments, executeMiddlewareChain } from './utils'
+import { toSegments, executeMiddlewareChain } from './utils'
 
 import {
   buildSocketState,
@@ -17,6 +17,7 @@ import {
   RequestError,
   NotFoundError,
   MethodNotAllowedError,
+  InternalServerError,
 } from './errors'
 
 import type { BunRequest } from 'bun'
@@ -470,15 +471,11 @@ function buildServer (
     error (err) {
       console.error(err)
 
-      if (err instanceof RequestError) {
-        const ctor = err.constructor as typeof RequestError
+      const isRequestError = !(err instanceof RequestError)
+      const httpError = isRequestError ? new InternalServerError() : err
+      const { status } = httpError.constructor as typeof RequestError
 
-        return Response.json(err.output, { status: ctor.status })
-      }
-
-      return new Response(err.message, {
-        status: StatusCode.InternalServerError,
-      })
+      return Response.json(httpError.output, { status })
     },
   })
 }
@@ -504,14 +501,11 @@ function processIO (
     return shutdown
   }
 
-  stdin.setRawMode(true)
-
   const rl = readline.createInterface({
     input: stdin,
     output: stdout,
   })
 
-  /* istanbul ignore next */
   const handleClose = async (): Promise<void> => {
     await shutdown()
     process.exit(0)
@@ -522,7 +516,6 @@ function processIO (
   return async (force = false) => {
     rl.off('close', handleClose)
     rl.close()
-    stdin.setRawMode(false)
 
     await shutdown(force)
   }

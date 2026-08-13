@@ -1,6 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../../../src'
-import { UnprocessableContentError } from '../../../../src/errors'
+import { createApp, StatusCode } from '../../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when a RequestError sub-type is thrown (REST)', async () => {
@@ -10,7 +9,7 @@ test('when a RequestError sub-type is thrown (REST)', async () => {
 
   await app.close(true)
 
-  expect(res.status).toBe(UnprocessableContentError.status)
+  expect(res.status).toBe(StatusCode.UnprocessableContent)
 
   expect(res.body).toStrictEqual([
     {
@@ -27,7 +26,7 @@ test('when a RequestError sub-type is thrown (ws)', async () => {
 
   await app.close(true)
 
-  expect(msg.status).toBe(UnprocessableContentError.status)
+  expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
   expect(msg.body).toStrictEqual([
     {

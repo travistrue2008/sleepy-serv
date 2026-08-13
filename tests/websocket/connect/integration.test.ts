@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createApp } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 const HEARTBEAT_INTERVAL = 20
@@ -36,7 +36,7 @@ test('when a request carries the cached clientId', async () => {
     id: res.id,
     clientId: client.id!,
     type: MessageType.Response,
-    status: 200,
+    status: StatusCode.Ok,
     timestamp: res.timestamp,
     headers: {
       'content-type': 'application/json;charset=utf-8',

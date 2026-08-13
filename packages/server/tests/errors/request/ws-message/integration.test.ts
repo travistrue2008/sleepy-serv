@@ -1,8 +1,7 @@
 import crypto from 'node:crypto'
 import { describe, test, expect } from 'bun:test'
-import { createApp } from '../../../../src'
+import { createApp, StatusCode } from '../../../../src'
 import { MessageType, RECEIVED_MESSAGE_TYPES } from '../../../../src/messages'
-import { UnprocessableContentError } from '../../../../src/errors'
 import { createSocketClient } from '../../../helpers'
 
 const ID = crypto.randomUUID()
@@ -34,7 +33,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -63,7 +62,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -91,7 +90,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -120,7 +119,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       id: msg.id,
       clientId: msg.clientId,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -149,7 +148,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -178,7 +177,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -207,7 +206,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -236,7 +235,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -279,7 +278,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -308,7 +307,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -336,7 +335,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
     expect(msg).toStrictEqual({
       id: msg.id,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -365,7 +364,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: msg.clientId,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -394,7 +393,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -423,7 +422,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -452,7 +451,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -481,7 +480,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -510,7 +509,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -539,7 +538,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -568,7 +567,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -597,7 +596,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -626,7 +625,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -655,7 +654,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -684,7 +683,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -713,7 +712,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -742,7 +741,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
-      status: UnprocessableContentError.status,
+      status: StatusCode.UnprocessableContent,
       timestamp: TIMESTAMP,
       headers: {
         'content-type': 'application/json;charset=utf-8',

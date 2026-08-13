@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { Fmt, createRequestor } from '../../helpers'
-import { UnauthorizedError, createApp } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import SleepySocketClient from 'sleepy-socket'
 
 import type { TicketBody } from '../../helpers'
@@ -42,7 +42,7 @@ test('when the token is wrong', async () => {
   await client.close()
   await app.close(true)
 
-  expect(res.status).toBe(UnauthorizedError.status)
+  expect(res.status).toBe(StatusCode.Unauthorized)
 
   expect(res.body).toStrictEqual({
     message: 'Invalid token',

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { InternalServerError, createApp } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import { createRequestor, Fmt } from '../../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -9,12 +9,15 @@ describe('POST', () => {
   test('when middleware errors', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.post('/ws?err', Fmt.Text)
+    const res = await req.post('/ws?err', Fmt.Json)
 
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
-    expect(res.body).toBe('Error from POST middleware')
+    expect(res.status).toBe(StatusCode.InternalServerError)
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when middleware is successful', async () => {
@@ -24,7 +27,7 @@ describe('POST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(201)
+    expect(res.status).toBe(StatusCode.Created)
 
     expect(res.body).toStrictEqual({
       clientId: expect.any(String),
@@ -43,13 +46,16 @@ describe('PUT', () => {
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.connect(host, port)
-    const res = await req.put(`/ws/${client.id}?err`, Fmt.Text)
+    const res = await req.put(`/ws/${client.id}?err`, Fmt.Json)
 
     await client.close()
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
-    expect(res.body).toBe('Error from PUT middleware')
+    expect(res.status).toBe(StatusCode.InternalServerError)
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when middleware is successful', async () => {
@@ -68,7 +74,7 @@ describe('PUT', () => {
     await client.close()
     await app.close(true)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(StatusCode.Ok)
 
     expect(res.body).toStrictEqual({
       clientId: expect.any(String),
@@ -84,12 +90,15 @@ describe('GET', () => {
   test('when middleware errors', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/ws?ticket=asdf&err', Fmt.Text)
+    const res = await req.get('/ws?ticket=asdf&err', Fmt.Json)
 
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
-    expect(res.body).toBe('Error from GET middleware')
+    expect(res.status).toBe(StatusCode.InternalServerError)
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when middleware is successful', async () => {

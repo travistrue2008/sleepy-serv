@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createApp } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import SleepySocketClient from 'sleepy-socket'
 
 test('when a reply arrives for an already-timed-out request', async () => {
@@ -27,6 +27,6 @@ test('when a reply arrives for an already-timed-out request', async () => {
   await client.close()
   await app.close(true)
 
-  expect(res.status).toBe(200)
+  expect(res.status).toBe(StatusCode.Ok)
   expect(res.body).toStrictEqual({ ok: true })
 })

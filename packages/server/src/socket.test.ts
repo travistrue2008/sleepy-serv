@@ -24,9 +24,7 @@ import {
   RequestError,
   NotFoundError,
   UnauthorizedError,
-  MethodNotAllowedError,
   UnprocessableContentError,
-  InternalServerError,
   ServiceUnavailableError,
 } from './errors'
 
@@ -363,7 +361,7 @@ describe('buildTestServer()', () => {
           id: 'invalid',
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: UnprocessableContentError.status,
+          status: StatusCode.UnprocessableContent,
           timestamp: TIMESTAMP,
           headers: {
             'content-type': 'application/json;charset=utf-8',
@@ -407,7 +405,7 @@ describe('buildTestServer()', () => {
           id: ID,
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: NotFoundError.status,
+          status: StatusCode.NotFound,
           timestamp: TIMESTAMP,
           headers: {
             'content-type': 'application/json;charset=utf-8',
@@ -446,7 +444,7 @@ describe('buildTestServer()', () => {
           id: ID,
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: MethodNotAllowedError.status,
+          status: StatusCode.MethodNotAllowed,
           timestamp: TIMESTAMP,
           headers: {
             'content-type': 'application/json;charset=utf-8',
@@ -489,10 +487,14 @@ describe('buildTestServer()', () => {
           id: ID,
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: InternalServerError.status,
+          status: StatusCode.InternalServerError,
           timestamp: TIMESTAMP,
-          headers: {},
-          body: 'Bad',
+          headers: {
+            'content-type': 'application/json;charset=utf-8',
+          },
+          body: {
+            message: 'An internal server error occurred',
+          },
         })
       })
 
@@ -530,7 +532,7 @@ describe('buildTestServer()', () => {
           id: ID,
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: TestError.status,
+          status: StatusCode.ImATeapot,
           timestamp: TIMESTAMP,
           headers: {
             'content-type': 'application/json;charset=utf-8',
@@ -572,7 +574,7 @@ describe('buildTestServer()', () => {
           id: ID,
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: 200,
+          status: StatusCode.Ok,
           timestamp: TIMESTAMP,
           headers: {},
           body: 'Success',
@@ -609,7 +611,7 @@ describe('buildTestServer()', () => {
           id: ID,
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: 200,
+          status: StatusCode.Ok,
           timestamp: TIMESTAMP,
           headers: {
             'content-type': 'application/json;charset=utf-8',
@@ -1115,7 +1117,7 @@ describe('buildSocketHandlers()', () => {
         },
       })
 
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(StatusCode.Ok)
     })
 
     test('when "res" is not of type "object"', async () => {
@@ -1152,7 +1154,7 @@ describe('buildSocketHandlers()', () => {
         raw: REQ_RAW,
       }, null)
 
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(StatusCode.Ok)
 
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
@@ -1179,7 +1181,7 @@ describe('buildSocketHandlers()', () => {
         raw: REQ_RAW,
       }, {})
 
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(StatusCode.Ok)
 
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
@@ -1210,7 +1212,7 @@ describe('buildSocketHandlers()', () => {
         raw: REQ_RAW,
       }, middlewareRes)
 
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(StatusCode.Ok)
 
       expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
         data: {
@@ -1253,7 +1255,7 @@ describe('buildSocketHandlers()', () => {
         },
       })
 
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(StatusCode.Ok)
     })
 
     test('when "res" has other top-level properties', async () => {
@@ -1287,7 +1289,7 @@ describe('buildSocketHandlers()', () => {
         },
       })
 
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(StatusCode.Ok)
     })
   })
 
@@ -1334,7 +1336,7 @@ describe('buildSocketHandlers()', () => {
       const res = createTicket({}, {})
       const result = await res.json()
 
-      expect(res.status).toBe(201)
+      expect(res.status).toBe(StatusCode.Created)
 
       expect(result).toStrictEqual({
         clientId: UUIDs[0],
@@ -1360,7 +1362,7 @@ describe('buildSocketHandlers()', () => {
 
       const res = createTicket({}, {})
 
-      expect(res.status).toBe(201)
+      expect(res.status).toBe(StatusCode.Created)
       expect(state.tickets.size).toBe(1)
     })
 
@@ -1368,7 +1370,7 @@ describe('buildSocketHandlers()', () => {
       const res = createTicket({}, RES_HANDLER)
       const result = await res.json()
 
-      expect(res.status).toBe(201)
+      expect(res.status).toBe(StatusCode.Created)
 
       expect(result).toStrictEqual({
         clientId: UUIDs[0],
@@ -1532,7 +1534,7 @@ describe('buildSocketHandlers()', () => {
 
       const body = await result.json()
 
-      expect(result.status).toBe(200)
+      expect(result.status).toBe(StatusCode.Ok)
 
       expect(body).toStrictEqual({
         clientId: CLIENT_ID,
@@ -1558,7 +1560,7 @@ describe('buildSocketHandlers()', () => {
 
       const body = await res.json()
 
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(StatusCode.Ok)
 
       expect(body).toStrictEqual({
         clientId: CLIENT_ID,
@@ -1585,7 +1587,7 @@ describe('buildSocketHandlers()', () => {
 
       const body = await result.json()
 
-      expect(result.status).toBe(200)
+      expect(result.status).toBe(StatusCode.Ok)
 
       expect(body).toStrictEqual({
         clientId: CLIENT_ID,

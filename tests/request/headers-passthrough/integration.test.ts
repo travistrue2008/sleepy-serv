@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createApp } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -15,7 +15,7 @@ describe('REST', () => {
     })
 
     expect(res).toStrictEqual({
-      status: 200,
+      status: StatusCode.Ok,
       body: { auth: 'Bearer xyz' },
     })
   })
@@ -41,7 +41,7 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: 200,
+      status: StatusCode.Ok,
       timestamp: res.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',

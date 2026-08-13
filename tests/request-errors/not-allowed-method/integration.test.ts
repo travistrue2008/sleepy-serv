@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createApp, MethodNotAllowedError } from 'sleepy-serv'
+import { createApp, StatusCode } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -9,7 +9,7 @@ describe('REST', () => {
     const req = createRequestor(app)
     const res = await req.post('/', Fmt.Json)
 
-    expect(res.status).toBe(MethodNotAllowedError.status)
+    expect(res.status).toBe(StatusCode.MethodNotAllowed)
     expect(res.body).toBe(null)
   })
 })
@@ -29,7 +29,7 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: MethodNotAllowedError.status,
+      status: StatusCode.MethodNotAllowed,
       timestamp: res.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',

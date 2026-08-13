@@ -2,22 +2,21 @@ import { describe, test, expect } from 'bun:test'
 import { createRequestor, Fmt } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
-import {
-  createApp,
-  ConflictError,
-  InternalServerError,
-} from 'sleepy-serv'
+import { createApp, StatusCode } from 'sleepy-serv'
 
 describe('REST', () => {
   test('when the handler throws a generic Error', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/boom', Fmt.Text)
+    const res = await req.get('/boom', Fmt.Json)
 
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
-    expect(res.body).toBe('Boom')
+    expect(res.status).toBe(StatusCode.InternalServerError)
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when the handler throws a RequestError subclass', async () => {
@@ -27,7 +26,7 @@ describe('REST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(ConflictError.status)
+    expect(res.status).toBe(StatusCode.Conflict)
     expect(res.body).toStrictEqual({ message: 'nope' })
   })
 })
@@ -47,10 +46,14 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: InternalServerError.status,
+      status: StatusCode.InternalServerError,
       timestamp: res.timestamp,
-      headers: {},
-      body: 'Boom',
+      headers: {
+        'content-type': 'application/json;charset=utf-8',
+      },
+      body: {
+        message: 'An internal server error occurred',
+      },
     })
   })
 
@@ -68,7 +71,7 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: ConflictError.status,
+      status: StatusCode.Conflict,
       timestamp: res.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',

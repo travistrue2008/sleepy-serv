@@ -1,6 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../../../src'
-import { NotFoundError } from '../../../../src/errors'
+import { createApp, StatusCode } from '../../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when requested resource is not found (REST)', async () => {
@@ -10,7 +9,7 @@ test('when requested resource is not found (REST)', async () => {
 
   await app.close(true)
 
-  expect(res.status).toBe(NotFoundError.status)
+  expect(res.status).toBe(StatusCode.NotFound)
   expect(res.body).toBe(null)
 })
 
@@ -21,6 +20,6 @@ test('when requested resource is not found (ws)', async () => {
 
   await app.close(true)
 
-  expect(msg.status).toBe(NotFoundError.status)
+  expect(msg.status).toBe(StatusCode.NotFound)
   expect(msg.body).toBe(null)
 })

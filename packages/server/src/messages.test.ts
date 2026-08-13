@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 import { describe, test, expect } from 'bun:test'
 import { UnprocessableContentError } from './errors'
+import { StatusCode } from './utils'
 
 import {
   MessageType,
@@ -11,7 +12,7 @@ import {
 
 const ID = crypto.randomUUID()
 const CLIENT_ID = crypto.randomUUID()
-const STATUS = 200
+const STATUS = StatusCode.Ok
 const METHOD = 'GET'
 const ROUTE = '/users/123'
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'

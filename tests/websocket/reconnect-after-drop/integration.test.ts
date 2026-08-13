@@ -1,5 +1,5 @@
+import { StatusCode, createApp } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
-import { createApp } from 'sleepy-serv'
 import { waitFor } from '../../helpers'
 import SleepySocketClient from 'sleepy-socket'
 
@@ -43,6 +43,6 @@ test('when the socket drops AND the client reconnects', async () => {
   await app.close(true)
 
   expect(client.id).toBe(id)
-  expect(res.status).toBe(200)
+  expect(res.status).toBe(StatusCode.Ok)
   expect(res.body).toStrictEqual({ ok: true })
 })

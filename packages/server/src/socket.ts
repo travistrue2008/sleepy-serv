@@ -2,7 +2,11 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import crypto from 'node:crypto'
 
-import { MessageType, createMessage, validateMessage } from './messages'
+import {
+  MessageType,
+  createMessage,
+  validateMessage,
+} from './messages'
 
 import {
   StatusCode,
@@ -21,8 +25,8 @@ import {
   ServiceUnavailableError,
 } from './errors'
 
-import type { WebSocketHandler } from 'bun'
 import type { ValidateFunction } from 'ajv'
+import type { WebSocketHandler } from 'bun'
 
 import type {
   HttpMethod,
@@ -375,25 +379,17 @@ function buildErrorMessage (
   err: unknown,
 ): ResponseMessage {
   const { id, clientId } = message as Pick<BaseMessage, 'id' | 'clientId'>
-
-  if (err instanceof RequestError) {
-    const ctor = err.constructor as typeof RequestError
-
-    return createMessage(clientId, MessageType.Response, {
-      id,
-      status: ctor.status,
-      headers: new Headers({
-        'content-type': 'application/json;charset=utf-8',
-      }),
-      body: err.output,
-    })
-  }
+  const isRequestError = err instanceof RequestError
+  const httpError = isRequestError ? err : new InternalServerError()
+  const { status } = httpError.constructor as typeof RequestError
 
   return createMessage(clientId, MessageType.Response, {
     id,
-    status: InternalServerError.status,
-    headers: new Headers(),
-    body: err instanceof Error ? err.message : undefined,
+    status,
+    headers: new Headers({
+      'content-type': 'application/json;charset=utf-8',
+    }),
+    body: httpError.output,
   })
 }
 

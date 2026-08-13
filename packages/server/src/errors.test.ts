@@ -427,11 +427,11 @@ describe('UnavailableForLegalReasonsError', () => {
 describe('InternalServerError', () => {
   test('when thrown', () => {
     const fn = () => {
-      throw new InternalServerError('Bad')
+      throw new InternalServerError()
     }
 
     expect(InternalServerError.status).toBe(StatusCode.InternalServerError)
-    expect(fn).toThrow(new InternalServerError('Bad'))
+    expect(fn).toThrow(new InternalServerError())
   })
 })
 

@@ -384,13 +384,10 @@ export class InternalServerError extends RequestError {
     return StatusCode.InternalServerError
   }
 
-  ctx: unknown
-
-  constructor (message: string, ctx?: unknown) {
-    super(message)
+  constructor () {
+    super('An internal server error occurred')
 
     this.name = 'InternalServerError'
-    this.ctx = ctx
   }
 }
 

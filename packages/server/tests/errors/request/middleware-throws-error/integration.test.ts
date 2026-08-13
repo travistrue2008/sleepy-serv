@@ -1,17 +1,19 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../../../src'
-import { InternalServerError } from '../../../../src/errors'
+import { createApp, StatusCode } from '../../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when middleware throws an error (REST)', async () => {
   const app = await createApp(0, import.meta.dirname)
   const req = createRequestor(app)
-  const res = await req.get('/', Fmt.Text)
+  const res = await req.get('/', Fmt.Json)
 
   await app.close(true)
 
-  expect(res.status).toBe(InternalServerError.status)
-  expect(res.body).toBe('Bad')
+  expect(res.status).toBe(StatusCode.InternalServerError)
+
+  expect(res.body).toStrictEqual({
+    message: 'An internal server error occurred',
+  })
 })
 
 test('when middleware throws an error (ws)', async () => {
@@ -21,6 +23,9 @@ test('when middleware throws an error (ws)', async () => {
 
   await app.close(true)
 
-  expect(msg.status).toBe(InternalServerError.status)
-  expect(msg.body).toBe('Bad')
+  expect(msg.status).toBe(StatusCode.InternalServerError)
+
+  expect(msg.body).toStrictEqual({
+    message: 'An internal server error occurred',
+  })
 })

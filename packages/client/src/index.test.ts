@@ -1,5 +1,5 @@
 import SleepySocketClient, { Queue, MessageType } from './'
-import { id } from './utils'
+import { StatusCode, id } from './utils'
 
 import {
   jest,
@@ -249,7 +249,7 @@ function response (id: string, body: unknown): ResponseMessage {
     id,
     clientId: CLIENT_ID,
     type: MessageType.Response,
-    status: 200,
+    status: StatusCode.Ok,
     timestamp: TIMESTAMP,
     headers: {},
     body,
@@ -1149,7 +1149,7 @@ describe('SleepySocketClient', () => {
 
       socket.receive({
         type: MessageType.Response,
-        status: 200,
+        status: StatusCode.Ok,
         timestamp: TIMESTAMP,
         headers: {},
         body: { userId: '123' },
@@ -1199,7 +1199,7 @@ describe('SleepySocketClient', () => {
         id: sent.id,
         clientId: CLIENT_ID,
         type: MessageType.Response,
-        status: 200,
+        status: StatusCode.Ok,
         timestamp: TIMESTAMP,
         headers: {},
         body: { userId: '123' },

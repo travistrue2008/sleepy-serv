@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createApp } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -10,7 +10,7 @@ test('when meta middleware writes to res (REST)', async () => {
 
   await app.close(true)
 
-  expect(res.status).toBe(200)
+  expect(res.status).toBe(StatusCode.Ok)
   expect(res.body).toStrictEqual({ stamp: 'via-meta' })
 })
 
@@ -28,7 +28,7 @@ test('when meta middleware writes to res (ws)', async () => {
     id: res.id,
     clientId: client.id!,
     type: MessageType.Response,
-    status: 200,
+    status: StatusCode.Ok,
     timestamp: res.timestamp,
     headers: {
       'content-type': 'application/json;charset=utf-8',

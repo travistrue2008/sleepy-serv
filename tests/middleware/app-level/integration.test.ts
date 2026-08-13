@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createApp, InternalServerError } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -24,12 +24,15 @@ describe('REST', () => {
     })
 
     const req = createRequestor(app)
-    const res = await req.get('/?err', Fmt.Text)
+    const res = await req.get('/?err', Fmt.Json)
 
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
-    expect(res.body).toBe('Error from root middleware')
+    expect(res.status).toBe(StatusCode.InternalServerError)
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when root middleware is invoked', async () => {
@@ -42,7 +45,7 @@ describe('REST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(StatusCode.Ok)
     expect(res.body).toStrictEqual('GET - successful')
   })
 })
@@ -66,16 +69,20 @@ describe('WebSocket', () => {
     await client.close()
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
+    expect(res.status).toBe(StatusCode.InternalServerError)
 
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: InternalServerError.status,
+      status: StatusCode.InternalServerError,
       timestamp: res.timestamp,
-      headers: {},
-      body: 'Error from root middleware',
+      headers: {
+        'content-type': 'application/json;charset=utf-8',
+      },
+      body: {
+        message: 'An internal server error occurred',
+      },
     })
   })
 
@@ -92,13 +99,13 @@ describe('WebSocket', () => {
     await client.close()
     await app.close(true)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(StatusCode.Ok)
 
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: 200,
+      status: StatusCode.Ok,
       timestamp: res.timestamp,
       headers: {},
       body: 'GET - successful',

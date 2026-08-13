@@ -8,6 +8,30 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `sleepy-socket` now exports `StatusCode`, a const object and matching type covering the
+  full range of HTTP status codes. This mirrors the codes `sleepy-serv` already used
+  internally, so client code can reference statuses by name instead of by number.
+
+### Changed
+
+- `InternalServerError`'s constructor no longer accepts a `message` or `ctx` argument. It
+  now always carries the fixed message `An internal server error occurred` and no longer
+  has a `ctx` field. Callers constructing `InternalServerError` directly with either
+  argument need to drop them.
+
+- `sleepy-serv`'s HTTP and WebSocket error handlers now normalize any thrown error that
+  isn't a `RequestError` into an `InternalServerError` before responding, so both paths
+  always return a consistent shape.
+
+  Previously an unexpected HTTP error produced a bare-text 500 response, and an unexpected
+  WebSocket error produced a response message with no headers and the raw error message as
+  its body. Both now respond with `Response.json`-equivalent output: a
+  `content-type: application/json;charset=utf-8` header and a JSON body built from
+  `InternalServerError`'s output, matching how `RequestError` subclasses were already
+  handled.
+
 ## [0.8.0] - 2026-08-12
 
 ### Added
