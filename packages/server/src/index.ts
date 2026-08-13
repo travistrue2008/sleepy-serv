@@ -17,6 +17,7 @@ import {
   RequestError,
   NotFoundError,
   MethodNotAllowedError,
+  InternalServerError,
 } from './errors'
 
 import type { BunRequest } from 'bun'
@@ -470,15 +471,11 @@ function buildServer (
     error (err) {
       console.error(err)
 
-      if (err instanceof RequestError) {
-        const ctor = err.constructor as typeof RequestError
+      const isRequestError = !(err instanceof RequestError)
+      const httpError = isRequestError ? new InternalServerError() : err
+      const { status } = httpError.constructor as typeof RequestError
 
-        return Response.json(err.output, { status: ctor.status })
-      }
-
-      return new Response(err.message, {
-        status: StatusCode.InternalServerError,
-      })
+      return Response.json(httpError.output, { status })
     },
   })
 }

@@ -8,12 +8,15 @@ describe('REST', () => {
   test('when the handler throws a generic Error', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/boom', Fmt.Text)
+    const res = await req.get('/boom', Fmt.Json)
 
     await app.close(true)
 
     expect(res.status).toBe(StatusCode.InternalServerError)
-    expect(res.body).toBe('Boom')
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when the handler throws a RequestError subclass', async () => {
@@ -45,8 +48,12 @@ describe('WebSocket', () => {
       type: MessageType.Response,
       status: StatusCode.InternalServerError,
       timestamp: res.timestamp,
-      headers: {},
-      body: 'Boom',
+      headers: {
+        'content-type': 'application/json;charset=utf-8',
+      },
+      body: {
+        message: 'An internal server error occurred',
+      },
     })
   })
 

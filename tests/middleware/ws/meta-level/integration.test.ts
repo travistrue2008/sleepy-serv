@@ -9,23 +9,29 @@ describe('POST', () => {
   test('when middleware errors (lvl 1)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.post('/ws?err=lvl_1', Fmt.Text)
+    const res = await req.post('/ws?err=lvl_1', Fmt.Json)
 
     await app.close(true)
 
     expect(res.status).toBe(StatusCode.InternalServerError)
-    expect(res.body).toBe('Error Lvl 1')
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when middleware errors (lvl 2)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.post('/ws?err=lvl_2', Fmt.Text)
+    const res = await req.post('/ws?err=lvl_2', Fmt.Json)
 
     await app.close(true)
 
     expect(res.status).toBe(StatusCode.InternalServerError)
-    expect(res.body).toBe('Error Lvl 2')
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when middleware is successful', async () => {
@@ -52,13 +58,16 @@ describe('PUT', () => {
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.connect(host, port)
-    const res = await req.put(`/ws/${client.id}?err=lvl_1`, Fmt.Text)
+    const res = await req.put(`/ws/${client.id}?err=lvl_1`, Fmt.Json)
 
     await client.close()
     await app.close(true)
 
     expect(res.status).toBe(StatusCode.InternalServerError)
-    expect(res.body).toBe('Error Lvl 1')
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when middleware errors (lvl 2)', async () => {
@@ -67,13 +76,16 @@ describe('PUT', () => {
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.connect(host, port)
-    const res = await req.put(`/ws/${client.id}?err=lvl_2`, Fmt.Text)
+    const res = await req.put(`/ws/${client.id}?err=lvl_2`, Fmt.Json)
 
     await client.close()
     await app.close(true)
 
     expect(res.status).toBe(StatusCode.InternalServerError)
-    expect(res.body).toBe('Error Lvl 2')
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when middleware errors (lvl 3)', async () => {
@@ -82,13 +94,16 @@ describe('PUT', () => {
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.connect(host, port)
-    const res = await req.put(`/ws/${client.id}?err=lvl_3`, Fmt.Text)
+    const res = await req.put(`/ws/${client.id}?err=lvl_3`, Fmt.Json)
 
     await client.close()
     await app.close(true)
 
     expect(res.status).toBe(StatusCode.InternalServerError)
-    expect(res.body).toBe('Error Lvl 3')
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when middleware is successful', async () => {
@@ -121,23 +136,29 @@ describe('GET', () => {
   test('when middleware errors (lvl 1)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/ws?ticket=asdf&err=lvl_1', Fmt.Text)
+    const res = await req.get('/ws?ticket=asdf&err=lvl_1', Fmt.Json)
 
     await app.close(true)
 
     expect(res.status).toBe(StatusCode.InternalServerError)
-    expect(res.body).toBe('Error Lvl 1')
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when middleware errors (lvl 2)', async () => {
     const app = await createApp(0, import.meta.dirname)
     const req = createRequestor(app)
-    const res = await req.get('/ws?ticket=asdf&err=lvl_2', Fmt.Text)
+    const res = await req.get('/ws?ticket=asdf&err=lvl_2', Fmt.Json)
 
     await app.close(true)
 
     expect(res.status).toBe(StatusCode.InternalServerError)
-    expect(res.body).toBe('Error Lvl 2')
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when middleware is successful', async () => {

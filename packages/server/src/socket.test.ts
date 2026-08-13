@@ -491,8 +491,12 @@ describe('buildTestServer()', () => {
           type: MessageType.Response,
           status: InternalServerError.status,
           timestamp: TIMESTAMP,
-          headers: {},
-          body: 'Bad',
+          headers: {
+            'content-type': 'application/json;charset=utf-8',
+          },
+          body: {
+            message: 'An internal server error occurred',
+          },
         })
       })
 

@@ -24,12 +24,15 @@ describe('REST', () => {
     })
 
     const req = createRequestor(app)
-    const res = await req.get('/?err', Fmt.Text)
+    const res = await req.get('/?err', Fmt.Json)
 
     await app.close(true)
 
     expect(res.status).toBe(StatusCode.InternalServerError)
-    expect(res.body).toBe('Error from root middleware')
+
+    expect(res.body).toStrictEqual({
+      message: 'An internal server error occurred',
+    })
   })
 
   test('when root middleware is invoked', async () => {
@@ -74,8 +77,12 @@ describe('WebSocket', () => {
       type: MessageType.Response,
       status: StatusCode.InternalServerError,
       timestamp: res.timestamp,
-      headers: {},
-      body: 'Error from root middleware',
+      headers: {
+        'content-type': 'application/json;charset=utf-8',
+      },
+      body: {
+        message: 'An internal server error occurred',
+      },
     })
   })
 
