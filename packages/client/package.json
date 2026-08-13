@@ -3,7 +3,7 @@
   "description": "A dependency-free WebSocket client for sleepy-serv",
   "author": "Travis J True",
   "license": "MIT",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
