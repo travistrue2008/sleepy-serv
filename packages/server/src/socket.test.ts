@@ -363,7 +363,7 @@ describe('buildTestServer()', () => {
           id: 'invalid',
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: UnprocessableContentError.status,
+          status: StatusCode.UnprocessableContent,
           timestamp: TIMESTAMP,
           headers: {
             'content-type': 'application/json;charset=utf-8',
@@ -407,7 +407,7 @@ describe('buildTestServer()', () => {
           id: ID,
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: NotFoundError.status,
+          status: StatusCode.NotFound,
           timestamp: TIMESTAMP,
           headers: {
             'content-type': 'application/json;charset=utf-8',
@@ -446,7 +446,7 @@ describe('buildTestServer()', () => {
           id: ID,
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: MethodNotAllowedError.status,
+          status: StatusCode.MethodNotAllowed,
           timestamp: TIMESTAMP,
           headers: {
             'content-type': 'application/json;charset=utf-8',
@@ -489,7 +489,7 @@ describe('buildTestServer()', () => {
           id: ID,
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: InternalServerError.status,
+          status: StatusCode.InternalServerError,
           timestamp: TIMESTAMP,
           headers: {
             'content-type': 'application/json;charset=utf-8',
@@ -534,7 +534,7 @@ describe('buildTestServer()', () => {
           id: ID,
           clientId: CLIENT_ID,
           type: MessageType.Response,
-          status: TestError.status,
+          status: StatusCode.ImATeapot,
           timestamp: TIMESTAMP,
           headers: {
             'content-type': 'application/json;charset=utf-8',

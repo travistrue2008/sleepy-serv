@@ -14,7 +14,7 @@ describe('REST', () => {
 
     await app.close(true)
 
-    expect(res.status).toStrictEqual(201)
+    expect(res.status).toStrictEqual(StatusCode.Created)
 
     expect(res.body).toStrictEqual({
       received: 42,
@@ -36,7 +36,7 @@ describe('REST', () => {
 
     await app.close(true)
 
-    expect(res.status).toStrictEqual(201)
+    expect(res.status).toStrictEqual(StatusCode.Created)
 
     expect(res.body).toStrictEqual({
       received: {
