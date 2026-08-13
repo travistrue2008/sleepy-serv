@@ -46,7 +46,7 @@ describe('POST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(201)
+    expect(res.status).toBe(StatusCode.Created)
 
     expect(res.body).toStrictEqual({
       clientId: expect.any(String),
@@ -97,7 +97,7 @@ describe('PUT', () => {
     await client.close()
     await app.close(true)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(StatusCode.Ok)
 
     expect(res.body).toStrictEqual({
       clientId: expect.any(String),

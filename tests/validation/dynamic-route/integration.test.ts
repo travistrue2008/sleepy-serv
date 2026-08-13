@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createApp, StatusCode } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -76,7 +76,7 @@ describe('REST', () => {
 
       await app.close(true)
 
-      expect(res.status).toBe(201)
+      expect(res.status).toBe(StatusCode.Created)
 
       expect(res.body).toBe(null)
     })
@@ -180,7 +180,7 @@ describe('WebSocket', () => {
         clientId: client.id!,
         type: MessageType.Response,
         timestamp: res.timestamp,
-        status: 201,
+        status: StatusCode.Created,
         headers: {},
         body: '',
       })

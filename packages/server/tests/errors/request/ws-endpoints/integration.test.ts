@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createApp, StatusCode } from '../../../../src'
+import { StatusCode, createApp } from '../../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 type TicketBody = {
@@ -18,7 +18,7 @@ describe('POST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(201)
+    expect(res.status).toBe(StatusCode.Created)
 
     expect(res.body).toStrictEqual({
       clientId: expect.any(String),
@@ -181,7 +181,7 @@ describe('PUT', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(StatusCode.Ok)
 
     expect(res.body).toStrictEqual({
       clientId: expect.any(String),

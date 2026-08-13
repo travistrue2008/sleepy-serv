@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../../src'
+import { StatusCode, createApp } from '../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 test('when module-level middleware is defined (REST)', async () => {
@@ -9,7 +9,7 @@ test('when module-level middleware is defined (REST)', async () => {
 
   await app.close(true)
 
-  expect(res.status).toBe(200)
+  expect(res.status).toBe(StatusCode.Ok)
   expect(res.body).toBe('module')
 })
 
@@ -20,6 +20,6 @@ test('when module-level middleware is defined (ws)', async () => {
 
   await app.close(true)
 
-  expect(msg.status).toBe(200)
+  expect(msg.status).toBe(StatusCode.Ok)
   expect(msg.body).toBe('module')
 })

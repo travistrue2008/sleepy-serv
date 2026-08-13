@@ -1,7 +1,7 @@
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
 import { describe, test, expect } from 'bun:test'
 import { Fmt, createRequestor } from '../helpers'
 import { StatusCode, createApp } from 'sleepy-serv'
-import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 import type { ConnectionData } from './auth'
 
@@ -55,7 +55,7 @@ describe('REST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(StatusCode.Ok)
     expect(res.body).toStrictEqual({ sub: 'user-123' })
   })
 
@@ -66,7 +66,7 @@ describe('REST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(StatusCode.Ok)
     expect(res.body).toStrictEqual({ ok: true })
   })
 })
@@ -147,7 +147,7 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: 200,
+      status: StatusCode.Ok,
       timestamp: res.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -172,7 +172,7 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: 200,
+      status: StatusCode.Ok,
       timestamp: res.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',

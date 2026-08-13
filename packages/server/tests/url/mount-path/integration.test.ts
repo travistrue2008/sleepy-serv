@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../../src'
+import { StatusCode, createApp } from '../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 test('when adding a mount path (REST)', async () => {
@@ -12,7 +12,7 @@ test('when adding a mount path (REST)', async () => {
 
   await app.close(true)
 
-  expect(res.status).toBe(200)
+  expect(res.status).toBe(StatusCode.Ok)
   expect(res.body).toBe('Hello world')
 })
 
@@ -29,6 +29,6 @@ test('when adding a mount path (ws)', async () => {
 
   await app.close(true)
 
-  expect(msg.status).toBe(200)
+  expect(msg.status).toBe(StatusCode.Ok)
   expect(msg.body).toBe('Hello world')
 })

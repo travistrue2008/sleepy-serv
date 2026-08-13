@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../../src'
+import { StatusCode, createApp } from '../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 import type { NextFn, Request } from '../../../src'
@@ -23,7 +23,7 @@ test('when all levels of middleware are defined (REST)', async () => {
 
   await app.close(true)
 
-  expect(res.status).toBe(200)
+  expect(res.status).toBe(StatusCode.Ok)
   expect(res.body).toBe('root|parent-meta|sibling-meta|module')
 })
 
@@ -42,6 +42,6 @@ test('when all levels of middleware are defined (ws)', async () => {
 
   await app.close(true)
 
-  expect(msg.status).toBe(200)
+  expect(msg.status).toBe(StatusCode.Ok)
   expect(msg.body).toBe('root|parent-meta|sibling-meta|module')
 })

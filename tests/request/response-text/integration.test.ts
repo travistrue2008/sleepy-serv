@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createApp } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -9,7 +9,7 @@ describe('REST', () => {
     const req = createRequestor(app)
     const res = await req.get('/', Fmt.Text)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(StatusCode.Ok)
     expect(res.body).toBe('Just text')
   })
 })
@@ -29,7 +29,7 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: res.clientId,
       type: MessageType.Response,
-      status: 200,
+      status: StatusCode.Ok,
       timestamp: res.timestamp,
       headers: {},
       body: 'Just text',
