@@ -1,16 +1,10 @@
 import { describe, test, expect } from 'bun:test'
-import { createApp } from '../../../../src'
+import { createApp, StatusCode } from '../../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 type TicketBody = {
   ticket: string
 }
-
-import {
-  NotFoundError,
-  UnauthorizedError,
-  UnprocessableContentError,
-} from '../../../../src/errors'
 
 const CLIENT_ID_INVALID = 'client-invalid'
 const TICKET_INVALID = 'ticket-invalid'
@@ -40,7 +34,7 @@ describe('POST', () => {
 
     await app.close(true)
 
-    expect(msg.status).toBe(UnprocessableContentError.status)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -63,7 +57,7 @@ describe('PUT', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(UnprocessableContentError.status)
+    expect(res.status).toBe(StatusCode.UnprocessableContent)
 
     expect(res.body).toStrictEqual([
       {
@@ -83,7 +77,7 @@ describe('PUT', () => {
 
     await app.close(true)
 
-    expect(msg.status).toBe(UnprocessableContentError.status)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -106,7 +100,7 @@ describe('PUT', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(NotFoundError.status)
+    expect(res.status).toBe(StatusCode.NotFound)
     expect(res.body).toBe(null)
   })
 
@@ -122,7 +116,7 @@ describe('PUT', () => {
 
     await app.close(true)
 
-    expect(msg.status).toBe(UnprocessableContentError.status)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -145,7 +139,7 @@ describe('PUT', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(UnauthorizedError.status)
+    expect(res.status).toBe(StatusCode.Unauthorized)
 
     expect(res.body).toStrictEqual({
       message: 'Invalid token',
@@ -164,7 +158,7 @@ describe('PUT', () => {
 
     await app.close(true)
 
-    expect(msg.status).toBe(UnprocessableContentError.status)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -208,7 +202,7 @@ describe('PUT', () => {
 
     await app.close(true)
 
-    expect(msg.status).toBe(UnprocessableContentError.status)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -227,7 +221,7 @@ describe('GET', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(UnprocessableContentError.status)
+    expect(res.status).toBe(StatusCode.UnprocessableContent)
 
     expect(res.body).toStrictEqual([
       {
@@ -244,7 +238,7 @@ describe('GET', () => {
 
     await app.close(true)
 
-    expect(msg.status).toBe(UnprocessableContentError.status)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -266,7 +260,7 @@ describe('GET', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(NotFoundError.status)
+    expect(res.status).toBe(StatusCode.NotFound)
 
     expect(res.body).toBe(null)
   })
@@ -279,7 +273,7 @@ describe('GET', () => {
 
     await app.close(true)
 
-    expect(msg.status).toBe(UnprocessableContentError.status)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -303,7 +297,7 @@ describe('GET', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(NotFoundError.status)
+    expect(res.status).toBe(StatusCode.NotFound)
 
     expect(res.body).toBe(null)
   })
@@ -323,7 +317,7 @@ describe('GET', () => {
 
     await app.close(true)
 
-    expect(msg.status).toBe(UnprocessableContentError.status)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {

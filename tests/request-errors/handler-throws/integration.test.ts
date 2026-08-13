@@ -2,11 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import { createRequestor, Fmt } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
-import {
-  createApp,
-  ConflictError,
-  InternalServerError,
-} from 'sleepy-serv'
+import { createApp, StatusCode } from 'sleepy-serv'
 
 describe('REST', () => {
   test('when the handler throws a generic Error', async () => {
@@ -16,7 +12,7 @@ describe('REST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
+    expect(res.status).toBe(StatusCode.InternalServerError)
     expect(res.body).toBe('Boom')
   })
 
@@ -27,7 +23,7 @@ describe('REST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(ConflictError.status)
+    expect(res.status).toBe(StatusCode.Conflict)
     expect(res.body).toStrictEqual({ message: 'nope' })
   })
 })
@@ -47,7 +43,7 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: InternalServerError.status,
+      status: StatusCode.InternalServerError,
       timestamp: res.timestamp,
       headers: {},
       body: 'Boom',
@@ -68,7 +64,7 @@ describe('WebSocket', () => {
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: ConflictError.status,
+      status: StatusCode.Conflict,
       timestamp: res.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',

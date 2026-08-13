@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createApp, UnprocessableContentError } from 'sleepy-serv'
+import { createApp, StatusCode } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -27,7 +27,7 @@ describe('REST', () => {
 
       await app.close(true)
 
-      expect(res.status).toBe(UnprocessableContentError.status)
+      expect(res.status).toBe(StatusCode.UnprocessableContent)
 
       expect(res.body).toStrictEqual([
         {
@@ -53,7 +53,7 @@ describe('REST', () => {
 
       await app.close(true)
 
-      expect(res.status).toBe(UnprocessableContentError.status)
+      expect(res.status).toBe(StatusCode.UnprocessableContent)
 
       expect(res.body).toStrictEqual([
         {
@@ -109,7 +109,7 @@ describe('WebSocket', () => {
         clientId: client.id!,
         type: MessageType.Response,
         timestamp: res.timestamp,
-        status: UnprocessableContentError.status,
+        status: StatusCode.UnprocessableContent,
         headers: {
           'content-type': 'application/json;charset=utf-8',
         },
@@ -146,7 +146,7 @@ describe('WebSocket', () => {
         clientId: client.id!,
         type: MessageType.Response,
         timestamp: res.timestamp,
-        status: UnprocessableContentError.status,
+        status: StatusCode.UnprocessableContent,
         headers: {
           'content-type': 'application/json;charset=utf-8',
         },

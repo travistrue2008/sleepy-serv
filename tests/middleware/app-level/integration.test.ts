@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { createApp, InternalServerError } from 'sleepy-serv'
+import { createApp, StatusCode } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -28,7 +28,7 @@ describe('REST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
+    expect(res.status).toBe(StatusCode.InternalServerError)
     expect(res.body).toBe('Error from root middleware')
   })
 
@@ -66,13 +66,13 @@ describe('WebSocket', () => {
     await client.close()
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
+    expect(res.status).toBe(StatusCode.InternalServerError)
 
     expect(res).toStrictEqual({
       id: res.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: InternalServerError.status,
+      status: StatusCode.InternalServerError,
       timestamp: res.timestamp,
       headers: {},
       body: 'Error from root middleware',

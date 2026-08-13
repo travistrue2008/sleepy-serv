@@ -1,6 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../../../src'
-import { MethodNotAllowedError } from '../../../../src/errors'
+import { createApp, StatusCode } from '../../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when requested method on resource does not exist (REST)', async () => {
@@ -10,7 +9,7 @@ test('when requested method on resource does not exist (REST)', async () => {
 
   await app.close(true)
 
-  expect(res.status).toBe(MethodNotAllowedError.status)
+  expect(res.status).toBe(StatusCode.MethodNotAllowed)
   expect(res.body).toBe(null)
 })
 
@@ -21,6 +20,6 @@ test('when requested method on resource does not exist (ws)', async () => {
 
   await app.close(true)
 
-  expect(msg.status).toBe(MethodNotAllowedError.status)
+  expect(msg.status).toBe(StatusCode.MethodNotAllowed)
   expect(msg.body).toBe(null)
 })

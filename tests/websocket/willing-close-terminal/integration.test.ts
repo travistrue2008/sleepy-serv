@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test'
 import { Fmt, createRequestor } from '../../helpers'
-import { NotFoundError, createApp } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import SleepySocketClient from 'sleepy-socket'
 
 test('when a willingly-closed clientId is reclaimed', async () => {
@@ -20,6 +20,6 @@ test('when a willingly-closed clientId is reclaimed', async () => {
 
   await app.close(true)
 
-  expect(res.status).toBe(NotFoundError.status)
+  expect(res.status).toBe(StatusCode.NotFound)
   expect(res.body).toBe(null)
 })

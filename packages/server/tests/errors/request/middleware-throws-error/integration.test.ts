@@ -1,6 +1,5 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../../../src'
-import { InternalServerError } from '../../../../src/errors'
+import { createApp, StatusCode } from '../../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when middleware throws an error (REST)', async () => {
@@ -10,7 +9,7 @@ test('when middleware throws an error (REST)', async () => {
 
   await app.close(true)
 
-  expect(res.status).toBe(InternalServerError.status)
+  expect(res.status).toBe(StatusCode.InternalServerError)
   expect(res.body).toBe('Bad')
 })
 
@@ -21,6 +20,6 @@ test('when middleware throws an error (ws)', async () => {
 
   await app.close(true)
 
-  expect(msg.status).toBe(InternalServerError.status)
+  expect(msg.status).toBe(StatusCode.InternalServerError)
   expect(msg.body).toBe('Bad')
 })

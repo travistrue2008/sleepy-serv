@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { InternalServerError, createApp } from 'sleepy-serv'
+import { StatusCode, createApp } from 'sleepy-serv'
 import { createRequestor, Fmt } from '../../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
@@ -13,7 +13,7 @@ describe('POST', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
+    expect(res.status).toBe(StatusCode.InternalServerError)
     expect(res.body).toBe('Error from POST middleware')
   })
 
@@ -48,7 +48,7 @@ describe('PUT', () => {
     await client.close()
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
+    expect(res.status).toBe(StatusCode.InternalServerError)
     expect(res.body).toBe('Error from PUT middleware')
   })
 
@@ -88,7 +88,7 @@ describe('GET', () => {
 
     await app.close(true)
 
-    expect(res.status).toBe(InternalServerError.status)
+    expect(res.status).toBe(StatusCode.InternalServerError)
     expect(res.body).toBe('Error from GET middleware')
   })
 
