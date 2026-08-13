@@ -501,14 +501,11 @@ function processIO (
     return shutdown
   }
 
-  stdin.setRawMode(true)
-
   const rl = readline.createInterface({
     input: stdin,
     output: stdout,
   })
 
-  /* istanbul ignore next */
   const handleClose = async (): Promise<void> => {
     await shutdown()
     process.exit(0)
@@ -519,7 +516,6 @@ function processIO (
   return async (force = false) => {
     rl.off('close', handleClose)
     rl.close()
-    stdin.setRawMode(false)
 
     await shutdown(force)
   }

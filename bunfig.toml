@@ -2,6 +2,7 @@
 coverage = true
 coverageDir = "./coverage"
 coverageReporter = ["text", "lcov"]
+coverageThreshold = 0.98
 
 coveragePathIgnorePatterns = [
   ".claude/**",

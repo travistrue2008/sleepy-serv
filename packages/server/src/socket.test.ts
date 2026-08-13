@@ -24,9 +24,7 @@ import {
   RequestError,
   NotFoundError,
   UnauthorizedError,
-  MethodNotAllowedError,
   UnprocessableContentError,
-  InternalServerError,
   ServiceUnavailableError,
 } from './errors'
 
