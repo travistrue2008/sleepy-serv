@@ -2,7 +2,11 @@ import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
 import crypto from 'node:crypto'
 
-import { MessageType, createMessage, validateMessage } from './messages'
+import {
+  MessageType,
+  createMessage,
+  validateMessage,
+} from './messages'
 
 import {
   StatusCode,
@@ -21,8 +25,8 @@ import {
   ServiceUnavailableError,
 } from './errors'
 
-import type { WebSocketHandler } from 'bun'
 import type { ValidateFunction } from 'ajv'
+import type { WebSocketHandler } from 'bun'
 
 import type {
   HttpMethod,

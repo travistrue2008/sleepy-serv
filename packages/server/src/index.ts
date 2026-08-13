@@ -4,7 +4,7 @@ import querystring from 'querystring'
 import readline from 'node:readline'
 
 import { stdin, stdout } from 'node:process'
-import { StatusCode, toSegments, executeMiddlewareChain } from './utils'
+import { toSegments, executeMiddlewareChain } from './utils'
 
 import {
   buildSocketState,
