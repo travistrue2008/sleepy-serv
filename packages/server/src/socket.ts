@@ -591,16 +591,17 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
         }
 
         const ctx: UpgradeContext = res ? { ...res } : {}
+        const clientId: string | undefined = redeemTicket(validReq.query.ticket)
+
+        if (!clientId) {
+          throw new NotFoundError()
+        }
 
         ctx.data = ctx.data ?? {}
-        ctx.data.clientId = redeemTicket(validReq.query.ticket)
+        ctx.data.clientId = clientId
         ctx.data.superseded = false
         ctx.data.reaped = false
         ctx.data.reaperHandle = null
-
-        if (!ctx.data.clientId) {
-          throw new NotFoundError()
-        }
 
         const useSocket = validReq.server.upgrade(validReq.raw, ctx)
 
@@ -618,10 +619,11 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
         validateSchema(req, createTicketValidator)
 
         const clientId = crypto.randomUUID()
+        const ticket = bindTicket(clientId)
 
         return Response.json({
           clientId,
-          ticket: bindTicket(clientId),
+          ticket,
           data: res,
         }, { status: StatusCode.Created })
       },

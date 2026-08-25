@@ -186,10 +186,10 @@ export function validateSchemas (
   ): unknown => {
     const source = buildValidationSource(req, res)
 
-    const errors = entries.reduce((accum: FormattedError[], [
-      key,
-      validator,
-    ]) => {
+    const errors = entries.reduce((
+      accum: FormattedError[],
+      [key, validator]: [SchemaKey, ValidateFunction],
+    ) => {
       const valid = validator(source[key])
 
       return !valid
