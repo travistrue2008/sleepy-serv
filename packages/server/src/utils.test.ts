@@ -247,6 +247,9 @@ describe('executeMiddlewareChain()', () => {
     params: {},
     query: {},
     json: async () => null,
+    ws: {
+      active: new Map(),
+    },
   }
 
   test('when NO middleware is provided', async () => {

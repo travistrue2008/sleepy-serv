@@ -92,6 +92,19 @@ export type FormattedError = {
 
 export type NextFn = (data?: unknown) => Response | Promise<Response>
 
+export type ActiveSession = {
+  token: string
+  ws: SocketConnection
+}
+
+export type InactiveSession = {
+  token: string
+  expiresAt: number
+}
+
+export type ActiveSessions = ReadonlyMap<string, ActiveSession>
+export type Session = ActiveSession | InactiveSession
+
 export type BaseRequest = {
   method: HttpMethod
   route: string
@@ -99,6 +112,9 @@ export type BaseRequest = {
   params: Record<string, string>
   query: Record<string, unknown>
   json: () => Promise<unknown>
+  ws: {
+    active: ActiveSessions
+  }
 }
 
 export type EndpointRequest = BaseRequest & {
@@ -133,6 +149,12 @@ export type SocketData = {
   reaped: boolean
   reaperHandle: ReturnType<typeof setTimeout> | null
   app: unknown
+}
+
+export type SocketConnection = {
+  data: SocketData
+  send: (data: string) => unknown
+  close: () => void
 }
 
 export type Server = BunServer<SocketData>

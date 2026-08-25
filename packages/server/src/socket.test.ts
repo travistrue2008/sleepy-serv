@@ -33,11 +33,42 @@ import type { UUID } from 'node:crypto'
 import type { ServerWebSocket, WebSocketHandler } from 'bun'
 import type { SocketData } from './utils'
 
+type Request = Record<string, unknown>
+type TestHandler = (req: Request, res: unknown) => Promise<Response>
+type TestServerArgs = Parameters<typeof buildSocketServer>
+
 type TicketBody = {
   clientId: string
   ticket: string
   data: unknown
 }
+
+/*
+  The handlers are typed against Bun's `ServerWebSocket`, which has 20
+  members. These tests only ever touch four, so the mock is cast once
+  here rather than stubbing the rest. `welcome` is a test-only accessor
+  over the first frame the handler sent.
+ */
+
+type SocketMock = ServerWebSocket<SocketData> & {
+  send: ReturnType<typeof mock>
+  close: ReturnType<typeof mock>
+  readonly welcome: Record<string, unknown>
+}
+
+/*
+  Bun declares `open` and `close` optional, since a handler object may
+  supply any subset; only `message` is required. `buildSocketServer`
+  always supplies all three, so this narrows once rather than asserting
+  at each of the 32 call sites.
+ */
+
+type TestServer = Required<
+  Pick<
+    WebSocketHandler<SocketData>,
+    'open' | 'close' | 'message'
+  >
+>
 
 const ID = crypto.randomUUID()
 const CLIENT_ID = crypto.randomUUID()
@@ -57,24 +88,6 @@ const UUIDs: UUID[] = [
   '00000000-0000-0000-0000-000000000002',
   '00000000-0000-0000-0000-000000000003',
 ]
-
-type LooseHandler = (
-  req: Record<string, unknown>,
-  res: unknown,
-) => Promise<Response>
-
-/*
-  The handlers are typed against Bun's `ServerWebSocket`, which has 20
-  members. These tests only ever touch four, so the mock is cast once
-  here rather than stubbing the rest. `welcome` is a test-only accessor
-  over the first frame the handler sent.
- */
-
-type SocketMock = ServerWebSocket<SocketData> & {
-  send: ReturnType<typeof mock>
-  close: ReturnType<typeof mock>
-  readonly welcome: Record<string, unknown>
-}
 
 function buildSocket (clientId: string): SocketMock {
   const send = mock()
@@ -103,20 +116,7 @@ function welcomeToken (ws: SocketMock): string {
   return body.token
 }
 
-/*
-  Bun declares `open` and `close` optional, since a handler object may
-  supply any subset; only `message` is required. `buildSocketServer`
-  always supplies all three, so this narrows once rather than asserting
-  at each of the 32 call sites.
- */
-
-type TestServer = Required<
-  Pick<WebSocketHandler<SocketData>, 'open' | 'close' | 'message'>
->
-
-function buildTestServer (
-  ...args: Parameters<typeof buildSocketServer>
-): TestServer {
+function buildTestServer (...args: TestServerArgs): TestServer {
   return buildSocketServer(...args) as TestServer
 }
 
@@ -586,6 +586,47 @@ describe('buildTestServer()', () => {
         })
       })
 
+      test('when "req.ws.active" reflects connected sockets', async () => {
+        const server = buildTestServer([
+          {
+            method: 'GET',
+            path: '/',
+            chain: [
+              req => Response.json({
+                count: req.ws.active.size,
+              }),
+            ],
+            segments: [],
+          },
+        ], state)
+
+        const ws = buildSocket(CLIENT_ID)
+
+        server.open(ws)
+
+        const incomingMessage = JSON.stringify({
+          id: ID,
+          clientId: CLIENT_ID,
+          type: MessageType.Request,
+          method: 'GET',
+          route: '/',
+          timestamp: TIMESTAMP,
+          headers: HEADERS,
+          query: {},
+          body: null,
+        })
+
+        await server.message(ws, incomingMessage)
+
+        expect(ws.send).toHaveBeenCalledTimes(2)
+
+        const response = JSON.parse(
+          ws.send.mock.calls[1][0],
+        )
+
+        expect(response.body).toStrictEqual({ count: 1 })
+      })
+
       test('when route and method match with dynamic params', async () => {
         const server = buildTestServer([
           {
@@ -733,7 +774,7 @@ describe('buildTestServer()', () => {
 
   describe('close()', () => {
     const handlers = buildSocketHandlers(state)
-    const updateTicket = handlers[2].handler as LooseHandler
+    const updateTicket = handlers[2].handler as TestHandler
 
     test('when the socket is no longer registered', () => {
       const state = buildSocketState()
@@ -877,9 +918,9 @@ describe('buildSocketHandlers()', () => {
 
   const state = buildSocketState()
   const handlers = buildSocketHandlers(state)
-  const createSocket = handlers[0].handler as LooseHandler
-  const createTicket = handlers[1].handler as LooseHandler
-  const updateTicket = handlers[2].handler as LooseHandler
+  const createSocket = handlers[0].handler as TestHandler
+  const createTicket = handlers[1].handler as TestHandler
+  const updateTicket = handlers[2].handler as TestHandler
 
   describe('GET', () => {
     test('when invoked via WebSocket message', async () => {
@@ -1375,7 +1416,7 @@ describe('buildSocketHandlers()', () => {
       })
 
       const handlers = buildSocketHandlers(state)
-      const createTicket = handlers[1].handler as LooseHandler
+      const createTicket = handlers[1].handler as TestHandler
 
       state.tickets.set('a', {
         clientId: 'x',
@@ -1417,7 +1458,7 @@ describe('buildSocketHandlers()', () => {
     test('when expired tickets exist, it sweeps them on mint', async () => {
       const state = buildSocketState()
       const handlers = buildSocketHandlers(state)
-      const createTicket = handlers[1].handler as LooseHandler
+      const createTicket = handlers[1].handler as TestHandler
 
       state.tickets.set('expired-a', {
         clientId: 'x',

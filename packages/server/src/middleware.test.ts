@@ -34,6 +34,9 @@ const BASE_REQUEST: WebSocketRequest = {
   params: {},
   query: {},
   json: async () => null,
+  ws: {
+    active: new Map(),
+  },
 }
 
 describe('parseJsonBody()', () => {
@@ -216,15 +219,6 @@ describe('setValidationFormats()', () => {
 describe('validateSchemas()', () => {
   const UUID = '00000000-0000-0000-0000-000000000001'
 
-  test('when "next" is NOT provided', () => {
-    const middleware = validateSchemas({})
-    const fn = () => middleware(BASE_REQUEST, null, null)
-
-    expect(fn).toThrow(
-      new TypeError('Middleware cannot be the last entry in a chain'),
-    )
-  })
-
   const PATTERN_UUID =
     '^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$'
 
@@ -259,6 +253,15 @@ describe('validateSchemas()', () => {
       'dob',
     ],
   }
+
+  test('when "next" is NOT provided', () => {
+    const middleware = validateSchemas({})
+    const fn = () => middleware(BASE_REQUEST, null, null)
+
+    expect(fn).toThrow(
+      new TypeError('Middleware cannot be the last entry in a chain'),
+    )
+  })
 
   test('when NO schemas are provided', () => {
     const middleware = validateSchemas({})

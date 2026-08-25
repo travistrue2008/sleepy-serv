@@ -35,6 +35,11 @@ import type {
   WebSocketRequest,
   Middleware,
   SocketData,
+  SocketConnection,
+  ActiveSession,
+  ActiveSessions,
+  InactiveSession,
+  Session,
   AppOptions,
 } from './utils'
 
@@ -45,29 +50,48 @@ import type {
   ResponseMessage,
 } from './messages'
 
+type SocketHandler = (req: Request, res: unknown) => Promise<Response>
+
+type UpgradeData = {
+  clientId?: string
+  [key: string]: unknown
+}
+
+type UpgradeContext = {
+  data?: UpgradeData
+  [key: string]: unknown
+}
+
+type SocketEndpoint = {
+  method: HttpMethod
+  path: string
+  handler: SocketHandler
+}
+
+type CreateSocketRequest = {
+  query: {
+    ticket: string
+  }
+  server: {
+    upgrade: (raw: unknown, ctx: UpgradeContext) => boolean
+  }
+  raw: unknown
+}
+
+type CreateTicketRequest = Record<string, unknown>
+
+type UpdateTicketRequest = {
+  headers: Headers
+  params: {
+    clientId: string
+  }
+}
+
 export type Ticket = {
   clientId: string
   expiresAt: number
   data: unknown
 }
-
-export type SocketConnection = {
-  data: SocketData
-  send: (data: string) => unknown
-  close: () => void
-}
-
-export type ActiveSession = {
-  token: string
-  ws: SocketConnection
-}
-
-export type InactiveSession = {
-  token: string
-  expiresAt: number
-}
-
-export type Session = ActiveSession | InactiveSession
 
 export type SocketState = {
   disconnectThreshold: number
@@ -90,41 +114,6 @@ export type SocketRoute = {
 export type SocketCommands = {
   send: (clientId: string, event: string, body: unknown) => void
   broadcast: (event: string, body: unknown) => void
-}
-
-type UpgradeData = {
-  clientId?: string
-  [key: string]: unknown
-}
-
-type UpgradeContext = {
-  data?: UpgradeData
-  [key: string]: unknown
-}
-
-type SocketEndpoint = {
-  method: HttpMethod
-  path: string
-  handler: (req: Request, res: unknown) => Promise<Response>
-}
-
-type CreateSocketRequest = {
-  query: {
-    ticket: string
-  }
-  server: {
-    upgrade: (raw: unknown, ctx: UpgradeContext) => boolean
-  }
-  raw: unknown
-}
-
-type CreateTicketRequest = Record<string, unknown>
-
-type UpdateTicketRequest = {
-  headers: Headers
-  params: {
-    clientId: string
-  }
 }
 
 const ajv = new Ajv({
@@ -364,6 +353,7 @@ function buildParams (
 function buildRequest (
   params: Record<string, string>,
   message: RequestMessage,
+  activeSessions: ActiveSessions,
 ): WebSocketRequest {
   const { id, clientId, method, route } = message
   const headers = new Headers(message.headers ?? {})
@@ -379,6 +369,9 @@ function buildRequest (
     params,
     query,
     json,
+    ws: {
+      active: activeSessions,
+    },
   }
 }
 
@@ -540,7 +533,13 @@ export function buildSocketServer (
         const { id, clientId } = message
         const route = matchRoute(routes, message)
         const params = buildParams(route, message)
-        const req = buildRequest(params, message)
+
+        const req = buildRequest(
+          params,
+          message,
+          activeSessions,
+        )
+
         const res = await executeMiddlewareChain(req, route.chain)
         const outgoingMsg = await buildOutgoingMessage(id, clientId, res)
 
