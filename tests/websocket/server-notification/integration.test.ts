@@ -66,14 +66,10 @@ test('when the server sends to an unknown clientId', async () => {
 
   client.on('notification', message => received.push(message))
 
-  const fn = () => app.commands.send(
-    CLIENT_ID,
-    'state_changed',
-    { score: 1 },
-  )
+  const fn = () => app.commands.send(CLIENT_ID, 'state_changed', { score: 1 })
 
   expect(fn).toThrow(
-    new ReferenceError(`No live socket for client: ${CLIENT_ID}`),
+    new ReferenceError(`No active socket for client: ${CLIENT_ID}`),
   )
 
   await client.close()

@@ -52,6 +52,7 @@ import type {
 } from './messages'
 
 type SocketHandler = (req: Request, res: unknown) => Promise<Response>
+type FilterFn = (clientId: string, data: unknown) => boolean
 
 type UpgradeData = {
   clientId?: string
@@ -116,7 +117,9 @@ export type SocketRoute = {
 
 export type SocketCommands = {
   send: (clientId: string, event: string, body: unknown) => void
+  sendToGroup: (fn: FilterFn, event: string, body: unknown) => void
   broadcast: (event: string, body: unknown) => void
+  disconnect: (clientId: string, code?: number, reason?: string) => void
 }
 
 const ajv = new Ajv({
@@ -735,7 +738,7 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
     const session = state.activeSessions.get(clientId)
 
     if (!session) {
-      throw new ReferenceError(`No live socket for client: ${clientId}`)
+      throw new ReferenceError(`No active socket for client: ${clientId}`)
     }
 
     const message = createMessage(clientId, MessageType.Notification, {
@@ -751,10 +754,28 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
     send (clientId, event, body) {
       sendToClient(clientId, event, body)
     },
+    sendToGroup (fn, event, body) {
+      for (const [clientId, session] of state.activeSessions) {
+        const allow = fn(clientId, session.ws.data)
+
+        if (allow) {
+          sendToClient(clientId, event, body)
+        }
+      }
+    },
     broadcast (event, body) {
       for (const clientId of state.activeSessions.keys()) {
         sendToClient(clientId, event, body)
       }
+    },
+    disconnect (clientId, code, reason) {
+      const session = state.activeSessions.get(clientId)
+
+      if (!session) {
+        throw new ReferenceError(`No active socket for client: ${clientId}`)
+      }
+
+      session.ws.close(code, reason)
     },
   }
 }

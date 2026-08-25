@@ -165,7 +165,7 @@ export type SocketData = {
 export type SocketConnection = {
   data: SocketData
   send: (data: string) => unknown
-  close: () => void
+  close: (code?: number, reason?: string) => void
 }
 
 export type Server = BunServer<SocketData>

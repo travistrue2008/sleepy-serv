@@ -73,6 +73,7 @@ type TestServer = Required<
 const ID = crypto.randomUUID()
 const CLIENT_ID = crypto.randomUUID()
 const TIMESTAMP = '2000-01-01T00:00:00.000Z'
+const EVENT = 'state_changed'
 
 const BYTES: Record<number, Buffer<ArrayBuffer>> = {
   24: Buffer.alloc(24, 1),
@@ -636,9 +637,8 @@ describe('buildTestServer()', () => {
 
         expect(ws.send).toHaveBeenCalledTimes(2)
 
-        const response = JSON.parse(
-          ws.send.mock.calls[1][0],
-        )
+        /* ignore first call (welcome) */
+        const response = JSON.parse(ws.send.mock.calls[1][0])
 
         expect(response.body).toStrictEqual({ count: 1 })
       })
@@ -2008,27 +2008,54 @@ describe('buildSocketHandlers()', () => {
 })
 
 describe('buildSocketCommands()', () => {
-  const state = buildSocketState()
-  const server = buildTestServer([], state)
-  const commands = buildSocketCommands(state)
-
   describe('send()', () => {
-    test('when the client has no live socket', () => {
-      const fn = () => commands.send(CLIENT_ID, 'state_changed', {
+    test('when target connection does not exist', () => {
+      const targetClientId = crypto.randomUUID()
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+
+      const fn = () => commands.send(targetClientId, EVENT, {
         ok: true,
       })
 
+      server.open(buildSocket(CLIENT_ID))
+
       expect(fn).toThrow(
-        new ReferenceError(`No live socket for client: ${CLIENT_ID}`),
+        new ReferenceError(`No active socket for client: ${targetClientId}`),
       )
     })
 
-    test('when the client has a live socket', () => {
+    test('when target connection is NOT active', () => {
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const ws = buildSocket(CLIENT_ID)
+
+      const fn = () => commands.send(CLIENT_ID, EVENT, {
+        ok: true,
+      })
+
+      jest.advanceTimersByTime(state.disconnectThreshold + 100)
+
+      server.open(ws)
+      server.close(ws, 1000, '')
+
+      expect(fn).toThrow(
+        new ReferenceError(`No active socket for client: ${CLIENT_ID}`),
+      )
+    })
+
+    test('when target connection is active', () => {
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      commands.send(CLIENT_ID, 'state_changed', { score: 1 })
+      commands.send(CLIENT_ID, EVENT, { score: 1 })
 
+      /* ignore first call (welcome) */
       const notification = JSON.parse(ws.send.mock.calls[1][0])
 
       expect(notification).toStrictEqual({
@@ -2036,7 +2063,7 @@ describe('buildSocketCommands()', () => {
         clientId: CLIENT_ID,
         type: MessageType.Notification,
         timestamp: TIMESTAMP,
-        event: 'state_changed',
+        event: EVENT,
         headers: {},
         body: {
           score: 1,
@@ -2045,11 +2072,122 @@ describe('buildSocketCommands()', () => {
     })
   })
 
+  describe('sendToGroup()', () => {
+    test('when invoked', () => {
+      const clientIds = [
+        crypto.randomUUID(),
+        crypto.randomUUID(),
+        crypto.randomUUID(),
+        crypto.randomUUID(),
+      ]
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const webSockets = clientIds.map(buildSocket)
+
+      webSockets.forEach(ws => server.open(ws))
+      server.close(webSockets[0], 1000, '')
+
+      const filterFn = mock((_cid, data) => data.clientId !== clientIds[3])
+
+      commands.sendToGroup(filterFn, EVENT, { score: 1 })
+
+      console.log('length:', webSockets.length)
+
+      const notifications = webSockets.map(ws => {
+        return ws.send.mock.calls.map(call => {
+          return call.map(arg => JSON.parse(arg))
+        })
+      })
+
+      expect(notifications).toStrictEqual([
+        [
+          [
+            expect.objectContaining({
+              type: MessageType.Welcome,
+            }),
+          ],
+        ],
+        [
+          [
+            expect.objectContaining({
+              type: MessageType.Welcome,
+            }),
+          ],
+          [
+            {
+              id: expect.any(String),
+              clientId: webSockets[1].data.clientId,
+              type: MessageType.Notification,
+              timestamp: TIMESTAMP,
+              event: EVENT,
+              headers: {},
+              body: {
+                score: 1,
+              },
+            },
+          ],
+        ],
+        [
+          [
+            expect.objectContaining({
+              type: MessageType.Welcome,
+            }),
+          ],
+          [
+            {
+              id: expect.any(String),
+              clientId: webSockets[2].data.clientId,
+              type: MessageType.Notification,
+              timestamp: TIMESTAMP,
+              event: EVENT,
+              headers: {},
+              body: {
+                score: 1,
+              },
+            },
+          ],
+        ],
+        [
+          [
+            expect.objectContaining({
+              type: MessageType.Welcome,
+            }),
+          ],
+        ],
+      ])
+
+      expect(filterFn).toHaveBeenCalledTimes(3)
+
+      expect(filterFn).toHaveBeenNthCalledWith(
+        1,
+        clientIds[1],
+        webSockets[1].data,
+      )
+
+      expect(filterFn).toHaveBeenNthCalledWith(
+        2,
+        clientIds[2],
+        webSockets[2].data,
+      )
+
+      expect(filterFn).toHaveBeenNthCalledWith(
+        3,
+        clientIds[3],
+        webSockets[3].data,
+      )
+    })
+  })
+
   describe('broadcast()', () => {
     const CLIENT_ID_A = '00000000-0000-0000-0000-000000000010'
     const CLIENT_ID_B = '00000000-0000-0000-0000-000000000011'
 
     test('when multiple clients are connected', () => {
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
       const wsA = buildSocket(CLIENT_ID_A)
       const wsB = buildSocket(CLIENT_ID_B)
 
@@ -2083,6 +2221,48 @@ describe('buildSocketCommands()', () => {
           name: 'x',
         },
       })
+    })
+  })
+
+  describe('disconnect()', () => {
+    const DISCONNECT_ID = '00000000-0000-0000-0000-999999999999'
+
+    test('when the client has no active socket', () => {
+      const state = buildSocketState()
+      const commands = buildSocketCommands(state)
+
+      const fn = () => commands.disconnect(DISCONNECT_ID)
+
+      expect(fn).toThrow(
+        new ReferenceError(
+          `No active socket for client: ${DISCONNECT_ID}`,
+        ),
+      )
+    })
+
+    test('when the client has a active socket', () => {
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const ws = buildSocket(DISCONNECT_ID)
+
+      server.open(ws)
+      commands.disconnect(DISCONNECT_ID)
+
+      expect(ws.close).toHaveBeenCalledOnce()
+    })
+
+    test('when a code and reason are provided', () => {
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const ws = buildSocket(DISCONNECT_ID)
+
+      server.open(ws)
+      commands.disconnect(DISCONNECT_ID, 4000, 'kicked')
+
+      expect(ws.close).toHaveBeenCalledOnce()
+      expect(ws.close).toHaveBeenCalledWith(4000, 'kicked')
     })
   })
 })
