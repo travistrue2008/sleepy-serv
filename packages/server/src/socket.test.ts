@@ -1497,9 +1497,7 @@ describe('buildSocketHandlers()', () => {
           'content-type':
             'application/json;charset=utf-8',
         }),
-        json: () => Promise.reject(
-          new SyntaxError('bad'),
-        ),
+        json: () => Promise.reject(new SyntaxError('Bad')),
       }, {})
 
       await expect(promise).rejects.toThrow(

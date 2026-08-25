@@ -1,4 +1,8 @@
-import SleepySocketClient, { Queue, MessageType } from './'
+import SleepySocketClient, {
+  Queue,
+  MessageType,
+  HandshakeError,
+} from './'
 import { StatusCode, id } from './utils'
 
 import {
@@ -27,15 +31,10 @@ type MockEvent = {
 
 type MockListener = (event: MockEvent) => void
 
-type TicketBody = {
-  ticket?: string
-  clientId?: string
-  data?: unknown
-}
-
 type MockResponse = {
   ok: boolean
-  json: () => Promise<TicketBody>
+  status?: number
+  json: () => Promise<unknown>
 }
 
 /*
@@ -342,6 +341,44 @@ describe('SleepySocketClient', () => {
       installFetchMock(mock(async () => {
         throw new Error('Down')
       }))
+
+      const promise = SleepySocketClient.connect('localhost', 3000)
+
+      await expect(promise).rejects.toThrow(new Error('Connection failed.'))
+    })
+
+    test('when the server rejects the handshake', async () => {
+      const BODY_ERROR = {
+        message: 'Game is full',
+      }
+
+      installFetchMock(mock(async (_url, _opts) => ({
+        ok: false,
+        status: 409,
+        json: async () => BODY_ERROR,
+      })))
+
+      const promise = SleepySocketClient.connect('localhost', 3000)
+
+      await expect(promise).rejects.toThrow(
+        new HandshakeError(409, BODY_ERROR),
+      )
+
+      await expect(promise).rejects.toMatchObject({
+        status: 409,
+        body: BODY_ERROR,
+      })
+    })
+
+    test('when the server rejects with unparseable body', async () => {
+      installFetchMock(mock(async (_url, _opts) => ({
+        ok: false,
+        status: 500,
+        text: async () => 'A problem occurred',
+        json: async () => {
+          throw new SyntaxError('Bad')
+        },
+      })))
 
       const promise = SleepySocketClient.connect('localhost', 3000)
 
@@ -772,6 +809,7 @@ describe('SleepySocketClient', () => {
 
       installFetchMock(mock(async (_url, options) => ({
         ok: options.method === 'POST',
+        status: options.method === 'POST' ? 201 : 404,
         json: async () => ({
           ticket: TICKET,
           clientId: OTHER_CLIENT_ID,
@@ -795,6 +833,34 @@ describe('SleepySocketClient', () => {
       )
 
       expect(methods).toStrictEqual(['PUT', 'POST'])
+    })
+
+    test('when reclaim receives an app-level refusal', async () => {
+      const ERROR_BODY = {
+        message: 'Game ended',
+      }
+
+      const { socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      installFetchMock(mock(async (_url, _opts) => ({
+        ok: false,
+        status: 409,
+        json: async () => ERROR_BODY,
+      })))
+
+      socket.drop()
+
+      jest.advanceTimersByTime(500)
+
+      await settle()
+      await settle()
+
+      expect(fetchMock()).toHaveBeenCalledOnce()
+      expect(MockWebSocket.last).toBe(socket)
     })
 
     test('when the welcome returns the same clientId', async () => {

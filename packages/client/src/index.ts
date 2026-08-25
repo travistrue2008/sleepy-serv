@@ -90,6 +90,19 @@ type NormalizedRequestOpts = {
 const RECONNECT_JITTER = 0.5
 const JSON_CONTENT_TYPE = 'application/json;charset=utf-8'
 
+export class HandshakeError extends Error {
+  status: number
+  body: unknown
+
+  constructor (status: number, body: unknown) {
+    super(`Handshake rejected (${status})`)
+
+    this.name = 'HandshakeError'
+    this.status = status
+    this.body = body
+  }
+}
+
 export default class SleepySocketClient {
   #id: string | null = null
   #queueType: Queue = Queue.None
@@ -204,21 +217,36 @@ export default class SleepySocketClient {
     return `${protocol}://${this.#host}:${this.#port}${this.#mountPath}`
   }
 
+  async #handleError (response: Response): Promise<void> {
+    const body = await response.json().catch(() => null)
+
+    if (!body) {
+      const msg = await response.text()
+
+      throw new Error(msg)
+    }
+
+    throw new HandshakeError(response.status, body)
+  }
+
   async #createTicket (): Promise<TicketData> {
-    const response = await fetch(
-      `${this.#getBaseUrl()}/ws`,
-      {
-        method: 'POST',
-        ...(this.#ctx ? {
-          headers: {
-            'content-type': JSON_CONTENT_TYPE,
-          },
-          body: JSON.stringify({
-            data: this.#ctx,
-          }),
-        } : {}),
-      },
-    )
+    const url = `${this.#getBaseUrl()}/ws`
+
+    const response = await fetch(url, {
+      method: 'POST',
+      ...(this.#ctx ? {
+        headers: {
+          'content-type': JSON_CONTENT_TYPE,
+        },
+        body: JSON.stringify({
+          data: this.#ctx,
+        }),
+      } : {}),
+    })
+
+    if (!response.ok) {
+      await this.#handleError(response)
+    }
 
     return await response.json() as TicketData
   }
@@ -245,7 +273,11 @@ export default class SleepySocketClient {
     })
 
     if (!response.ok) {
-      return null
+      if ([401, 404].includes(response.status)) {
+        return null
+      }
+
+      await this.#handleError(response)
     }
 
     return await response.json() as TicketData
@@ -354,8 +386,27 @@ export default class SleepySocketClient {
       }
 
       this.#requestTicket()
-        .then(ticketData => this.#openSocket(ticketData, succeed, fail))
-        .catch(() => fail('Connection failed.'))
+        .then(ticketData => this.#openSocket(
+          ticketData,
+          succeed,
+          fail,
+        ))
+        .catch(err => {
+          if (err instanceof HandshakeError) {
+            if (settled) {
+              return
+            }
+
+            settled = true
+
+            clearTimeout(timer)
+            reject(err)
+
+            return
+          }
+
+          fail('Connection failed.')
+        })
     })
   }
 
@@ -383,8 +434,11 @@ export default class SleepySocketClient {
 
       try {
         await this.#establish()
-      } catch {
-        if (this.#closing) {
+      } catch (err) {
+        if (
+          this.#closing ||
+          err instanceof HandshakeError
+        ) {
           return
         }
 
