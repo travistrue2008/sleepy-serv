@@ -132,6 +132,7 @@ export type SocketData = {
   superseded: boolean
   reaped: boolean
   reaperHandle: ReturnType<typeof setTimeout> | null
+  app: unknown
 }
 
 export type Server = BunServer<SocketData>

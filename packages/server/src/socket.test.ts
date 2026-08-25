@@ -22,6 +22,7 @@ import {
 
 import {
   RequestError,
+  BadRequestError,
   NotFoundError,
   UnauthorizedError,
   UnprocessableContentError,
@@ -57,7 +58,10 @@ const UUIDs: UUID[] = [
   '00000000-0000-0000-0000-000000000003',
 ]
 
-type LooseHandler = (req: Record<string, unknown>, res: unknown) => Response
+type LooseHandler = (
+  req: Record<string, unknown>,
+  res: unknown,
+) => Promise<Response>
 
 /*
   The handlers are typed against Bun's `ServerWebSocket`, which has 20
@@ -83,6 +87,7 @@ function buildSocket (clientId: string): SocketMock {
       superseded: false,
       reaped: false,
       reaperHandle: null,
+      app: null,
     },
     get welcome () {
       return JSON.parse(send.mock.calls[0][0])
@@ -752,7 +757,7 @@ describe('buildTestServer()', () => {
       server.close(oldSocket, 1000, '')
       server.open(newSocket)
 
-      const res = updateTicket({
+      const res = await updateTicket({
         method: 'PUT',
         headers: new Headers({
           authorization: `Bearer ${welcomeToken(newSocket)}`,
@@ -776,7 +781,7 @@ describe('buildTestServer()', () => {
 
       server.open(ws)
 
-      const res = updateTicket({
+      const res = await updateTicket({
         method: 'PUT',
         headers: new Headers({
           authorization: `Bearer ${BASE64_32}`,
@@ -804,7 +809,7 @@ describe('buildTestServer()', () => {
       jest.advanceTimersByTime(state.disconnectThreshold + 100)
       server.close(ws, 1000, '')
 
-      const res = updateTicket({
+      const res = await updateTicket({
         method: 'PUT',
         headers: new Headers({
           authorization: `Bearer ${BASE64_32}`,
@@ -879,7 +884,7 @@ describe('buildSocketHandlers()', () => {
   describe('GET', () => {
     test('when invoked via WebSocket message', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
@@ -939,7 +944,7 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when "req.server" is missing', async () => {
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
@@ -958,7 +963,7 @@ describe('buildSocketHandlers()', () => {
     })
 
     test('when "req.server.upgrade" is missing', async () => {
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
@@ -979,7 +984,7 @@ describe('buildSocketHandlers()', () => {
 
     test('when "req.raw" is missing', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
@@ -1019,7 +1024,7 @@ describe('buildSocketHandlers()', () => {
 
     test('when the same ticket is redeemed twice', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
@@ -1042,12 +1047,13 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
+          app: null,
         },
       })
     })
 
     test('when the ticket has expired', async () => {
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
@@ -1067,7 +1073,7 @@ describe('buildSocketHandlers()', () => {
 
     test('when the upgrade is refused', async () => {
       const upgrade = mock(() => false)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
@@ -1088,16 +1094,17 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
+          app: null,
         },
       })
     })
 
     test('when the ticket is valid', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
-      const res = createSocket({
+      const res = await createSocket({
         query: {
           ticket: ticketBody.ticket,
         },
@@ -1114,6 +1121,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
+          app: null,
         },
       })
 
@@ -1122,7 +1130,7 @@ describe('buildSocketHandlers()', () => {
 
     test('when "res" is not of type "object"', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const fn = () => createSocket({
@@ -1141,10 +1149,10 @@ describe('buildSocketHandlers()', () => {
 
     test('when "res" is NULL', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
-      const res = createSocket({
+      const res = await createSocket({
         query: {
           ticket: ticketBody.ticket,
         },
@@ -1162,16 +1170,17 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
+          app: null,
         },
       })
     })
 
     test('when "res" is an empty object', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
-      const res = createSocket({
+      const res = await createSocket({
         query: {
           ticket: ticketBody.ticket,
         },
@@ -1189,20 +1198,21 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
+          app: null,
         },
       })
     })
 
     test('when "res.data" is an empty object', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const middlewareRes = {
         data: {},
       }
 
-      const res = createSocket({
+      const res = await createSocket({
         query: {
           ticket: ticketBody.ticket,
         },
@@ -1220,13 +1230,14 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
+          app: null,
         },
       })
     })
 
     test('when "res.data" is an object with content', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const middlewareRes = {
@@ -1235,7 +1246,7 @@ describe('buildSocketHandlers()', () => {
         },
       }
 
-      const res = createSocket({
+      const res = await createSocket({
         query: {
           ticket: ticketBody.ticket,
         },
@@ -1252,6 +1263,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
+          app: null,
         },
       })
 
@@ -1260,7 +1272,7 @@ describe('buildSocketHandlers()', () => {
 
     test('when "res" has other top-level properties', async () => {
       const upgrade = mock(() => true)
-      const ticketRes = createTicket({}, {})
+      const ticketRes = await createTicket({ headers: new Headers() },{})
       const ticketBody = await ticketRes.json() as TicketBody
 
       const middlewareRes = {
@@ -1269,7 +1281,7 @@ describe('buildSocketHandlers()', () => {
         }),
       }
 
-      const res = createSocket({
+      const res = await createSocket({
         query: {
           ticket: ticketBody.ticket,
         },
@@ -1286,6 +1298,51 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
+          app: null,
+        },
+      })
+
+      expect(res.status).toBe(StatusCode.Ok)
+    })
+
+    test('when "ctx" is provided via POST', async () => {
+      const upgrade = mock(() => true)
+
+      const appData = {
+        gameId: 'g1',
+        playerId: 'p1',
+      }
+
+      const ticketRes = await createTicket({
+        headers: new Headers({
+          'content-type':
+            'application/json;charset=utf-8',
+        }),
+        json: () => Promise.resolve({
+          data: appData,
+        }),
+      }, {})
+
+      const ticketBody =
+        await ticketRes.json() as TicketBody
+
+      const res = await createSocket({
+        query: {
+          ticket: ticketBody.ticket,
+        },
+        server: {
+          upgrade,
+        },
+        raw: REQ_RAW,
+      }, {})
+
+      expect(upgrade).toHaveBeenCalledWith(REQ_RAW, {
+        data: {
+          clientId: UUIDs[0],
+          superseded: false,
+          reaped: false,
+          reaperHandle: null,
+          app: appData,
         },
       })
 
@@ -1294,20 +1351,23 @@ describe('buildSocketHandlers()', () => {
   })
 
   describe('POST', () => {
-    test('when invoked via WebSocket message', () => {
-      const fn = () => createTicket({
+    test('when invoked via WebSocket message', async () => {
+      const promise = createTicket({
         clientId: crypto.randomUUID(),
+        headers: new Headers(),
       }, {})
 
-      expect(fn).toThrow(new UnprocessableContentError([
-        {
-          path: '',
-          message: 'must NOT be valid',
-        },
-      ]))
+      await expect(promise).rejects.toThrow(
+        new UnprocessableContentError([
+          {
+            path: '',
+            message: 'must NOT be valid',
+          },
+        ]),
+      )
     })
 
-    test('when the ticket cap is reached', () => {
+    test('when the ticket cap is reached', async () => {
       const state = buildSocketState({
         ws: {
           maxTickets: 2,
@@ -1320,20 +1380,29 @@ describe('buildSocketHandlers()', () => {
       state.tickets.set('a', {
         clientId: 'x',
         expiresAt: Date.now() + 10_000,
+        data: null,
       })
 
       state.tickets.set('b', {
         clientId: 'y',
         expiresAt: Date.now() + 10_000,
+        data: null,
       })
 
-      const fn = () => createTicket({}, {})
+      const promise = createTicket(
+        { headers: new Headers() },
+        {},
+      )
 
-      expect(fn).toThrow(new ServiceUnavailableError('Unable to issue ticket'))
+      await expect(promise).rejects.toThrow(
+        new ServiceUnavailableError(
+          'Unable to issue ticket',
+        ),
+      )
     })
 
     test('when called, it mints a fresh clientId and ticket', async () => {
-      const res = createTicket({}, {})
+      const res = await createTicket({ headers: new Headers() },{})
       const result = await res.json()
 
       expect(res.status).toBe(StatusCode.Created)
@@ -1345,7 +1414,7 @@ describe('buildSocketHandlers()', () => {
       })
     })
 
-    test('when expired tickets exist, it sweeps them on mint', () => {
+    test('when expired tickets exist, it sweeps them on mint', async () => {
       const state = buildSocketState()
       const handlers = buildSocketHandlers(state)
       const createTicket = handlers[1].handler as LooseHandler
@@ -1353,21 +1422,23 @@ describe('buildSocketHandlers()', () => {
       state.tickets.set('expired-a', {
         clientId: 'x',
         expiresAt: Date.now() - 100,
+        data: null,
       })
 
       state.tickets.set('expired-b', {
         clientId: 'y',
         expiresAt: Date.now() - 100,
+        data: null,
       })
 
-      const res = createTicket({}, {})
+      const res = await createTicket({ headers: new Headers() },{})
 
       expect(res.status).toBe(StatusCode.Created)
       expect(state.tickets.size).toBe(1)
     })
 
     test('when "res" has content', async () => {
-      const res = createTicket({}, RES_HANDLER)
+      const res = await createTicket({ headers: new Headers() },RES_HANDLER)
       const result = await res.json()
 
       expect(res.status).toBe(StatusCode.Created)
@@ -1378,11 +1449,113 @@ describe('buildSocketHandlers()', () => {
         data: RES_HANDLER,
       })
     })
+
+    test('when the JSON body is malformed', async () => {
+      const promise = createTicket({
+        headers: new Headers({
+          'content-type':
+            'application/json;charset=utf-8',
+        }),
+        json: () => Promise.reject(
+          new SyntaxError('bad'),
+        ),
+      }, {})
+
+      await expect(promise).rejects.toThrow(
+        new BadRequestError('Invalid JSON'),
+      )
+    })
+
+    test('when the body has no "data" property', async () => {
+      const res = await createTicket({
+        headers: new Headers({
+          'content-type':
+            'application/json;charset=utf-8',
+        }),
+        json: () => Promise.resolve({ foo: 'bar' }),
+      }, {})
+
+      const result = await res.json()
+
+      expect(res.status).toBe(StatusCode.Created)
+
+      expect(result).toStrictEqual({
+        clientId: UUIDs[0],
+        ticket: BASE64_24,
+        data: {},
+      })
+    })
+
+    test('when "ctx" is an object', async () => {
+      const res = await createTicket({
+        headers: new Headers({
+          'content-type':
+            'application/json;charset=utf-8',
+        }),
+        json: () => Promise.resolve({
+          data: { gameId: 'g1' },
+        }),
+      }, {})
+
+      const result = await res.json()
+
+      expect(res.status).toBe(StatusCode.Created)
+
+      expect(result).toStrictEqual({
+        clientId: UUIDs[0],
+        ticket: BASE64_24,
+        data: {},
+      })
+    })
+
+    test('when "ctx" is an array', async () => {
+      const res = await createTicket({
+        headers: new Headers({
+          'content-type':
+            'application/json;charset=utf-8',
+        }),
+        json: () => Promise.resolve({
+          data: [1, 2, 3],
+        }),
+      }, {})
+
+      const result = await res.json()
+
+      expect(res.status).toBe(StatusCode.Created)
+
+      expect(result).toStrictEqual({
+        clientId: UUIDs[0],
+        ticket: BASE64_24,
+        data: {},
+      })
+    })
+
+    test('when "ctx" is a primitive', async () => {
+      const res = await createTicket({
+        headers: new Headers({
+          'content-type':
+            'application/json;charset=utf-8',
+        }),
+        json: () => Promise.resolve({
+          data: 'hello',
+        }),
+      }, {})
+
+      const result = await res.json()
+
+      expect(res.status).toBe(StatusCode.Created)
+
+      expect(result).toStrictEqual({
+        clientId: UUIDs[0],
+        ticket: BASE64_24,
+        data: {},
+      })
+    })
   })
 
   describe('PUT', () => {
-    test('when invoked via WebSocket message', () => {
-      const fn = () => updateTicket({
+    test('when invoked via WebSocket message', async () => {
+      const promise = updateTicket({
         clientId: crypto.randomUUID(),
         params: {
           clientId: crypto.randomUUID(),
@@ -1392,63 +1565,71 @@ describe('buildSocketHandlers()', () => {
         }),
       }, {})
 
-      expect(fn).toThrow(new UnprocessableContentError([
-        {
-          path: '',
-          message: 'must NOT be valid',
-        },
-      ]))
+      await expect(promise).rejects.toThrow(
+        new UnprocessableContentError([
+          {
+            path: '',
+            message: 'must NOT be valid',
+          },
+        ]),
+      )
     })
 
-    test('when "params" is missing', () => {
-      const fn = () => updateTicket({
+    test('when "params" is missing', async () => {
+      const promise = updateTicket({
         headers: new Headers({
           authorization: 'Bearer abc',
         }),
       }, {})
 
-      expect(fn).toThrow(new UnprocessableContentError([
-        {
-          path: '',
-          message: `must have required property 'params'`,
-        },
-      ]))
+      await expect(promise).rejects.toThrow(
+        new UnprocessableContentError([
+          {
+            path: '',
+            message: `must have required property 'params'`,
+          },
+        ]),
+      )
     })
 
-    test('when "params.clientId" is missing', () => {
-      const fn = () => updateTicket({
+    test('when "params.clientId" is missing', async () => {
+      const promise = updateTicket({
         params: {},
         headers: new Headers({
           authorization: 'Bearer abc',
         }),
       }, {})
 
-      expect(fn).toThrow(new UnprocessableContentError([
-        {
-          path: 'params',
-          message: `must have required property 'clientId'`,
-        },
-      ]))
+      await expect(promise).rejects.toThrow(
+        new UnprocessableContentError([
+          {
+            path: 'params',
+            message: `must have required property 'clientId'`,
+          },
+        ]),
+      )
     })
 
-    test('when "headers.authorization" is missing', () => {
-      const fn = () => updateTicket({
+    test('when "headers.authorization" is missing', async () => {
+      const promise = updateTicket({
         params: {
           clientId: UUIDs[0],
         },
         headers: new Headers({}),
       }, {})
 
-      expect(fn).toThrow(new UnprocessableContentError([
-        {
-          path: 'headers',
-          message: `must have required property 'authorization'`,
-        },
-      ]))
+      await expect(promise).rejects.toThrow(
+        new UnprocessableContentError([
+          {
+            path: 'headers',
+            message: `must have required property 'authorization'`,
+          },
+        ]),
+      )
     })
 
-    test('when "headers.authorization" missing "Bearer "', () => {
-      const fn = () => updateTicket({
+    test('when "headers.authorization" missing "Bearer "', async () => {
+      const promise = updateTicket({
         params: {
           clientId: UUIDs[0],
         },
@@ -1457,16 +1638,18 @@ describe('buildSocketHandlers()', () => {
         }),
       }, {})
 
-      expect(fn).toThrow(new UnprocessableContentError([
-        {
-          path: 'headers.authorization',
-          message: `must match pattern "^Bearer .+$"`,
-        },
-      ]))
+      await expect(promise).rejects.toThrow(
+        new UnprocessableContentError([
+          {
+            path: 'headers.authorization',
+            message: `must match pattern "^Bearer .+$"`,
+          },
+        ]),
+      )
     })
 
-    test('when the clientId has no session', () => {
-      const fn = () => updateTicket({
+    test('when the clientId has no session', async () => {
+      const promise = updateTicket({
         params: {
           clientId: 'does-not-exist',
         },
@@ -1475,16 +1658,18 @@ describe('buildSocketHandlers()', () => {
         }),
       }, {})
 
-      expect(fn).toThrow(new NotFoundError())
+      await expect(promise).rejects.toThrow(
+        new NotFoundError(),
+      )
     })
 
-    test('when the token is incorrect', () => {
+    test('when the token is incorrect', async () => {
       const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
 
-      const fn = () => updateTicket({
+      const promise = updateTicket({
         params: {
           clientId: CLIENT_ID,
         },
@@ -1493,10 +1678,12 @@ describe('buildSocketHandlers()', () => {
         }),
       }, {})
 
-      expect(fn).toThrow(new UnauthorizedError('Invalid token'))
+      await expect(promise).rejects.toThrow(
+        new UnauthorizedError('Invalid token'),
+      )
     })
 
-    test('when the socket is closed unexpectedly (expired)', () => {
+    test('when the socket is closed unexpectedly (expired)', async () => {
       const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
@@ -1504,7 +1691,7 @@ describe('buildSocketHandlers()', () => {
       server.close(ws, 1006, '')
       jest.advanceTimersByTime(state.reclaimTtl + 1)
 
-      const fn = () => updateTicket({
+      const promise = updateTicket({
         params: {
           clientId: CLIENT_ID,
         },
@@ -1513,7 +1700,9 @@ describe('buildSocketHandlers()', () => {
         }),
       }, {})
 
-      expect(fn).toThrow(new NotFoundError())
+      await expect(promise).rejects.toThrow(
+        new NotFoundError(),
+      )
     })
 
     test('when the socket is closed unexpectedly and (fresh)', async () => {
@@ -1523,7 +1712,7 @@ describe('buildSocketHandlers()', () => {
       server.open(ws)
       server.close(ws, 1006, '')
 
-      const result = updateTicket({
+      const result = await updateTicket({
         params: {
           clientId: CLIENT_ID,
         },
@@ -1549,7 +1738,7 @@ describe('buildSocketHandlers()', () => {
 
       server.open(ws)
 
-      const res = updateTicket({
+      const res = await updateTicket({
         params: {
           clientId: CLIENT_ID,
         },
@@ -1576,7 +1765,7 @@ describe('buildSocketHandlers()', () => {
       server.open(ws)
       server.close(ws, 1006, '')
 
-      const result = updateTicket({
+      const result = await updateTicket({
         params: {
           clientId: CLIENT_ID,
         },
@@ -1593,6 +1782,39 @@ describe('buildSocketHandlers()', () => {
         clientId: CLIENT_ID,
         ticket: BASE64_24,
         data: RES_HANDLER,
+      })
+    })
+
+    test('when "ctx" is provided on reclaim', async () => {
+      const server = buildTestServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+      const appData = { playerId: 'p1' }
+
+      server.open(ws)
+      server.close(ws, 1006, '')
+
+      const result = await updateTicket({
+        params: {
+          clientId: CLIENT_ID,
+        },
+        headers: new Headers({
+          'content-type':
+            'application/json;charset=utf-8',
+          authorization: `Bearer ${BASE64_32}`,
+        }),
+        json: () => Promise.resolve({
+          data: appData,
+        }),
+      }, {})
+
+      const body = await result.json()
+
+      expect(result.status).toBe(StatusCode.Ok)
+
+      expect(body).toStrictEqual({
+        clientId: CLIENT_ID,
+        ticket: BASE64_24,
+        data: {},
       })
     })
   })

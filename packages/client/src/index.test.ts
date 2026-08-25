@@ -460,6 +460,27 @@ describe('SleepySocketClient', () => {
 
       expect(client.mountPath).toBe('/test-mount-path')
     })
+
+    test('when "opts.ctx" is provided', async () => {
+      const ctx = {
+        gameId: 'g1',
+        playerId: 'p1',
+      }
+
+      await connectAndOpen({ ctx })
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/ws',
+        {
+          method: 'POST',
+          headers: {
+            'content-type':
+              'application/json;charset=utf-8',
+          },
+          body: JSON.stringify({ data: ctx }),
+        },
+      )
+    })
   })
 
   describe('close()', () => {
@@ -689,6 +710,55 @@ describe('SleepySocketClient', () => {
           headers: {
             authorization: `Bearer ${TOKEN}`,
           },
+        },
+      )
+    })
+
+    test('when "opts.ctx" is replayed on reclaim', async () => {
+      const ctx = {
+        gameId: 'g1',
+        playerId: 'p1',
+      }
+
+      const { client, socket } = await connectAndOpen({
+        ctx,
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      socket.drop()
+
+      await reconnect()
+
+      expect(client.isConnected).toBe(true)
+
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+
+      expect(globalThis.fetch).toHaveBeenNthCalledWith(
+        1,
+        'http://localhost:3000/ws',
+        {
+          method: 'POST',
+          headers: {
+            'content-type':
+              'application/json;charset=utf-8',
+          },
+          body: JSON.stringify({ data: ctx }),
+        },
+      )
+
+      expect(globalThis.fetch).toHaveBeenNthCalledWith(
+        2,
+        `http://localhost:3000/ws/${CLIENT_ID}`,
+        {
+          method: 'PUT',
+          headers: {
+            authorization: `Bearer ${TOKEN}`,
+            'content-type':
+              'application/json;charset=utf-8',
+          },
+          body: JSON.stringify({ data: ctx }),
         },
       )
     })

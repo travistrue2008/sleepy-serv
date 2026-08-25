@@ -29,6 +29,7 @@ export type ConnectOptions = {
   serverTimeout?: number
   mountPath?: string
   reconnect?: ReconnectOptions | false
+  ctx?: unknown
 }
 
 export type RequestOptions = {
@@ -74,7 +75,7 @@ type ReconnectConfig = {
 type DispatchedMessage = {
   id: string
   ready: boolean
-  timer: ReturnType<typeof setTimeout>
+  timer: TimeoutHandle
   response: ResponseMessage | null
   resolve: (value: ResponseMessage) => void
   reject: (reason: Error) => void
@@ -104,10 +105,11 @@ export default class SleepySocketClient {
   #token: string | null = null
   #socket: WebSocket | null = null
   #random: () => number = Math.random
-  #livenessTimer: ReturnType<typeof setTimeout> | null = null
-  #heartbeatTimer: ReturnType<typeof setInterval> | null = null
-  #reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  #livenessTimer: TimeoutHandle | null = null
+  #heartbeatTimer: IntervalHandle | null = null
+  #reconnectTimer: TimeoutHandle | null = null
   #reconnectConfig: ReconnectConfig | null = null
+  #ctx: unknown
   #connectionData: unknown = null
   #listeners = new Map<string, Set<EventHandler>>()
   #dispatchedMessages: DispatchedMessage[] = []
@@ -179,6 +181,7 @@ export default class SleepySocketClient {
     client.#timeout = opts.timeout ?? 30_000
     client.#serverTimeout = opts.serverTimeout ?? 120_000
     client.#mountPath = opts.mountPath ?? ''
+    client.#ctx = opts.ctx
 
     if (opts.reconnect !== false) {
       client.#reconnectConfig = {
@@ -195,28 +198,50 @@ export default class SleepySocketClient {
     return client
   }
 
-  #baseUrl (): string {
+  #getBaseUrl (): string {
     const protocol = this.#secure ? 'https' : 'http'
 
     return `${protocol}://${this.#host}:${this.#port}${this.#mountPath}`
   }
 
   async #createTicket (): Promise<TicketData> {
-    const response = await fetch(`${this.#baseUrl()}/ws`, {
-      method: 'POST',
-    })
+    const response = await fetch(
+      `${this.#getBaseUrl()}/ws`,
+      {
+        method: 'POST',
+        ...(this.#ctx ? {
+          headers: {
+            'content-type': JSON_CONTENT_TYPE,
+          },
+          body: JSON.stringify({
+            data: this.#ctx,
+          }),
+        } : {}),
+      },
+    )
 
     return await response.json() as TicketData
   }
 
   async #reclaimTicket (): Promise<TicketData | null> {
-    const url = `${this.#baseUrl()}/ws/${this.#id}`
+    const url = `${this.#getBaseUrl()}/ws/${this.#id}`
+
+    const headers: Record<string, string> = {
+      authorization: `Bearer ${this.#token}`,
+    }
+
+    if (this.#ctx) {
+      headers['content-type'] = JSON_CONTENT_TYPE
+    }
 
     const response = await fetch(url, {
       method: 'PUT',
-      headers: {
-        authorization: `Bearer ${this.#token}`,
-      },
+      headers,
+      ...(this.#ctx ? {
+        body: JSON.stringify({
+          data: this.#ctx,
+        }),
+      } : {}),
     })
 
     if (!response.ok) {

@@ -17,6 +17,7 @@ import {
 
 import {
   RequestError,
+  BadRequestError,
   NotFoundError,
   UnauthorizedError,
   MethodNotAllowedError,
@@ -47,6 +48,7 @@ import type {
 export type Ticket = {
   clientId: string
   expiresAt: number
+  data: unknown
 }
 
 export type SocketConnection = {
@@ -85,12 +87,6 @@ export type SocketRoute = {
   chain: Middleware[]
 }
 
-export type SocketEndpoint = {
-  method: HttpMethod
-  path: string
-  handler: (req: Request, res: unknown) => Response
-}
-
 export type SocketCommands = {
   send: (clientId: string, event: string, body: unknown) => void
   broadcast: (event: string, body: unknown) => void
@@ -104,6 +100,12 @@ type UpgradeData = {
 type UpgradeContext = {
   data?: UpgradeData
   [key: string]: unknown
+}
+
+type SocketEndpoint = {
+  method: HttpMethod
+  path: string
+  handler: (req: Request, res: unknown) => Promise<Response>
 }
 
 type CreateSocketRequest = {
@@ -230,7 +232,7 @@ function isSessionActive (session: InactiveSession): boolean {
   return !session.expiresAt || session.expiresAt > Date.now()
 }
 
-function randomTicket (): string {
+function randomTicketHash (): string {
   return crypto.randomBytes(24).toString('base64url')
 }
 
@@ -246,6 +248,30 @@ function parseMessage (raw: string | Buffer): RawMessage | undefined {
 
     return undefined
   }
+}
+
+async function parseJsonBody (req: Request): Promise<unknown> {
+  try {
+    const body = await req.json()
+
+    return body
+  } catch {
+    throw new BadRequestError('Invalid JSON')
+  }
+}
+
+async function parseJsonBodyAppData (req: Request): Promise<unknown> {
+  const contentType = req.headers.get('content-type')
+  const usingJsonBody = contentType?.startsWith('application/json')
+
+  if (!usingJsonBody) {
+    return null
+  }
+
+  const rawBody = await parseJsonBody(req)
+  const appData = (rawBody as Record<string, unknown> | null)?.data ?? null
+
+  return appData
 }
 
 function sweepInactiveSessions (state: SocketState): void {
@@ -539,7 +565,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     inactiveSessions,
   } = state
 
-  function bindTicket (clientId: string): string {
+  function issueTicket (clientId: string, data: unknown): string {
     for (const [key, entry] of tickets) {
       if (entry.expiresAt > Date.now()) {
         break
@@ -552,38 +578,36 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
       throw new ServiceUnavailableError('Unable to issue ticket')
     }
 
-    const ticket = randomTicket()
+    const hash = randomTicketHash()
     const expiresAt = Date.now() + ticketTtl
 
-    tickets.set(ticket, {
+    tickets.set(hash, {
       clientId,
       expiresAt,
+      data,
     })
 
-    return ticket
+    return hash
   }
 
-  function redeemTicket (ticket: string): string | undefined {
-    const entry = ticket ? tickets.get(ticket) : undefined
+  function redeemTicket (hash: string): Ticket | undefined {
+    const entry = hash ? tickets.get(hash) : undefined
 
     if (!entry) {
       return undefined
     }
 
-    tickets.delete(ticket)
+    tickets.delete(hash)
 
-    if (entry.expiresAt <= Date.now()) {
-      return undefined
-    }
+    return entry.expiresAt > Date.now() ? entry : undefined
 
-    return entry.clientId
   }
 
   return [
     {
       method: 'GET',
       path: '/ws',
-      handler (req: Record<string, unknown>, res: unknown): Response {
+      handler (req: Request, res: unknown): Promise<Response> {
         const validReq = validateSchema(req, createSocketValidator)
 
         if (typeof res !== 'object') {
@@ -591,17 +615,18 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
         }
 
         const ctx: UpgradeContext = res ? { ...res } : {}
-        const clientId: string | undefined = redeemTicket(validReq.query.ticket)
+        const ticket = redeemTicket(validReq.query.ticket)
 
-        if (!clientId) {
+        if (!ticket) {
           throw new NotFoundError()
         }
 
         ctx.data = ctx.data ?? {}
-        ctx.data.clientId = clientId
+        ctx.data.clientId = ticket.clientId
         ctx.data.superseded = false
         ctx.data.reaped = false
         ctx.data.reaperHandle = null
+        ctx.data.app = ticket.data
 
         const useSocket = validReq.server.upgrade(validReq.raw, ctx)
 
@@ -609,17 +634,18 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
           throw new NotFoundError()
         }
 
-        return new Response()
+        return Promise.resolve(new Response())
       },
     },
     {
       method: 'POST',
       path: '/ws',
-      handler (req: Record<string, unknown>, res: unknown): Response {
+      async handler (req: Request, res: unknown): Promise<Response> {
         validateSchema(req, createTicketValidator)
 
         const clientId = crypto.randomUUID()
-        const ticket = bindTicket(clientId)
+        const appData = await parseJsonBodyAppData(req)
+        const ticket = issueTicket(clientId, appData)
 
         return Response.json({
           clientId,
@@ -631,10 +657,10 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     {
       method: 'PUT',
       path: '/ws/:clientId',
-      handler (req: Record<string, unknown>, res: unknown): Response {
+      async handler (req: Request, res: unknown): Promise<Response> {
         const validReq = validateSchema(req, updateTicketValidator)
-        const authHeader = validReq.headers.get('authorization')
-        const token = authHeader!.slice('Bearer '.length)
+        const authHeader = validReq.headers.get('authorization')!
+        const token = authHeader.slice('Bearer '.length)
 
         let session: Session | undefined =
           activeSessions.get(validReq.params.clientId)
@@ -657,9 +683,11 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
           throw new UnauthorizedError('Invalid token')
         }
 
+        const appData = await parseJsonBodyAppData(req)
+
         return Response.json({
           clientId: validReq.params.clientId,
-          ticket: bindTicket(validReq.params.clientId),
+          ticket: issueTicket(validReq.params.clientId, appData),
           data: res,
         })
       },
@@ -668,11 +696,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
 }
 
 export function buildSocketCommands (state: SocketState): SocketCommands {
-  function sendToClient (
-    clientId: string,
-    event: string,
-    body: unknown,
-  ): void {
+  function sendToClient (clientId: string, event: string, body: unknown) {
     const session = state.activeSessions.get(clientId)
 
     if (!session) {

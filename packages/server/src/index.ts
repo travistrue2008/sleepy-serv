@@ -157,7 +157,16 @@ function buildEndpointRequest (
 ): EndpointRequest {
   const url = new URL(bunReq.url)
   const qs = url.search.replace('?', '')
-  const json = () => bunReq.json()
+
+  let bodyPromise: Promise<unknown> | null = null
+
+  const json = (): Promise<unknown> => {
+    if (!bodyPromise) {
+      bodyPromise = bunReq.json()
+    }
+
+    return bodyPromise
+  }
 
   return {
     method: bunReq.method as HttpMethod,
