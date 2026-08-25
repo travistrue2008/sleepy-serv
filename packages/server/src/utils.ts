@@ -135,12 +135,23 @@ export type Middleware = (
   next: NextFn | null,
 ) => unknown
 
+export const CloseReason = {
+  Willing: 'willing',
+  Dropped: 'dropped',
+  Reaped: 'reaped',
+  Superseded: 'superseded',
+} as const
+
+export type CloseReason = typeof CloseReason[keyof typeof CloseReason]
+
 export type SocketOptions = {
   disconnectThreshold?: number
   heartbeatInterval?: number
   maxTickets?: number
   reclaimTtl?: number
   ticketTtl?: number
+  onOpen?: (clientId: string) => void
+  onClose?: (clientId: string, reason: CloseReason) => void
 }
 
 export type SocketData = {

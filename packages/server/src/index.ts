@@ -42,7 +42,7 @@ import type {
 } from './socket'
 
 export * from './errors'
-export { StatusCode } from './utils'
+export { StatusCode, CloseReason } from './utils'
 
 export {
   parseJsonBody,

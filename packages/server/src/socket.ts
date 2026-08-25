@@ -10,6 +10,7 @@ import {
 
 import {
   StatusCode,
+  CloseReason,
   toSegments,
   formatError,
   executeMiddlewareChain,
@@ -102,6 +103,8 @@ export type SocketState = {
   tickets: Map<string, Ticket>
   activeSessions: Map<string, ActiveSession>
   inactiveSessions: Map<string, InactiveSession>
+  onOpen: ((clientId: string) => void) | null
+  onClose: ((clientId: string, reason: CloseReason) => void) | null
 }
 
 export type SocketRoute = {
@@ -383,13 +386,12 @@ async function buildOutgoingMessage (
   const text = await response.text()
   const contentType = response.headers.get('content-type') ?? ''
   const usingJson = contentType.includes('application/json')
-  const body = usingJson ? JSON.parse(text) : text
 
   return createMessage(clientId, MessageType.Response, {
     id,
     status: response.status,
     headers: response.headers,
-    body,
+    body: usingJson ? JSON.parse(text) : text,
   })
 }
 
@@ -412,6 +414,16 @@ function buildErrorMessage (
   })
 }
 
+function getCloseReason (ws: SocketConnection, code: number): CloseReason {
+  if (ws.data.reaped) {
+    return CloseReason.Reaped
+  } else if (code === 1000) {
+    return CloseReason.Willing
+  }
+
+  return CloseReason.Dropped
+}
+
 export function buildSocketState (opts: AppOptions = {}): SocketState {
   return {
     disconnectThreshold: opts.ws?.disconnectThreshold ?? 120_000,
@@ -422,6 +434,8 @@ export function buildSocketState (opts: AppOptions = {}): SocketState {
     tickets: new Map(),
     activeSessions: new Map(),
     inactiveSessions: new Map(),
+    onOpen: opts.ws?.onOpen ?? null,
+    onClose: opts.ws?.onClose ?? null,
   }
 }
 
@@ -435,9 +449,11 @@ export function buildSocketServer (
     reclaimTtl,
     activeSessions,
     inactiveSessions,
+    onOpen,
+    onClose,
   } = state
 
-  function armReaper (ws: SocketConnection): void {
+  function armReaper (ws: SocketConnection) {
     if (ws.data.reaperHandle) {
       clearTimeout(ws.data.reaperHandle)
     }
@@ -447,6 +463,26 @@ export function buildSocketServer (
 
       ws.close()
     }, disconnectThreshold)
+  }
+
+  function invokeOpen (ws: SocketConnection) {
+    if (onOpen) {
+      try {
+        onOpen(ws.data.clientId)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  }
+
+  function invokeClose (ws: SocketConnection, reason: CloseReason) {
+    if (onClose) {
+      try {
+        onClose(ws.data.clientId, reason)
+      } catch (err) {
+        console.error(err)
+      }
+    }
   }
 
   return {
@@ -484,6 +520,7 @@ export function buildSocketServer (
       )
 
       ws.send(JSON.stringify(welcomeMessage))
+      invokeOpen(ws)
     },
     close (ws: SocketConnection, code: number): void {
       if (ws.data.reaperHandle) {
@@ -491,12 +528,15 @@ export function buildSocketServer (
       }
 
       if (ws.data.superseded) {
+        invokeClose(ws, CloseReason.Superseded)
+
         return
       }
 
-      const existingSession = activeSessions.get(ws.data.clientId)
+      const reason = getCloseReason(ws, code)
+      const exists = activeSessions.get(ws.data.clientId)
 
-      if (!existingSession || existingSession.ws !== ws) {
+      if (!exists || exists.ws !== ws) {
         return
       }
 
@@ -504,10 +544,12 @@ export function buildSocketServer (
 
       if (code !== 1000 || ws.data.reaped) {
         inactiveSessions.set(ws.data.clientId, {
-          token: existingSession.token,
+          token: exists.token,
           expiresAt: Date.now() + reclaimTtl,
         })
       }
+
+      invokeClose(ws, reason)
     },
     async message (ws: SocketConnection, raw: string | Buffer): Promise<void> {
       const incomingMsg = parseMessage(raw)
@@ -533,13 +575,7 @@ export function buildSocketServer (
         const { id, clientId } = message
         const route = matchRoute(routes, message)
         const params = buildParams(route, message)
-
-        const req = buildRequest(
-          params,
-          message,
-          activeSessions,
-        )
-
+        const req = buildRequest(params, message, activeSessions)
         const res = await executeMiddlewareChain(req, route.chain)
         const outgoingMsg = await buildOutgoingMessage(id, clientId, res)
 

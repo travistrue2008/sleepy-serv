@@ -166,6 +166,8 @@ describe('buildSocketState()', () => {
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
+      onOpen: null,
+      onClose: null,
     })
   })
 
@@ -181,6 +183,8 @@ describe('buildSocketState()', () => {
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
+      onOpen: null,
+      onClose: null,
     })
   })
 
@@ -198,6 +202,8 @@ describe('buildSocketState()', () => {
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
+      onOpen: null,
+      onClose: null,
     })
   })
 
@@ -217,6 +223,8 @@ describe('buildSocketState()', () => {
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
+      onOpen: null,
+      onClose: null,
     })
   })
 
@@ -236,6 +244,8 @@ describe('buildSocketState()', () => {
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
+      onOpen: null,
+      onClose: null,
     })
   })
 
@@ -255,6 +265,8 @@ describe('buildSocketState()', () => {
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
+      onOpen: null,
+      onClose: null,
     })
   })
 
@@ -274,6 +286,8 @@ describe('buildSocketState()', () => {
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
+      onOpen: null,
+      onClose: null,
     })
   })
 
@@ -293,6 +307,8 @@ describe('buildSocketState()', () => {
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
+      onOpen: null,
+      onClose: null,
     })
   })
 })
@@ -910,6 +926,145 @@ describe('buildTestServer()', () => {
       expect(fn).toThrow(new NotFoundError())
     })
   })
+
+  describe('lifecycle hooks', () => {
+    test('when onOpen is called on connect', () => {
+      const state = buildSocketState({
+        ws: {
+          onOpen: mock(),
+        },
+      })
+
+      const server = buildTestServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+
+      expect(state.activeSessions.size).toBe(1)
+      expect(state.onOpen).toHaveBeenCalledOnce()
+      expect(state.onOpen).toHaveBeenCalledWith(CLIENT_ID)
+    })
+
+    test('when onOpen throws, the socket still works', () => {
+      const state = buildSocketState({
+        ws: {
+          onOpen: mock(() => {
+            throw new Error('hook failed')
+          }),
+        },
+      })
+
+      const server = buildTestServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      const fn = () => server.open(ws)
+
+      expect(fn).not.toThrow()
+      expect(state.activeSessions.size).toBe(1)
+      expect(state.activeSessions.has(CLIENT_ID)).toBe(true)
+      expect(state.onOpen).toHaveBeenCalledOnce()
+      expect(state.onOpen).toHaveBeenCalledWith(CLIENT_ID)
+    })
+
+    test('when onClose fires with "willing"', () => {
+      const state = buildSocketState({
+        ws: {
+          onClose: mock(),
+        },
+      })
+
+      const server = buildTestServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+      server.close(ws, 1000, '')
+
+      expect(state.activeSessions.size).toBe(0)
+      expect(state.onClose).toHaveBeenCalledOnce()
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, 'willing')
+    })
+
+    test('when onClose fires with "dropped"', () => {
+      const state = buildSocketState({
+        ws: {
+          onClose: mock(),
+        },
+      })
+
+      const server = buildTestServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+      server.close(ws, 1006, '')
+
+      expect(state.activeSessions.size).toBe(0)
+      expect(state.onClose).toHaveBeenCalledOnce()
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, 'dropped')
+    })
+
+    test('when onClose fires with "reaped"', () => {
+      const state = buildSocketState({
+        ws: {
+          onClose: mock(),
+          disconnectThreshold: 100,
+        },
+      })
+
+      const server = buildTestServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+      jest.advanceTimersByTime(101)
+      server.close(ws, 1000, '')
+
+      expect(state.activeSessions.size).toBe(0)
+      expect(state.onClose).toHaveBeenCalledOnce()
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, 'reaped')
+    })
+
+    test('when onClose fires with "superseded"', () => {
+      const state = buildSocketState({
+        ws: {
+          onClose: mock(),
+        },
+      })
+
+      const server = buildTestServer([], state)
+      const oldWs = buildSocket(CLIENT_ID)
+      const newWs = buildSocket(CLIENT_ID)
+
+      server.open(oldWs)
+      server.open(newWs)
+      server.close(oldWs, 1000, '')
+
+      expect(state.activeSessions.size).toBe(1)
+      expect(state.onClose).toHaveBeenCalledOnce()
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, 'superseded')
+    })
+
+    test('when onClose throws, the runtime is unaffected', () => {
+      const state = buildSocketState({
+        ws: {
+          onClose: mock(() => {
+            throw new Error('hook failed')
+          }),
+        },
+      })
+
+      const server = buildTestServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+
+      const fn = () => server.close(ws, 1000, '')
+
+      expect(fn).not.toThrow()
+      expect(state.activeSessions.size).toBe(0)
+      expect(state.activeSessions.has(CLIENT_ID)).toBe(false)
+      expect(state.onClose).toHaveBeenCalledOnce()
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, 'willing')
+    })
+  })
 })
 
 describe('buildSocketHandlers()', () => {
@@ -1356,8 +1511,7 @@ describe('buildSocketHandlers()', () => {
 
       const ticketRes = await createTicket({
         headers: new Headers({
-          'content-type':
-            'application/json;charset=utf-8',
+          'content-type': 'application/json;charset=utf-8',
         }),
         json: () => Promise.resolve({
           data: appData,
@@ -1494,8 +1648,7 @@ describe('buildSocketHandlers()', () => {
     test('when the JSON body is malformed', async () => {
       const promise = createTicket({
         headers: new Headers({
-          'content-type':
-            'application/json;charset=utf-8',
+          'content-type': 'application/json;charset=utf-8',
         }),
         json: () => Promise.reject(new SyntaxError('Bad')),
       }, {})
@@ -1508,8 +1661,7 @@ describe('buildSocketHandlers()', () => {
     test('when the body has no "data" property', async () => {
       const res = await createTicket({
         headers: new Headers({
-          'content-type':
-            'application/json;charset=utf-8',
+          'content-type': 'application/json;charset=utf-8',
         }),
         json: () => Promise.resolve({ foo: 'bar' }),
       }, {})
@@ -1528,8 +1680,7 @@ describe('buildSocketHandlers()', () => {
     test('when "ctx" is an object', async () => {
       const res = await createTicket({
         headers: new Headers({
-          'content-type':
-            'application/json;charset=utf-8',
+          'content-type': 'application/json;charset=utf-8',
         }),
         json: () => Promise.resolve({
           data: { gameId: 'g1' },
@@ -1550,8 +1701,7 @@ describe('buildSocketHandlers()', () => {
     test('when "ctx" is an array', async () => {
       const res = await createTicket({
         headers: new Headers({
-          'content-type':
-            'application/json;charset=utf-8',
+          'content-type': 'application/json;charset=utf-8',
         }),
         json: () => Promise.resolve({
           data: [1, 2, 3],
@@ -1572,8 +1722,7 @@ describe('buildSocketHandlers()', () => {
     test('when "ctx" is a primitive', async () => {
       const res = await createTicket({
         headers: new Headers({
-          'content-type':
-            'application/json;charset=utf-8',
+          'content-type': 'application/json;charset=utf-8',
         }),
         json: () => Promise.resolve({
           data: 'hello',
@@ -1837,8 +1986,7 @@ describe('buildSocketHandlers()', () => {
           clientId: CLIENT_ID,
         },
         headers: new Headers({
-          'content-type':
-            'application/json;charset=utf-8',
+          'content-type': 'application/json;charset=utf-8',
           authorization: `Bearer ${BASE64_32}`,
         }),
         json: () => Promise.resolve({
