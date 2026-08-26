@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
-import { StatusCode } from './utils'
 import { MessageType } from './messages'
+import { StatusCode, CloseReason } from './utils'
 
 import {
   jest,
@@ -981,7 +981,7 @@ describe('buildTestServer()', () => {
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, 'willing')
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, CloseReason.Willing)
     })
 
     test('when onClose fires with "dropped"', () => {
@@ -999,7 +999,7 @@ describe('buildTestServer()', () => {
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, 'dropped')
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, CloseReason.Dropped)
     })
 
     test('when onClose fires with "reaped"', () => {
@@ -1019,7 +1019,7 @@ describe('buildTestServer()', () => {
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, 'reaped')
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, CloseReason.Reaped)
     })
 
     test('when onClose fires with "superseded"', () => {
@@ -1039,7 +1039,7 @@ describe('buildTestServer()', () => {
 
       expect(state.activeSessions.size).toBe(1)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, 'superseded')
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, CloseReason.Superseded)
     })
 
     test('when onClose throws, the runtime is unaffected', () => {
@@ -1062,7 +1062,7 @@ describe('buildTestServer()', () => {
       expect(state.activeSessions.size).toBe(0)
       expect(state.activeSessions.has(CLIENT_ID)).toBe(false)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, 'willing')
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID,CloseReason.Willing)
     })
   })
 })
