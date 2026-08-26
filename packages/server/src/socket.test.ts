@@ -1039,7 +1039,11 @@ describe('buildTestServer()', () => {
 
       expect(state.activeSessions.size).toBe(1)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, CloseReason.Superseded)
+
+      expect(state.onClose).toHaveBeenCalledWith(
+        CLIENT_ID,
+        CloseReason.Superseded,
+      )
     })
 
     test('when onClose throws, the runtime is unaffected', () => {
