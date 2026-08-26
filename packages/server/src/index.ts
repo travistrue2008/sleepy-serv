@@ -60,6 +60,7 @@ export type {
   FormattedError,
   Middleware,
   NextFn,
+  HandlerResult,
   Request,
   Server,
   SocketConnection,

@@ -1,14 +1,10 @@
-import type { NextFn, Request } from '../../../../../src'
+import type { NextFn, HandlerResult, Request } from '../../../../../src'
 
 type Accum = {
   output: string
 }
 
-function middleware (
-  _req: Request,
-  res: Accum,
-  next: NextFn,
-): Response | Promise<Response> {
+function middleware (_req: Request, res: Accum, next: NextFn): HandlerResult {
   return next({
     ...res,
     output: 'module',

@@ -3,14 +3,14 @@ import { StatusCode, createApp } from 'sleepy-serv'
 import { createRequestor, Fmt } from '../../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
-import type { NextFn, Request } from 'sleepy-serv'
+import type { NextFn, HandlerResult, Request } from 'sleepy-serv'
 import type { TicketBody } from '../../../helpers'
 
 function root (
   req: Request,
   _res: unknown,
   next: NextFn | null,
-): Response | Promise<Response> {
+): HandlerResult {
   if (req.query.err !== undefined) {
     throw new Error('Middleware error triggered')
   }

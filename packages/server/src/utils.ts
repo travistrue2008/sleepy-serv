@@ -90,7 +90,8 @@ export type FormattedError = {
   message: string
 }
 
-export type NextFn = (data?: unknown) => Response | Promise<Response>
+export type HandlerResult = Response | Promise<Response>
+export type NextFn = (data?: unknown) => HandlerResult
 
 export type ActiveSession = {
   token: string

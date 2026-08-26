@@ -3,13 +3,13 @@ import { StatusCode, createApp } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
-import type { NextFn, Request } from 'sleepy-serv'
+import type { NextFn, HandlerResult, Request } from 'sleepy-serv'
 
 function root (
   req: Request,
   _res: unknown,
   next: NextFn | null,
-): Response | Promise<Response> {
+): HandlerResult {
   if (req.query.err !== undefined) {
     throw new Error('Error from root middleware')
   }
