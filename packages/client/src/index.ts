@@ -58,7 +58,7 @@ export type NotificationMessage = {
   body: unknown
 }
 
-export type EventHandler = (payload: NotificationMessage) => void
+export type EventHandler = (payload: unknown) => void
 
 export type TicketData = {
   clientId: string
@@ -553,9 +553,9 @@ export default class SleepySocketClient {
     }
 
     if (!this.#reconnectConfig) {
-      if (!event.wasClean) {
-        throw new Error(`Socket closed unexpectedly (code: ${event.code}).`)
-      }
+      this.#emit('disconnect', {
+        code: event.code,
+      })
 
       return
     }
@@ -641,7 +641,7 @@ export default class SleepySocketClient {
     }
   }
 
-  #emit (event: string, payload: NotificationMessage): void {
+  #emit (event: string, payload: unknown): void {
     const handlers = this.#listeners.get(event)
 
     if (!handlers) {
