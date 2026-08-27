@@ -111,12 +111,12 @@ class MockWebSocket {
     this.sent.push(data)
   }
 
-  close (): void {
+  close (code: number): void {
     this.readyState = 3
 
     this.#emit('close', {
-      wasClean: true,
-      code: 1000,
+      wasClean: code === 1000,
+      code,
     })
   }
 
@@ -663,17 +663,20 @@ describe('SleepySocketClient', () => {
     })
 
     test('when a clean close was not app-initiated', async () => {
-      const { socket } = await connectAndOpen({
+      const handler = mock()
+
+      const { client, socket } = await connectAndOpen({
         reconnect: {
           random: () => 0,
         },
       })
 
-      socket.close()
+      client.on('disconnect', handler)
+      socket.close(1000)
 
-      const next = await reconnect()
-
-      expect(next).not.toBe(socket)
+      expect(client.isConnected).toBe(false)
+      expect(handler).toHaveBeenCalledOnce()
+      expect(handler).toHaveBeenCalledWith({ code: 1000 })
     })
 
     test('when the app closes the client', async () => {

@@ -10,6 +10,7 @@ import {
 
 import {
   StatusCode,
+  CloseCode,
   CloseReason,
   toSegments,
   formatError,
@@ -421,7 +422,7 @@ function buildErrorMessage (
 function getCloseReason (ws: SocketConnection, code: number): CloseReason {
   if (ws.data.reaped) {
     return CloseReason.Reaped
-  } else if (code === 1000) {
+  } else if (code === CloseCode.Normal) {
     return CloseReason.Willing
   }
 
@@ -465,7 +466,7 @@ export function buildSocketServer (
     ws.data.reaperHandle = setTimeout(() => {
       ws.data.reaped = true
 
-      ws.close()
+      ws.close(CloseCode.Reaped)
     }, disconnectThreshold)
   }
 
@@ -546,7 +547,7 @@ export function buildSocketServer (
 
       activeSessions.delete(ws.data.clientId)
 
-      if (code !== 1000 || ws.data.reaped) {
+      if (code !== CloseCode.Normal || ws.data.reaped) {
         inactiveSessions.set(ws.data.clientId, {
           token: exists.token,
           expiresAt: Date.now() + reclaimTtl,

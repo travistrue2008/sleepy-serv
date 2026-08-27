@@ -1,5 +1,5 @@
 import { MessageType, createMessage } from './messages.js'
-import { joinRoute } from './utils.js'
+import { CloseCode, joinRoute } from './utils.js'
 
 export * from './messages.js'
 export * from './utils.js'
@@ -416,7 +416,7 @@ export default class SleepySocketClient {
     }
 
     this.#livenessTimer = setTimeout(() => {
-      this.#socket?.close()
+      this.#socket?.close(CloseCode.Reaped)
     }, this.serverTimeout)
   }
 
@@ -552,7 +552,7 @@ export default class SleepySocketClient {
       return
     }
 
-    if (!this.#reconnectConfig) {
+    if (!this.#reconnectConfig || event.code === CloseCode.Normal) {
       this.#emit('disconnect', {
         code: event.code,
       })

@@ -728,6 +728,7 @@ describe('buildTestServer()', () => {
       jest.advanceTimersByTime(state.disconnectThreshold + 1)
 
       expect(ws.close).toHaveBeenCalledOnce()
+      expect(ws.close).toHaveBeenCalledWith(4999)
       expect(ws.data.reaped).toBe(true)
     })
 
