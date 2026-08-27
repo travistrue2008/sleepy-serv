@@ -42,19 +42,6 @@ const BASE_REQUEST: WebSocketRequest = {
 describe('parseJsonBody()', () => {
   const parser = parseJsonBody()
 
-  test('when "next" is NOT provided', async () => {
-    const req = {
-      ...BASE_REQUEST,
-      headers: new Headers({}),
-    }
-
-    const fn = () => parser(req, null, null)
-
-    await expect(fn).toThrow(
-      new TypeError('Middleware cannot be the last entry in a chain'),
-    )
-  })
-
   test('when NO "content-type" is provided', async () => {
     const req = {
       ...BASE_REQUEST,
@@ -253,15 +240,6 @@ describe('validateSchemas()', () => {
       'dob',
     ],
   }
-
-  test('when "next" is NOT provided', () => {
-    const middleware = validateSchemas({})
-    const fn = () => middleware(BASE_REQUEST, null, null)
-
-    expect(fn).toThrow(
-      new TypeError('Middleware cannot be the last entry in a chain'),
-    )
-  })
 
   test('when NO schemas are provided', () => {
     const middleware = validateSchemas({})

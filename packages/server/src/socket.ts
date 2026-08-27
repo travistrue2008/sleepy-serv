@@ -33,8 +33,8 @@ import type { WebSocketHandler } from 'bun'
 import type {
   HttpMethod,
   Request,
+  MiddlewareChain,
   WebSocketRequest,
-  Middleware,
   SocketData,
   SocketConnection,
   ActiveSession,
@@ -112,7 +112,7 @@ export type SocketRoute = {
   method: HttpMethod
   path: string
   segments: string[]
-  chain: Middleware[]
+  chain: MiddlewareChain
 }
 
 export type SocketCommands = {

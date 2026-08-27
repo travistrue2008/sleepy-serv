@@ -5,7 +5,7 @@ import type { NextFn, HandlerResult, Request } from 'sleepy-serv'
 export default function (
   _req: Request,
   _res: unknown,
-  next: NextFn | null,
+  next: NextFn,
 ): HandlerResult {
-  return next!()
+  return next()
 }

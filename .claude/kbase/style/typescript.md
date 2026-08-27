@@ -7,20 +7,6 @@ decisions worth keeping were moved here.
 
 ## Toolchain
 
-### Why `typescript` is a dependency at all
-
-- **Choice:** `typescript` is a root `devDependency`, even though Bun
-  runs `.ts` natively.
-- **Rationale:** Bun's transpiler *strips* types, it does not *check*
-  them. A genuine type error runs to completion under Bun: passing a
-  string into a `number` parameter yields a silent string concatenation
-  and exit 0. `tsc --noEmit` is the only thing that catches it. Bun also
-  cannot emit `.d.ts` (`bun build` has no declaration flag), which the
-  publishing model requires.
-- **Consequence:** There is still no build step to *run* anything.
-  `tsc` is only ever invoked with `--noEmit`, and later
-  `--emitDeclarationOnly` for publishing.
-
 ### TypeScript version ceiling
 
 - **Choice:** `typescript` is constrained to `^5.9.3`.
@@ -228,7 +214,8 @@ decisions worth keeping were moved here.
   Request          EndpointRequest | WebSocketRequest
   ```
 
-  `Middleware` is `(req: Request, res, next) => unknown`, with no type
+  `Middleware` is `(req: Request, res, next: NextFn) => HandlerResult`,
+  `Handler` is `(req: Request, res) => HandlerResult`, with no type
   parameter, and `executeMiddlewareChain` is concrete.
 - **Why they all live in `utils.ts`.** The import graph is a DAG rooted
   at `utils`, so `Request` has to be declared there or the modules that
@@ -253,17 +240,58 @@ decisions worth keeping were moved here.
   fixtures must be malformed. One cast for the file beats 67 at the call
   sites, and it names the intent.
 
-### `Middleware` returns `unknown`
+### `Middleware` and `Handler` are separate types
 
-- **Choice:** `Middleware` is typed as returning `unknown`, not
-  `Response | Promise<Response>`.
-- **Rationale:** Middleware is user-authored and can return anything.
-  The `result instanceof Response` check in `executeMiddlewareChain`
-  exists precisely to catch handlers that fail to return one (see
-  [Request Flow](../architecture/request-flow.md)). Typing the return as
-  `Response` would make the compiler treat that check as redundant and
-  the `else` branch as unreachable, quietly deleting the reason the
-  check exists. `unknown` keeps it meaningful and narrows correctly.
+- **Choice:** The chain uses two function types:
+
+  ```ts
+  Middleware  (req, res, next: NextFn) => HandlerResult
+  Handler    (req, res)               => HandlerResult
+  ```
+
+  `MiddlewareChain` is the alias `(Middleware | Handler)[]`.
+  `executeMiddlewareChain` dispatches by position: non-last entries are
+  called as `Middleware` (3 args, including `next`), the last entry is
+  called as `Handler` (2 args, no `next`).
+- **Why the split.** Previously `Middleware` accepted
+  `next: NextFn | null`, and each middleware used a `requireNext()`
+  runtime guard to assert `next` was non-null before calling it. That
+  pushed a chain-level invariant (the last entry does not receive
+  `next`) into individual functions. The chain runner already knows
+  which entry is last, so the constraint belongs in the types, not in
+  runtime assertions.
+- **Both return `HandlerResult`.** Middleware always returns
+  `next(data)`, which itself returns `HandlerResult`. Typing the return
+  as `HandlerResult` catches a middleware that calls `next()` without
+  returning the result, which would otherwise silently produce
+  `undefined` and only fail at runtime.
+- **Async middleware annotates `Promise<Response>`, not
+  `Promise<HandlerResult>`.** An `async` function wraps its return in
+  `Promise<>`. Since `HandlerResult` is `Response | Promise<Response>`,
+  wrapping it yields `Promise<Response | Promise<Response>>`, a nested
+  promise TypeScript does not flatten. JavaScript flattens it at
+  runtime, so the actual value is `Promise<Response>`, which is the
+  correct annotation. `Promise<Response>` is already a member of
+  `HandlerResult`, so the function still satisfies the `Middleware`
+  type.
+
+### Contextual typing caveat with `MiddlewareChain`
+
+- **Problem:** An inline arrow in a `MiddlewareChain` array loses
+  contextual typing for its parameters, because `Middleware` has 3
+  parameters and `Handler` has 2. TypeScript cannot unify the union
+  into a single contextual call signature when the arities differ, so
+  parameters become implicitly `any` under `noImplicitAny`.
+- **Fix:** Add explicit type annotations to the parameters of inline
+  functions in `MiddlewareChain` arrays. For handlers that do not use
+  their parameters, `_req: Request, _res: unknown` keeps the types
+  honest. For handlers that access `req` members, import and annotate
+  with the real `Request` type (or an alias if the test file shadows
+  it).
+- **Scope:** Only affects inline arrows in arrays typed as
+  `MiddlewareChain`. Named functions or functions assigned to a
+  `Middleware`- or `Handler`-typed variable receive contextual typing
+  from the single type and are unaffected.
 
 ### `ValidationError` is `Partial<ErrorObject>`
 

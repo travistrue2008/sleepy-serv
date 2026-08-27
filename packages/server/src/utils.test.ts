@@ -265,7 +265,7 @@ describe('executeMiddlewareChain()', () => {
 
     expect(output).toBe('OK')
     expect(middleware).toHaveBeenCalledOnce()
-    expect(middleware).toHaveBeenCalledWith(REQ, null, null)
+    expect(middleware).toHaveBeenCalledWith(REQ, null)
   })
 
   test('when multiple middleware are provided', async () => {
@@ -292,7 +292,7 @@ describe('executeMiddlewareChain()', () => {
     expect(chain[0]).toHaveBeenCalledOnce()
     expect(chain[0]).toHaveBeenCalledWith(REQ, null, expect.any(Function))
     expect(chain[1]).toHaveBeenCalledOnce()
-    expect(chain[1]).toHaveBeenCalledWith(REQ, null, null)
+    expect(chain[1]).toHaveBeenCalledWith(REQ, null)
   })
 
   test('when "next()" is NOT called', async () => {
@@ -343,7 +343,7 @@ describe('executeMiddlewareChain()', () => {
 
     await executeMiddlewareChain(REQ, chain)
 
-    expect(chain[1]).toHaveBeenCalledWith(REQ, undefined, null)
+    expect(chain[1]).toHaveBeenCalledWith(REQ, undefined)
   })
 
   test('when data is passed through next()', async () => {
@@ -377,7 +377,7 @@ describe('executeMiddlewareChain()', () => {
 
     await executeMiddlewareChain(REQ, chain)
 
-    expect(chain[1]).toHaveBeenCalledWith(REQ, { swapped: true }, null)
+    expect(chain[1]).toHaveBeenCalledWith(REQ, { swapped: true })
   })
 
   test('when a middleware returns a Response', async () => {
@@ -430,7 +430,7 @@ describe('executeMiddlewareChain()', () => {
     expect(chain[0]).toHaveBeenCalledOnce()
     expect(chain[0]).toHaveBeenCalledWith(REQ, null, expect.any(Function))
     expect(chain[1]).toHaveBeenCalledOnce()
-    expect(chain[1]).toHaveBeenCalledWith(REQ, null, null)
+    expect(chain[1]).toHaveBeenCalledWith(REQ, null)
   })
 
   test('when an error is thrown', async () => {

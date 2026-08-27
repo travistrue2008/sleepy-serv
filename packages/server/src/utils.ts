@@ -93,6 +93,19 @@ export type FormattedError = {
 export type HandlerResult = Response | Promise<Response>
 export type NextFn = (data?: unknown) => HandlerResult
 
+export type Middleware = (
+  req: Request,
+  res: unknown,
+  next: NextFn,
+) => HandlerResult
+
+export type Handler = (
+  req: Request,
+  res: unknown,
+) => HandlerResult
+
+export type MiddlewareChain = (Middleware | Handler)[]
+
 export type ActiveSession = {
   token: string
   ws: SocketConnection
@@ -129,12 +142,6 @@ export type WebSocketRequest = BaseRequest & {
 }
 
 export type Request = EndpointRequest | WebSocketRequest
-
-export type Middleware = (
-  req: Request,
-  res: unknown,
-  next: NextFn | null,
-) => unknown
 
 export const CloseReason = {
   Willing: 'willing',
@@ -209,7 +216,7 @@ export function formatError (
 
 export async function executeMiddlewareChain (
   req: Request,
-  chain: Middleware[],
+  chain: MiddlewareChain,
 ): Promise<Response> {
   if (!chain.length) {
     throw new RangeError('Middleware chain is empty')
@@ -219,14 +226,13 @@ export async function executeMiddlewareChain (
     index: number,
     res: unknown,
   ): Promise<Response> => {
-    const currentMiddleware = chain[index]
-    const isLastMiddleware = index === chain.length - 1
+    const isLast = index === chain.length - 1
+    const fn = chain[index]
+    const next = (data?: unknown) => executeMiddleware(index + 1, data)
 
-    const next = !isLastMiddleware ?
-      (data?: unknown) => executeMiddleware(index + 1, data)
-      : null
-
-    const result = await currentMiddleware(req, res, next)
+    const result = isLast
+      ? await (fn as Handler)(req, res)
+      : await (fn as Middleware)(req, res, next)
 
     if (result instanceof Response) {
       return result

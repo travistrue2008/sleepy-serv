@@ -9,13 +9,13 @@ import type { TicketBody } from '../../../helpers'
 function root (
   req: Request,
   _res: unknown,
-  next: NextFn | null,
+  next: NextFn,
 ): HandlerResult {
   if (req.query.err !== undefined) {
     throw new Error('Middleware error triggered')
   }
 
-  return next!(['From root middleware'])
+  return next(['From root middleware'])
 }
 
 describe('POST', () => {

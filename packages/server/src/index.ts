@@ -29,6 +29,7 @@ import type { BunRequest } from 'bun'
 import type {
   HttpMethod,
   Middleware,
+  MiddlewareChain,
   EndpointRequest,
   ActiveSessions,
   AppOptions,
@@ -58,7 +59,9 @@ export type {
   BaseRequest,
   EndpointRequest,
   FormattedError,
+  Handler,
   Middleware,
+  MiddlewareChain,
   NextFn,
   HandlerResult,
   Request,
@@ -97,7 +100,7 @@ type RoutePath = {
 type ChainRoute = {
   method: HttpMethod
   path: string
-  chain: Middleware[]
+  chain: MiddlewareChain
 }
 
 type ModuleRoute = {

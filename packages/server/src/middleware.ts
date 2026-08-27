@@ -10,7 +10,14 @@ import {
 } from './errors'
 
 import type { Format, Schema, ValidateFunction } from 'ajv'
-import type { FormattedError, Middleware, NextFn, Request } from './utils'
+
+import type {
+  FormattedError,
+  HandlerResult,
+  Middleware,
+  NextFn,
+  Request,
+} from './utils'
 
 export type FormatterField = {
   type: string
@@ -27,14 +34,6 @@ export type ValidationSchemas = {
 }
 
 export type SchemaKey = keyof ValidationSchemas
-
-function requireNext (next: NextFn | null): NextFn {
-  if (!next) {
-    throw new TypeError('Middleware cannot be the last entry in a chain')
-  }
-
-  return next
-}
 
 let _schemasCompiled = false
 let _customFormats: Record<string, Format> | null = null
@@ -121,12 +120,12 @@ export function parseJsonBody (): Middleware {
   return async (
     req: Request,
     res: unknown,
-    next: NextFn | null,
-  ): Promise<unknown> => {
+    next: NextFn,
+  ): Promise<Response> => {
     const contentType = req.headers.get('content-type')
 
     if (!contentType) {
-      return requireNext(next)(res)
+      return next(res)
     }
 
     if (!contentType.startsWith('application/json')) {
@@ -135,13 +134,11 @@ export function parseJsonBody (): Middleware {
 
     const body = await parseBody(req)
 
-    return requireNext(next)(body)
+    return next(body)
   }
 }
 
-export function setValidationFormats (
-  formats: Record<string, Format>,
-): void {
+export function setValidationFormats (formats: Record<string, Format>): void {
   if (_customFormats) {
     console.warn('setValidationFormats() - already initialized')
   }
@@ -172,9 +169,7 @@ function buildValidationSource (
   }
 }
 
-export function validateSchemas (
-  schemas: ValidationSchemas,
-): Middleware {
+export function validateSchemas (schemas: ValidationSchemas): Middleware {
   const entries = compileSchemas(schemas)
 
   _schemasCompiled = true
@@ -182,8 +177,8 @@ export function validateSchemas (
   return (
     req: Request,
     res: unknown,
-    next: NextFn | null,
-  ): unknown => {
+    next: NextFn,
+  ): HandlerResult => {
     const source = buildValidationSource(req, res)
 
     const errors = entries.reduce((
@@ -204,6 +199,6 @@ export function validateSchemas (
       throw new UnprocessableContentError(errors)
     }
 
-    return requireNext(next)(res)
+    return next(res)
   }
 }

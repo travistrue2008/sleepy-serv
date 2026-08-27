@@ -31,7 +31,7 @@ import {
 
 import type { UUID } from 'node:crypto'
 import type { ServerWebSocket, WebSocketHandler } from 'bun'
-import type { SocketData } from './utils'
+import type { Request as ServerRequest, SocketData } from './utils'
 
 type Request = Record<string, unknown>
 type TestHandler = (req: Request, res: unknown) => Promise<Response>
@@ -609,7 +609,7 @@ describe('buildTestServer()', () => {
             method: 'GET',
             path: '/',
             chain: [
-              req => Response.json({
+              (req: ServerRequest) => Response.json({
                 count: req.ws.active.size,
               }),
             ],
@@ -648,7 +648,7 @@ describe('buildTestServer()', () => {
           {
             method: 'GET',
             path: '/users/:userId',
-            chain: [req => Response.json(req.params)],
+            chain: [(req: ServerRequest) => Response.json(req.params)],
             segments: ['users', ':userId'],
           },
         ], state)
