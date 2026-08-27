@@ -254,22 +254,11 @@ export default class SleepySocketClient {
   async #reclaimTicket (): Promise<TicketData | null> {
     const url = `${this.#getBaseUrl()}/ws/${this.#id}`
 
-    const headers: Record<string, string> = {
-      authorization: `Bearer ${this.#token}`,
-    }
-
-    if (this.#ctx) {
-      headers['content-type'] = JSON_CONTENT_TYPE
-    }
-
     const response = await fetch(url, {
       method: 'PUT',
-      headers,
-      ...(this.#ctx ? {
-        body: JSON.stringify({
-          data: this.#ctx,
-        }),
-      } : {}),
+      headers: {
+        authorization: `Bearer ${this.#token}`,
+      },
     })
 
     if (!response.ok) {

@@ -511,8 +511,7 @@ describe('SleepySocketClient', () => {
         {
           method: 'POST',
           headers: {
-            'content-type':
-              'application/json;charset=utf-8',
+            'content-type': 'application/json;charset=utf-8',
           },
           body: JSON.stringify({ data: ctx }),
         },
@@ -757,7 +756,7 @@ describe('SleepySocketClient', () => {
       )
     })
 
-    test('when "opts.ctx" is replayed on reclaim', async () => {
+    test('when "opts.ctx" is provided', async () => {
       const ctx = {
         gameId: 'g1',
         playerId: 'p1',
@@ -784,8 +783,7 @@ describe('SleepySocketClient', () => {
         {
           method: 'POST',
           headers: {
-            'content-type':
-              'application/json;charset=utf-8',
+            'content-type': 'application/json;charset=utf-8',
           },
           body: JSON.stringify({ data: ctx }),
         },
@@ -798,10 +796,7 @@ describe('SleepySocketClient', () => {
           method: 'PUT',
           headers: {
             authorization: `Bearer ${TOKEN}`,
-            'content-type':
-              'application/json;charset=utf-8',
           },
-          body: JSON.stringify({ data: ctx }),
         },
       )
     })

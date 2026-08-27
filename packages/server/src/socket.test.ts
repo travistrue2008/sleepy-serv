@@ -780,11 +780,13 @@ describe('buildTestServer()', () => {
       state.inactiveSessions.set('stale', {
         token: 'a',
         expiresAt: Date.now() - 1,
+        app: null,
       })
 
       state.inactiveSessions.set('fresh', {
         token: 'b',
         expiresAt: Date.now() + 10_000,
+        app: null,
       })
 
       server.open(ws)
@@ -1983,10 +1985,11 @@ describe('buildSocketHandlers()', () => {
       })
     })
 
-    test('when "ctx" is provided on reclaim', async () => {
+    test('when "ctx" is provided', async () => {
       const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
-      const appData = { playerId: 'p1' }
+
+      ws.data.app = { playerId: 'p1' }
 
       server.open(ws)
       server.close(ws, 1006, '')
@@ -1996,11 +1999,7 @@ describe('buildSocketHandlers()', () => {
           clientId: CLIENT_ID,
         },
         headers: new Headers({
-          'content-type': 'application/json;charset=utf-8',
           authorization: `Bearer ${BASE64_32}`,
-        }),
-        json: () => Promise.resolve({
-          data: appData,
         }),
       }, {})
 
@@ -2012,6 +2011,12 @@ describe('buildSocketHandlers()', () => {
         clientId: CLIENT_ID,
         ticket: BASE64_24,
         data: {},
+      })
+
+      const ticket = state.tickets.get(BASE64_24)
+
+      expect(ticket?.data).toStrictEqual({
+        playerId: 'p1',
       })
     })
   })

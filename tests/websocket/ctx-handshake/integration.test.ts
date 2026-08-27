@@ -7,7 +7,7 @@ const CTX = {
   playerId: 'p1',
 }
 
-test('when a "ctx" is provided to the POST handshake', async () => {
+test('when "ctx" is provided to the POST handshake', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const port = app.server.port!

@@ -551,6 +551,7 @@ export function buildSocketServer (
         inactiveSessions.set(ws.data.clientId, {
           token: exists.token,
           expiresAt: Date.now() + reclaimTtl,
+          app: ws.data.app,
         })
       }
 
@@ -723,7 +724,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
           throw new UnauthorizedError('Invalid token')
         }
 
-        const appData = await parseJsonBodyAppData(req)
+        const appData = 'ws' in session ? session.ws.data.app : session.app
 
         return Response.json({
           clientId: validReq.params.clientId,

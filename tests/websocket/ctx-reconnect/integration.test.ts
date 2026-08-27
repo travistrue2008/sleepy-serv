@@ -1,6 +1,6 @@
 import SleepySocketClient from 'sleepy-socket'
 import { StatusCode, createApp } from 'sleepy-serv'
-import { test, expect } from 'bun:test'
+import { spyOn, test, expect } from 'bun:test'
 import { waitFor } from '../../helpers'
 
 const CTX = {
@@ -8,7 +8,8 @@ const CTX = {
   playerId: 'p1',
 }
 
-test('when a "ctx" is provided to the PUT handshake', async () => {
+test('when reconnecting AND "ctx" IS provided', async () => {
+  const fetchSpy = spyOn(global, 'fetch')
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const port = app.server.port!
@@ -34,4 +35,25 @@ test('when a "ctx" is provided to the PUT handshake', async () => {
 
   expect(res.status).toBe(StatusCode.Ok)
   expect(res.body).toStrictEqual({ app: CTX })
+
+  expect(fetchSpy).toHaveBeenNthCalledWith(
+    1,
+    `${app.server.url.origin}/ws`,
+    expect.objectContaining({
+      method: 'POST',
+    }),
+  )
+
+  expect(fetchSpy).toHaveBeenNthCalledWith(
+    2,
+    `${app.server.url.origin}/ws/${client.id}`,
+    {
+      method: 'PUT',
+      headers: {
+        authorization: expect.any(String),
+      },
+    },
+  )
+
+  fetchSpy.mockRestore()
 })

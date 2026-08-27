@@ -115,6 +115,7 @@ export type ActiveSession = {
 export type InactiveSession = {
   token: string
   expiresAt: number
+  app: unknown
 }
 
 export type ActiveSessions = ReadonlyMap<string, ActiveSession>
