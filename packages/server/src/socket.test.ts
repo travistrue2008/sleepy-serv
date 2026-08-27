@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 import { MessageType } from './messages'
-import { StatusCode, CloseReason } from './utils'
+import { StatusCode, CloseCode, CloseReason } from './utils'
 
 import {
   jest,
@@ -728,7 +728,11 @@ describe('buildTestServer()', () => {
       jest.advanceTimersByTime(state.disconnectThreshold + 1)
 
       expect(ws.close).toHaveBeenCalledOnce()
-      expect(ws.close).toHaveBeenCalledWith(4999)
+
+      expect(ws.close).toHaveBeenCalledWith(
+        CloseCode.Reaped,
+      )
+
       expect(ws.data.reaped).toBe(true)
     })
 
@@ -806,9 +810,9 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, 1000, '')
+      server.close(ws, CloseCode.Normal, '')
 
-      const fn = () => server.close(ws, 1006, '')
+      const fn = () => server.close(ws, CloseCode.Abnormal, '')
 
       expect(fn).not.toThrow()
       expect(state.inactiveSessions.has(CLIENT_ID)).toBe(false)
@@ -819,7 +823,7 @@ describe('buildTestServer()', () => {
       const newSocket = buildSocket(CLIENT_ID)
 
       server.open(oldSocket)
-      server.close(oldSocket, 1000, '')
+      server.close(oldSocket, CloseCode.Normal, '')
       server.open(newSocket)
 
       const res = await updateTicket({
@@ -858,7 +862,7 @@ describe('buildTestServer()', () => {
 
       const result = await res.json()
 
-      server.close(ws, 1006, '')
+      server.close(ws, CloseCode.Abnormal, '')
 
       expect(result).toStrictEqual({
         clientId: CLIENT_ID,
@@ -872,7 +876,7 @@ describe('buildTestServer()', () => {
 
       server.open(ws)
       jest.advanceTimersByTime(state.disconnectThreshold + 100)
-      server.close(ws, 1000, '')
+      server.close(ws, CloseCode.Normal, '')
 
       const res = await updateTicket({
         method: 'PUT',
@@ -908,7 +912,7 @@ describe('buildTestServer()', () => {
         },
       }, undefined)
 
-      server.close(ws, 1006, '')
+      server.close(ws, CloseCode.Abnormal, '')
       jest.advanceTimersByTime(101)
 
       expect(fn).toThrow(new NotFoundError())
@@ -929,7 +933,7 @@ describe('buildTestServer()', () => {
         },
       }, undefined)
 
-      server.close(ws, 1000, '')
+      server.close(ws, CloseCode.Normal, '')
 
       expect(fn).toThrow(new NotFoundError())
     })
@@ -985,7 +989,7 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, 1000, '')
+      server.close(ws, CloseCode.Normal, '')
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
@@ -1003,7 +1007,7 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, 1006, '')
+      server.close(ws, CloseCode.Abnormal, '')
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
@@ -1023,7 +1027,7 @@ describe('buildTestServer()', () => {
 
       server.open(ws)
       jest.advanceTimersByTime(101)
-      server.close(ws, 1000, '')
+      server.close(ws, CloseCode.Normal, '')
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
@@ -1043,7 +1047,7 @@ describe('buildTestServer()', () => {
 
       server.open(oldWs)
       server.open(newWs)
-      server.close(oldWs, 1000, '')
+      server.close(oldWs, CloseCode.Normal, '')
 
       expect(state.activeSessions.size).toBe(1)
       expect(state.onClose).toHaveBeenCalledOnce()
@@ -1068,7 +1072,7 @@ describe('buildTestServer()', () => {
 
       server.open(ws)
 
-      const fn = () => server.close(ws, 1000, '')
+      const fn = () => server.close(ws, CloseCode.Normal, '')
 
       expect(fn).not.toThrow()
       expect(state.activeSessions.size).toBe(0)
@@ -1888,7 +1892,7 @@ describe('buildSocketHandlers()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, 1006, '')
+      server.close(ws, CloseCode.Abnormal, '')
       jest.advanceTimersByTime(state.reclaimTtl + 1)
 
       const promise = updateTicket({
@@ -1910,7 +1914,7 @@ describe('buildSocketHandlers()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, 1006, '')
+      server.close(ws, CloseCode.Abnormal, '')
 
       const result = await updateTicket({
         params: {
@@ -1963,7 +1967,7 @@ describe('buildSocketHandlers()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, 1006, '')
+      server.close(ws, CloseCode.Abnormal, '')
 
       const result = await updateTicket({
         params: {
@@ -1992,7 +1996,7 @@ describe('buildSocketHandlers()', () => {
       ws.data.app = { playerId: 'p1' }
 
       server.open(ws)
-      server.close(ws, 1006, '')
+      server.close(ws, CloseCode.Abnormal, '')
 
       const result = await updateTicket({
         params: {
@@ -2054,7 +2058,7 @@ describe('buildSocketCommands()', () => {
       jest.advanceTimersByTime(state.disconnectThreshold + 100)
 
       server.open(ws)
-      server.close(ws, 1000, '')
+      server.close(ws, CloseCode.Normal, '')
 
       expect(fn).toThrow(
         new ReferenceError(`No active socket for client: ${CLIENT_ID}`),
@@ -2102,7 +2106,7 @@ describe('buildSocketCommands()', () => {
       const webSockets = clientIds.map(buildSocket)
 
       webSockets.forEach(ws => server.open(ws))
-      server.close(webSockets[0], 1000, '')
+      server.close(webSockets[0], CloseCode.Normal, '')
 
       const filterFn = mock((_cid, data) => data.clientId !== clientIds[3])
 

@@ -3,7 +3,7 @@ import SleepySocketClient, {
   MessageType,
   HandshakeError,
 } from './'
-import { StatusCode, id } from './utils'
+import { StatusCode, CloseCode, id } from './utils'
 
 import {
   jest,
@@ -115,7 +115,7 @@ class MockWebSocket {
     this.readyState = 3
 
     this.#emit('close', {
-      wasClean: code === 1000,
+      wasClean: code === CloseCode.Normal,
       code,
     })
   }
@@ -139,7 +139,7 @@ class MockWebSocket {
 
   /* simulate an abnormal closure (e.g. network drop, server crash) */
 
-  drop (code = 1006): void {
+  drop (code = CloseCode.Abnormal): void {
     this.readyState = 3
 
     this.#emit('close', {
@@ -552,7 +552,10 @@ describe('SleepySocketClient', () => {
       socket.drop()
 
       expect(handler).toHaveBeenCalledOnce()
-      expect(handler).toHaveBeenCalledWith({ code: 1006 })
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Abnormal,
+      })
     })
   })
 
@@ -671,11 +674,14 @@ describe('SleepySocketClient', () => {
       })
 
       client.on('disconnect', handler)
-      socket.close(1000)
+      socket.close(CloseCode.Normal)
 
       expect(client.isConnected).toBe(false)
       expect(handler).toHaveBeenCalledOnce()
-      expect(handler).toHaveBeenCalledWith({ code: 1000 })
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Normal,
+      })
     })
 
     test('when the app closes the client', async () => {
