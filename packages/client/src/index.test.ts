@@ -531,7 +531,6 @@ describe('SleepySocketClient', () => {
 
     test('when successful', async () => {
       const { client } = await connectAndOpen()
-
       const fn = () => client.get('/')
 
       expect(client.isConnected).toBe(true)
@@ -544,13 +543,17 @@ describe('SleepySocketClient', () => {
     })
 
     test('when reconnect is disabled and the socket drops', async () => {
-      const { socket } = await connectAndOpen({
+      const handler = mock()
+
+      const { client, socket } = await connectAndOpen({
         reconnect: false,
       })
 
-      const fn = () => socket.drop()
+      client.on('disconnect', handler)
+      socket.drop()
 
-      expect(fn).toThrow(new Error('Socket closed unexpectedly (code: 1006).'))
+      expect(handler).toHaveBeenCalledOnce()
+      expect(handler).toHaveBeenCalledWith({ code: 1006 })
     })
   })
 
@@ -1061,8 +1064,9 @@ describe('SleepySocketClient', () => {
   describe('notification', () => {
     test('when a notification arrives', async () => {
       const { client, socket } = await connectAndOpen()
+
       const message = notification('state_changed', { score: 1 })
-      const received: NotificationMessage[] = []
+      const received: unknown[] = []
 
       client.on('notification', message => received.push(message))
       socket.receive(message)
@@ -1072,10 +1076,9 @@ describe('SleepySocketClient', () => {
 
     test('when a handler is removed with off()', async () => {
       const { client, socket } = await connectAndOpen()
-      const received: NotificationMessage[] = []
 
-      const handler = (message: NotificationMessage): number =>
-        received.push(message)
+      const received: unknown[] = []
+      const handler = (message: unknown) => received.push(message)
 
       const notifications = [
         notification('state_changed', { score: 1 }),
@@ -1240,9 +1243,7 @@ describe('SleepySocketClient', () => {
 
     test('when timeout occurs', async () => {
       const { client, socket } = await connectAndOpen()
-
       const promise = client.get('/')
-
       const sent = JSON.parse(socket.sent[0])
 
       jest.advanceTimersByTime(30_000)
@@ -1278,9 +1279,7 @@ describe('SleepySocketClient', () => {
 
     test('when malformed response comes back (missing ID)', async () => {
       const { client, socket } = await connectAndOpen()
-
       const promise = client.get('/')
-
       const sent = JSON.parse(socket.sent[0])
 
       socket.receive({
@@ -1310,9 +1309,7 @@ describe('SleepySocketClient', () => {
 
     test('when successful', async () => {
       const { client, socket } = await connectAndOpen()
-
       const promise = client.get('/')
-
       const sent = JSON.parse(socket.sent[0])
 
       socket.receive(response(sent.id, { userId: '123' }))
@@ -1445,8 +1442,8 @@ describe('SleepySocketClient', () => {
 
     test('when calls respond out-of-order (queue = NONE)', async () => {
       const { client, socket } = await connectAndOpen({ queue: Queue.None })
-      const order: number[] = []
 
+      const order: number[] = []
       const p1 = client.get('/a').then(() => order.push(1))
       const p2 = client.get('/b').then(() => order.push(2))
       const p3 = client.get('/c').then(() => order.push(3))
@@ -1468,7 +1465,6 @@ describe('SleepySocketClient', () => {
       const { client, socket } = await connectAndOpen({ queue: Queue.Fifo })
 
       const order: number[] = []
-
       const p1 = client.get('/a').then(() => order.push(1))
       const p2 = client.get('/b').then(() => order.push(2))
       const p3 = client.get('/c').then(() => order.push(3))
@@ -1490,7 +1486,6 @@ describe('SleepySocketClient', () => {
       const { client, socket } = await connectAndOpen({ queue: Queue.Lifo })
 
       const order: number[] = []
-
       const p1 = client.get('/a').then(() => order.push(1))
       const p2 = client.get('/b').then(() => order.push(2))
       const p3 = client.get('/c').then(() => order.push(3))
