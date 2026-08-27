@@ -90,7 +90,8 @@ export type FormattedError = {
   message: string
 }
 
-export type HandlerResult = Response | Promise<Response>
+export type AsyncHandlerResult = Promise<Response>
+export type HandlerResult = Response | AsyncHandlerResult
 export type NextFn = (data?: unknown) => HandlerResult
 
 export type Middleware = (
@@ -217,7 +218,7 @@ export function formatError (
 export async function executeMiddlewareChain (
   req: Request,
   chain: MiddlewareChain,
-): Promise<Response> {
+): AsyncHandlerResult {
   if (!chain.length) {
     throw new RangeError('Middleware chain is empty')
   }
@@ -225,7 +226,7 @@ export async function executeMiddlewareChain (
   const executeMiddleware = async (
     index: number,
     res: unknown,
-  ): Promise<Response> => {
+  ): AsyncHandlerResult => {
     const isLast = index === chain.length - 1
     const fn = chain[index]
     const next = (data?: unknown) => executeMiddleware(index + 1, data)

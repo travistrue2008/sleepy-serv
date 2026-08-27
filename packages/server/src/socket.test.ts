@@ -31,10 +31,15 @@ import {
 
 import type { UUID } from 'node:crypto'
 import type { ServerWebSocket, WebSocketHandler } from 'bun'
-import type { Request as ServerRequest, SocketData } from './utils'
+
+import type {
+  AsyncHandlerResult,
+  Request as ServerRequest,
+  SocketData,
+} from './utils'
 
 type Request = Record<string, unknown>
-type TestHandler = (req: Request, res: unknown) => Promise<Response>
+type TestHandler = (req: Request, res: unknown) => AsyncHandlerResult
 type TestServerArgs = Parameters<typeof buildSocketServer>
 
 type TicketBody = {

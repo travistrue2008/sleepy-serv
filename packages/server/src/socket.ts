@@ -31,6 +31,7 @@ import type { ValidateFunction } from 'ajv'
 import type { WebSocketHandler } from 'bun'
 
 import type {
+  AsyncHandlerResult,
   HttpMethod,
   Request,
   MiddlewareChain,
@@ -51,7 +52,7 @@ import type {
   ResponseMessage,
 } from './messages'
 
-type SocketHandler = (req: Request, res: unknown) => Promise<Response>
+type SocketHandler = (req: Request, res: unknown) => AsyncHandlerResult
 type FilterFn = (clientId: string, data: unknown) => boolean
 
 type UpgradeData = {
@@ -645,7 +646,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     {
       method: 'GET',
       path: '/ws',
-      handler (req: Request, res: unknown): Promise<Response> {
+      handler (req: Request, res: unknown): AsyncHandlerResult {
         const validReq = validateSchema(req, createSocketValidator)
 
         if (typeof res !== 'object') {
@@ -678,7 +679,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     {
       method: 'POST',
       path: '/ws',
-      async handler (req: Request, res: unknown): Promise<Response> {
+      async handler (req: Request, res: unknown): AsyncHandlerResult {
         validateSchema(req, createTicketValidator)
 
         const clientId = crypto.randomUUID()
@@ -695,7 +696,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     {
       method: 'PUT',
       path: '/ws/:clientId',
-      async handler (req: Request, res: unknown): Promise<Response> {
+      async handler (req: Request, res: unknown): AsyncHandlerResult {
         const validReq = validateSchema(req, updateTicketValidator)
         const authHeader = validReq.headers.get('authorization')!
         const token = authHeader.slice('Bearer '.length)

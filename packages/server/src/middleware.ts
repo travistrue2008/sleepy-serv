@@ -12,6 +12,7 @@ import {
 import type { Format, Schema, ValidateFunction } from 'ajv'
 
 import type {
+  AsyncHandlerResult,
   FormattedError,
   HandlerResult,
   Middleware,
@@ -121,7 +122,7 @@ export function parseJsonBody (): Middleware {
     req: Request,
     res: unknown,
     next: NextFn,
-  ): Promise<Response> => {
+  ): AsyncHandlerResult => {
     const contentType = req.headers.get('content-type')
 
     if (!contentType) {

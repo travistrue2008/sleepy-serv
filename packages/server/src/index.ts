@@ -27,6 +27,7 @@ import {
 import type { BunRequest } from 'bun'
 
 import type {
+  AsyncHandlerResult,
   HttpMethod,
   Middleware,
   MiddlewareChain,
@@ -56,6 +57,7 @@ export type { HttpMethod, ActiveSessions } from './utils'
 
 export type {
   AppOptions,
+  AsyncHandlerResult,
   BaseRequest,
   EndpointRequest,
   FormattedError,
@@ -83,7 +85,7 @@ type ServerRoutes = Record<string, Record<string, EndpointHandler>>
 type EndpointHandler = (
   bunReq: BunRequest,
   server: Server,
-) => Promise<Response>
+) => AsyncHandlerResult
 
 type DirEntry = {
   path: string

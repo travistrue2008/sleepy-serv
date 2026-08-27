@@ -1,11 +1,11 @@
 import { authorToken } from '../../auth'
 
-import type { Request } from 'sleepy-serv'
+import type { AsyncHandlerResult, Request } from 'sleepy-serv'
 
 export default async function signJwt (
   _req: Request,
   _res: unknown,
-): Promise<Response> {
+): AsyncHandlerResult {
   const token = await authorToken()
 
   return new Response(token)
