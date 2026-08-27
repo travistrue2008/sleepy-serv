@@ -2259,9 +2259,10 @@ describe('buildSocketCommands()', () => {
       commands.disconnect(DISCONNECT_ID)
 
       expect(ws.close).toHaveBeenCalledOnce()
+      expect(ws.close).toHaveBeenCalledWith(undefined, undefined)
     })
 
-    test('when a code and reason are provided', () => {
+    test('when a custom code and reason are provided', () => {
       const state = buildSocketState()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
