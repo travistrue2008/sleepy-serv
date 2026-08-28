@@ -164,11 +164,11 @@ describe('buildSocketState()', () => {
     const result = buildSocketState()
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120000,
-      heartbeatInterval: 30000,
-      maxTickets: 100000,
-      reclaimTtl: 300000,
-      ticketTtl: 10000,
+      disconnectThreshold: 120_000,
+      heartbeatInterval: 30_000,
+      maxTickets: 100_000,
+      reclaimTtl: 300_000,
+      ticketTtl: 10_000,
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
@@ -181,11 +181,11 @@ describe('buildSocketState()', () => {
     const result = buildSocketState({})
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120000,
-      heartbeatInterval: 30000,
-      maxTickets: 100000,
-      reclaimTtl: 300000,
-      ticketTtl: 10000,
+      disconnectThreshold: 120_000,
+      heartbeatInterval: 30_000,
+      maxTickets: 100_000,
+      reclaimTtl: 300_000,
+      ticketTtl: 10_000,
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
@@ -200,11 +200,11 @@ describe('buildSocketState()', () => {
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120000,
-      heartbeatInterval: 30000,
-      maxTickets: 100000,
-      reclaimTtl: 300000,
-      ticketTtl: 10000,
+      disconnectThreshold: 120_000,
+      heartbeatInterval: 30_000,
+      maxTickets: 100_000,
+      reclaimTtl: 300_000,
+      ticketTtl: 10_000,
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
@@ -221,11 +221,11 @@ describe('buildSocketState()', () => {
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120000,
+      disconnectThreshold: 120_000,
       heartbeatInterval: 100,
-      maxTickets: 100000,
-      reclaimTtl: 300000,
-      ticketTtl: 10000,
+      maxTickets: 100_000,
+      reclaimTtl: 300_000,
+      ticketTtl: 10_000,
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
@@ -243,10 +243,10 @@ describe('buildSocketState()', () => {
 
     expect(result).toStrictEqual({
       disconnectThreshold: 100,
-      heartbeatInterval: 30000,
-      maxTickets: 100000,
-      reclaimTtl: 300000,
-      ticketTtl: 10000,
+      heartbeatInterval: 30_000,
+      maxTickets: 100_000,
+      reclaimTtl: 300_000,
+      ticketTtl: 10_000,
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
@@ -263,11 +263,11 @@ describe('buildSocketState()', () => {
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120000,
-      heartbeatInterval: 30000,
+      disconnectThreshold: 120_000,
+      heartbeatInterval: 30_000,
       maxTickets: 5,
-      reclaimTtl: 300000,
-      ticketTtl: 10000,
+      reclaimTtl: 300_000,
+      ticketTtl: 10_000,
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
@@ -284,11 +284,11 @@ describe('buildSocketState()', () => {
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120000,
-      heartbeatInterval: 30000,
-      maxTickets: 100000,
+      disconnectThreshold: 120_000,
+      heartbeatInterval: 30_000,
+      maxTickets: 100_000,
       reclaimTtl: 100,
-      ticketTtl: 10000,
+      ticketTtl: 10_000,
       tickets: new Map(),
       activeSessions: new Map(),
       inactiveSessions: new Map(),
@@ -305,10 +305,10 @@ describe('buildSocketState()', () => {
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120000,
-      heartbeatInterval: 30000,
-      maxTickets: 100000,
-      reclaimTtl: 300000,
+      disconnectThreshold: 120_000,
+      heartbeatInterval: 30_000,
+      maxTickets: 100_000,
+      reclaimTtl: 300_000,
       ticketTtl: 100,
       tickets: new Map(),
       activeSessions: new Map(),
