@@ -14,7 +14,7 @@
   - [x] `/ws` upgrade with a per-connection `clientId`
   - [x] File-route request/response frames over the socket (shared middleware chains)
   - [x] Message validation (`request` type; `id` + `clientId` required as uuids)
-  - [x] Heartbeat / presence (`opts.ws.heartbeatInterval` + `disconnectThreshold`, welcome frame, server-side reaping)
+  - [x] Heartbeat / presence (`opts.ws.heartbeatInterval` + `dropThreshold`, welcome frame, server-side reaping)
   - [x] Formal envelopes (`response` + `notification`)
   - [x] Client-resilience (heartbeat ack → half-open detection → reconnect)
   - [x] Identity model (session + token reclaim)

@@ -10,7 +10,7 @@ test('when reaped AND reconnect enabled', async () => {
   const app = await createApp(0, import.meta.dirname, {
     ws: {
       heartbeatInterval: 200_000,
-      disconnectThreshold: 100,
+      dropThreshold: 100,
       onClose,
     },
   })
@@ -59,7 +59,7 @@ test('when reaped AND reconnect disabled', async () => {
   const app = await createApp(0, import.meta.dirname, {
     ws: {
       heartbeatInterval: 200_000,
-      disconnectThreshold: 100,
+      dropThreshold: 100,
       onClose,
     },
   })

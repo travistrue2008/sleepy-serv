@@ -14,7 +14,7 @@ test('when the server disconnects the client', async () => {
   })
 
   client.on('disconnect', handler)
-  app.commands.disconnect(client.id!)
+  app.commands.drop(client.id!)
 
   await waitFor(() => !client.isConnected)
 

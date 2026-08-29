@@ -164,7 +164,7 @@ describe('buildSocketState()', () => {
     const result = buildSocketState()
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120_000,
+      dropThreshold: 120_000,
       heartbeatInterval: 30_000,
       maxTickets: 100_000,
       reclaimTtl: 300_000,
@@ -181,7 +181,7 @@ describe('buildSocketState()', () => {
     const result = buildSocketState({})
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120_000,
+      dropThreshold: 120_000,
       heartbeatInterval: 30_000,
       maxTickets: 100_000,
       reclaimTtl: 300_000,
@@ -200,7 +200,7 @@ describe('buildSocketState()', () => {
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120_000,
+      dropThreshold: 120_000,
       heartbeatInterval: 30_000,
       maxTickets: 100_000,
       reclaimTtl: 300_000,
@@ -213,7 +213,7 @@ describe('buildSocketState()', () => {
     })
   })
 
-  test('when "opts.ws.disconnectThreshold" is provided', () => {
+  test('when "opts.ws.dropThreshold" is provided', () => {
     const result = buildSocketState({
       ws: {
         heartbeatInterval: 100,
@@ -221,7 +221,7 @@ describe('buildSocketState()', () => {
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120_000,
+      dropThreshold: 120_000,
       heartbeatInterval: 100,
       maxTickets: 100_000,
       reclaimTtl: 300_000,
@@ -237,12 +237,12 @@ describe('buildSocketState()', () => {
   test('when "opts.ws.heartbeatInterval" is provided', () => {
     const result = buildSocketState({
       ws: {
-        disconnectThreshold: 100,
+        dropThreshold: 100,
       },
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 100,
+      dropThreshold: 100,
       heartbeatInterval: 30_000,
       maxTickets: 100_000,
       reclaimTtl: 300_000,
@@ -263,7 +263,7 @@ describe('buildSocketState()', () => {
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120_000,
+      dropThreshold: 120_000,
       heartbeatInterval: 30_000,
       maxTickets: 5,
       reclaimTtl: 300_000,
@@ -284,7 +284,7 @@ describe('buildSocketState()', () => {
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120_000,
+      dropThreshold: 120_000,
       heartbeatInterval: 30_000,
       maxTickets: 100_000,
       reclaimTtl: 100,
@@ -305,7 +305,7 @@ describe('buildSocketState()', () => {
     })
 
     expect(result).toStrictEqual({
-      disconnectThreshold: 120_000,
+      dropThreshold: 120_000,
       heartbeatInterval: 30_000,
       maxTickets: 100_000,
       reclaimTtl: 300_000,
@@ -322,7 +322,7 @@ describe('buildSocketState()', () => {
 describe('buildTestServer()', () => {
   const state = buildSocketState({
     ws: {
-      disconnectThreshold: 60_000,
+      dropThreshold: 60_000,
       heartbeatInterval: 20_000,
     },
   })
@@ -725,7 +725,7 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      jest.advanceTimersByTime(state.disconnectThreshold + 1)
+      jest.advanceTimersByTime(state.dropThreshold + 1)
 
       expect(ws.close).toHaveBeenCalledOnce()
 
@@ -740,17 +740,17 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      jest.advanceTimersByTime(state.disconnectThreshold - 100)
+      jest.advanceTimersByTime(state.dropThreshold - 100)
 
       await server.message(ws, JSON.stringify({
         type: MessageType.Heartbeat,
       }))
 
-      jest.advanceTimersByTime(state.disconnectThreshold - 100)
+      jest.advanceTimersByTime(state.dropThreshold - 100)
 
       expect(ws.close).not.toHaveBeenCalled()
 
-      jest.advanceTimersByTime(state.disconnectThreshold - 100)
+      jest.advanceTimersByTime(state.dropThreshold - 100)
 
       expect(ws.close).toHaveBeenCalledOnce()
     })
@@ -759,7 +759,7 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      jest.advanceTimersByTime(state.disconnectThreshold - 100)
+      jest.advanceTimersByTime(state.dropThreshold - 100)
 
       expect(ws.close).not.toHaveBeenCalled()
 
@@ -767,11 +767,11 @@ describe('buildTestServer()', () => {
         type: MessageType.Heartbeat,
       }))
 
-      jest.advanceTimersByTime(state.disconnectThreshold - 100)
+      jest.advanceTimersByTime(state.dropThreshold - 100)
 
       expect(ws.close).not.toHaveBeenCalled()
 
-      jest.advanceTimersByTime(state.disconnectThreshold + 100)
+      jest.advanceTimersByTime(state.dropThreshold + 100)
 
       expect(ws.close).toHaveBeenCalledOnce()
     })
@@ -875,7 +875,7 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      jest.advanceTimersByTime(state.disconnectThreshold + 100)
+      jest.advanceTimersByTime(state.dropThreshold + 100)
       server.close(ws, CloseCode.Normal, '')
 
       const res = await updateTicket({
@@ -1025,7 +1025,7 @@ describe('buildTestServer()', () => {
       const state = buildSocketState({
         ws: {
           onClose: mock(),
-          disconnectThreshold: 100,
+          dropThreshold: 100,
         },
       })
 
@@ -2062,7 +2062,7 @@ describe('buildSocketCommands()', () => {
         ok: true,
       })
 
-      jest.advanceTimersByTime(state.disconnectThreshold + 100)
+      jest.advanceTimersByTime(state.dropThreshold + 100)
 
       server.open(ws)
       server.close(ws, CloseCode.Normal, '')
@@ -2250,14 +2250,14 @@ describe('buildSocketCommands()', () => {
     })
   })
 
-  describe('disconnect()', () => {
+  describe('drop()', () => {
     const DISCONNECT_ID = '00000000-0000-0000-0000-999999999999'
 
     test('when the client has no active socket', () => {
       const state = buildSocketState()
       const commands = buildSocketCommands(state)
 
-      const fn = () => commands.disconnect(DISCONNECT_ID)
+      const fn = () => commands.drop(DISCONNECT_ID)
 
       expect(fn).toThrow(
         new ReferenceError(
@@ -2273,7 +2273,7 @@ describe('buildSocketCommands()', () => {
       const ws = buildSocket(DISCONNECT_ID)
 
       server.open(ws)
-      commands.disconnect(DISCONNECT_ID)
+      commands.drop(DISCONNECT_ID)
 
       expect(ws.close).toHaveBeenCalledOnce()
       expect(ws.close).toHaveBeenCalledWith(undefined, undefined)
@@ -2286,7 +2286,7 @@ describe('buildSocketCommands()', () => {
       const ws = buildSocket(DISCONNECT_ID)
 
       server.open(ws)
-      commands.disconnect(DISCONNECT_ID, 4000, 'kicked')
+      commands.drop(DISCONNECT_ID, 4000, 'kicked')
 
       expect(ws.close).toHaveBeenCalledOnce()
       expect(ws.close).toHaveBeenCalledWith(4000, 'kicked')

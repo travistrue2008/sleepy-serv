@@ -98,7 +98,7 @@ export type Ticket = {
 }
 
 export type SocketState = {
-  disconnectThreshold: number
+  dropThreshold: number
   heartbeatInterval: number
   maxTickets: number
   reclaimTtl: number
@@ -121,7 +121,7 @@ export type SocketCommands = {
   send: (clientId: string, event: string, body: unknown) => void
   sendToGroup: (fn: FilterFn, event: string, body: unknown) => void
   broadcast: (event: string, body: unknown) => void
-  disconnect: (clientId: string, code?: number, reason?: string) => void
+  drop: (clientId: string, code?: number, reason?: string) => void
 }
 
 const ajv = new Ajv({
@@ -431,7 +431,7 @@ function getCloseReason (ws: SocketConnection, code: number): CloseReason {
 
 export function buildSocketState (opts: AppOptions = {}): SocketState {
   return {
-    disconnectThreshold: opts.ws?.disconnectThreshold ?? 120_000,
+    dropThreshold: opts.ws?.dropThreshold ?? 120_000,
     heartbeatInterval: opts.ws?.heartbeatInterval ?? 30_000,
     maxTickets: opts.ws?.maxTickets ?? 100_000,
     reclaimTtl: opts.ws?.reclaimTtl ?? 300_000,
@@ -449,7 +449,7 @@ export function buildSocketServer (
   state: SocketState,
 ): WebSocketHandler<SocketData> {
   const {
-    disconnectThreshold,
+    dropThreshold,
     heartbeatInterval,
     reclaimTtl,
     activeSessions,
@@ -467,7 +467,7 @@ export function buildSocketServer (
       ws.data.reaped = true
 
       ws.close(CloseCode.Reaped)
-    }, disconnectThreshold)
+    }, dropThreshold)
   }
 
   function invokeOpen (ws: SocketConnection) {
@@ -771,7 +771,7 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
         sendToClient(clientId, event, body)
       }
     },
-    disconnect (clientId, code, reason) {
+    drop (clientId, code, reason) {
       const session = state.activeSessions.get(clientId)
 
       if (!session) {

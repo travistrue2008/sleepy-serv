@@ -163,7 +163,7 @@ export const CloseReason = {
 export type CloseReason = typeof CloseReason[keyof typeof CloseReason]
 
 export type SocketOptions = {
-  disconnectThreshold?: number
+  dropThreshold?: number
   heartbeatInterval?: number
   maxTickets?: number
   reclaimTtl?: number
