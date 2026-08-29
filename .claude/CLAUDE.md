@@ -2,7 +2,7 @@
 
 ## Setup
 
-- Install `bun` v1.3.14, if not already
+- Install `bun` v1.4, if not already
 - Install `codegraph` globally, if not already: `bun add -g @colbymchenry/codegraph`, then `codegraph install`.
 
 ## Commands
