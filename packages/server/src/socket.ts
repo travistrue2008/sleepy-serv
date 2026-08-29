@@ -423,7 +423,7 @@ function getCloseReason (ws: SocketConnection, code: number): CloseReason {
   if (ws.data.reaped) {
     return CloseReason.Reaped
   } else if (code === CloseCode.Normal) {
-    return CloseReason.Willing
+    return CloseReason.Ok
   }
 
   return CloseReason.Dropped

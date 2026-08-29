@@ -154,7 +154,7 @@ export const CloseCode = {
 export type CloseCode = typeof CloseCode[keyof typeof CloseCode]
 
 export const CloseReason = {
-  Willing: 'willing',
+  Ok: 'ok',
   Dropped: 'dropped',
   Reaped: 'reaped',
   Superseded: 'superseded',

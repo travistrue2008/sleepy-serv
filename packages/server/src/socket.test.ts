@@ -1000,7 +1000,7 @@ describe('buildTestServer()', () => {
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, CloseReason.Willing)
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, CloseReason.Ok)
     })
 
     test('when onClose fires with "dropped"', () => {
@@ -1085,7 +1085,7 @@ describe('buildTestServer()', () => {
       expect(state.activeSessions.size).toBe(0)
       expect(state.activeSessions.has(CLIENT_ID)).toBe(false)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID,CloseReason.Willing)
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID,CloseReason.Ok)
     })
   })
 })
