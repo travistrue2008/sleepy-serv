@@ -65,7 +65,7 @@ describe('PUT', () => {
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const port = app.server.port!
-    const client = await SleepySocketClient.connect(host, port)
+    const client = await SleepySocketClient.open(host, port)
     const res = await req.put(`/ws/${client.id}?err`, Fmt.Json)
 
     await client.close()
@@ -86,7 +86,7 @@ describe('PUT', () => {
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const port = app.server.port!
-    const client = await SleepySocketClient.connect(host, port)
+    const client = await SleepySocketClient.open(host, port)
 
     const res = await req.put(`/ws/${client.id}`, Fmt.Json, {
       headers: new Headers({

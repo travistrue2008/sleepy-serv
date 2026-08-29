@@ -9,7 +9,7 @@ test('when the server drops the client', async () => {
   const port = app.server.port!
   const handler = mock()
 
-  const client = await SleepySocketClient.connect(host, port, {
+  const client = await SleepySocketClient.open(host, port, {
     reconnect: false,
   })
 

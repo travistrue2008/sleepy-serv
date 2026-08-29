@@ -16,7 +16,7 @@ test('when the socket drops AND the client reconnects', async () => {
   const host = app.server.url.hostname
   const port = app.server.port!
 
-  const client = await SleepySocketClient.connect(host, port, {
+  const client = await SleepySocketClient.open(host, port, {
     reconnect: {
       minDelay: 20,
       random: () => 0,

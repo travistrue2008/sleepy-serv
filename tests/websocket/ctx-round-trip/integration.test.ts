@@ -11,7 +11,7 @@ test('when an endpoint accesses the active session context', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const port = app.server.port!
-  const client = await SleepySocketClient.connect(host, port, { ctx: CTX })
+  const client = await SleepySocketClient.open(host, port, { ctx: CTX })
   const res = await client.get('/app-data')
 
   await client.close()

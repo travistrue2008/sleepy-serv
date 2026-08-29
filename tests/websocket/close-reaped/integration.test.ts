@@ -18,7 +18,7 @@ test('when reaped AND reconnect enabled', async () => {
   const host = app.server.url.hostname
   const port = app.server.port!
 
-  const client = await SleepySocketClient.connect(host, port, {
+  const client = await SleepySocketClient.open(host, port, {
     serverTimeout: 500,
     reconnect: {
       minDelay: 20,
@@ -67,7 +67,7 @@ test('when reaped AND reconnect disabled', async () => {
   const host = app.server.url.hostname
   const port = app.server.port!
 
-  const client = await SleepySocketClient.connect(host, port, {
+  const client = await SleepySocketClient.open(host, port, {
     serverTimeout: 500,
     reconnect: false,
   })

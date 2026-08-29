@@ -16,7 +16,7 @@ import {
 } from 'bun:test'
 
 import type {
-  ConnectOptions,
+  OpenOptions,
   NotificationMessage,
   ResponseMessage,
 } from './'
@@ -206,11 +206,11 @@ function mockTicketFetch (): FetchMock {
   }))
 }
 
-async function connectAndOpen (opts?: ConnectOptions): Promise<{
+async function connectAndOpen (opts?: OpenOptions): Promise<{
   client: SleepySocketClient
   socket: MockWebSocket
 }> {
-  const promise = SleepySocketClient.connect('localhost', 3000, opts)
+  const promise = SleepySocketClient.open('localhost', 3000, opts)
 
   await settle()
 
@@ -324,9 +324,9 @@ describe('Queue', () => {
 })
 
 describe('SleepySocketClient', () => {
-  describe('.connect()', () => {
+  describe('.open()', () => {
     test('when "opts.queue" is invalid', async () => {
-      const promise = SleepySocketClient.connect('localhost', 3000, {
+      const promise = SleepySocketClient.open('localhost', 3000, {
         /* deliberately invalid: the guard under test is a runtime one */
         // @ts-expect-error
         queue: 'nope',
@@ -342,7 +342,7 @@ describe('SleepySocketClient', () => {
         throw new Error('Down')
       }))
 
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       await expect(promise).rejects.toThrow(new Error('Connection failed.'))
     })
@@ -358,7 +358,7 @@ describe('SleepySocketClient', () => {
         json: async () => BODY_ERROR,
       })))
 
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       await expect(promise).rejects.toThrow(
         new HandshakeError(409, BODY_ERROR),
@@ -380,13 +380,13 @@ describe('SleepySocketClient', () => {
         },
       })))
 
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       await expect(promise).rejects.toThrow(new Error('Connection failed.'))
     })
 
     test('when connecting to a server fails', async () => {
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       await settle()
 
@@ -396,7 +396,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when connecting to a server times out', async () => {
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       jest.advanceTimersByTime(30_000)
 
@@ -404,7 +404,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when opened but no welcome frame arrives', async () => {
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       await settle()
 
@@ -416,7 +416,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when the first frame is not a welcome', async () => {
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       await settle()
 

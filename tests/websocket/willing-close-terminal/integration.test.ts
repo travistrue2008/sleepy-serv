@@ -7,7 +7,7 @@ test('when a willingly-closed clientId is reclaimed', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const port = app.server.port!
-  const client = await SleepySocketClient.connect(host, port)
+  const client = await SleepySocketClient.open(host, port)
   const req = createRequestor(app)
 
   await client.close()

@@ -31,7 +31,7 @@ describe('WebSocket', () => {
     const app = await createApp(0, import.meta.dirname)
     const host = app.server.url.hostname
     const port = app.server.port!
-    const client = await SleepySocketClient.connect(host, port)
+    const client = await SleepySocketClient.open(host, port)
 
     const res = await client.get('/search', {
       query: {

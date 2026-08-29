@@ -6,7 +6,7 @@ test('when app middleware rejects the handshake', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const port = app.server.port!
-  const promise = SleepySocketClient.connect(host, port)
+  const promise = SleepySocketClient.open(host, port)
 
   await expect(promise).rejects.toThrow(HandshakeError)
 
@@ -26,7 +26,7 @@ test('when the rejected handshake does not retry', async () => {
   const host = app.server.url.hostname
   const port = app.server.port!
 
-  await SleepySocketClient.connect(host, port, {
+  await SleepySocketClient.open(host, port, {
     reconnect: {
       minDelay: 20,
       random: () => 0,

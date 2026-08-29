@@ -10,7 +10,7 @@ test('when superseded AND reconnect enabled', async () => {
   const host = app.server.url.hostname
   const port = app.server.port!
 
-  const client = await SleepySocketClient.connect(host, port, {
+  const client = await SleepySocketClient.open(host, port, {
     reconnect: {
       minDelay: 20,
       random: () => 0,
@@ -58,7 +58,7 @@ test('when superseded AND reconnect disabled', async () => {
   const host = app.server.url.hostname
   const port = app.server.port!
 
-  const client = await SleepySocketClient.connect(host, port, {
+  const client = await SleepySocketClient.open(host, port, {
     reconnect: false,
   })
 

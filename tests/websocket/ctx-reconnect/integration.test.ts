@@ -14,7 +14,7 @@ test('when reconnecting AND "ctx" IS provided', async () => {
   const host = app.server.url.hostname
   const port = app.server.port!
 
-  const client = await SleepySocketClient.connect(host, port, {
+  const client = await SleepySocketClient.open(host, port, {
     ctx: CTX,
     reconnect: {
       minDelay: 20,

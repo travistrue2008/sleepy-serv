@@ -22,7 +22,7 @@ export type ReconnectOptions = {
   random?: () => number
 }
 
-export type ConnectOptions = {
+export type OpenOptions = {
   queue?: Queue
   secure?: boolean
   timeout?: number
@@ -182,10 +182,10 @@ export default class SleepySocketClient {
     return this.#connectionData
   }
 
-  static async connect (
+  static async open (
     host: string,
     port: number,
-    opts: ConnectOptions = {},
+    opts: OpenOptions = {},
   ): Promise<SleepySocketClient> {
     if (opts.queue && !Object.values(Queue).includes(opts.queue)) {
       throw new RangeError(`Invalid queue type: ${opts.queue}`)
