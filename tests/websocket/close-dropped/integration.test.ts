@@ -20,10 +20,11 @@ test('when closed from client AND reconnect enabled', async () => {
   client.on('disconnect', handler)
   client.socket!.close(4000)
 
+  console.log('client.isConnected', client.isConnected)
+
+  await waitFor(() => !client.isConnected)
   await waitFor(() => client.isConnected)
   await client.close()
-
-  await waitFor(() => onClose.mock.calls.length > 0)
   await app.close(true)
 
   expect(handler).toHaveBeenCalledTimes(2)
@@ -58,10 +59,8 @@ test('when closed from client AND reconnect disabled', async () => {
   client.on('disconnect', handler)
   client.socket!.close(4000)
 
+  await waitFor(() => !client.isConnected)
   await wait(100) /* reconnect should NOT happen during this time */
-  await client.close()
-
-  await waitFor(() => onClose.mock.calls.length > 0)
   await app.close(true)
 
   expect(handler).toHaveBeenCalledOnce()

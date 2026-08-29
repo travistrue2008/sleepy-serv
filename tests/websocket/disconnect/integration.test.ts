@@ -1,9 +1,9 @@
 import SleepySocketClient from 'sleepy-socket'
 import { mock, test, expect } from 'bun:test'
-import { createApp } from 'sleepy-serv'
+import { CloseCode, createApp } from 'sleepy-serv'
 import { waitFor } from '../../helpers'
 
-test('when the disconnect event fires on involuntary close', async () => {
+test('when the server disconnects the client', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const port = app.server.port!
@@ -14,14 +14,15 @@ test('when the disconnect event fires on involuntary close', async () => {
   })
 
   client.on('disconnect', handler)
-  client.socket!.close(4000)
+  app.commands.disconnect(client.id!)
 
   await waitFor(() => !client.isConnected)
+
   await app.close(true)
 
   expect(handler).toHaveBeenCalledOnce()
 
   expect(handler).toHaveBeenCalledWith({
-    code: 4000,
+    code: CloseCode.Normal,
   })
 })

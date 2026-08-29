@@ -1,7 +1,7 @@
 import SleepySocketClient from 'sleepy-socket'
 import { mock, test, expect } from 'bun:test'
 import { CloseCode, CloseReason, createApp } from 'sleepy-serv'
-import { waitFor } from '../../helpers'
+import { wait, waitFor } from '../../helpers'
 
 test('when reaped AND reconnect enabled', async () => {
   const onClose = mock()
@@ -28,11 +28,11 @@ test('when reaped AND reconnect enabled', async () => {
 
   client.on('disconnect', handler)
 
-  await waitFor(() => !client.isConnected) /* wait for disconnect */
-  await waitFor(() => client.isConnected) /* wait for reconnect */
+  await waitFor(() => !client.isConnected)
+  await waitFor(() => client.isConnected)
   await client.close()
 
-  app.close(true)
+  await app.close(true)
 
   expect(handler).toHaveBeenCalledTimes(2)
   expect(handler).toHaveBeenNthCalledWith(1, { code: CloseCode.Reaped })
@@ -75,8 +75,8 @@ test('when reaped AND reconnect disabled', async () => {
   client.on('disconnect', handler)
 
   await waitFor(() => !client.isConnected)
-
-  app.close(true)
+  await wait(100)
+  await app.close(true)
 
   expect(handler).toHaveBeenCalledOnce()
   expect(handler).toHaveBeenCalledWith({ code: CloseCode.Reaped })

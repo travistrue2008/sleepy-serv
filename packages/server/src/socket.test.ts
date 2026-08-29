@@ -897,12 +897,22 @@ describe('buildTestServer()', () => {
       })
     })
 
-    test('when the reclaim window has expired', () => {
+    test('when the reclaim window has expired', async () => {
+      const state = buildSocketState({
+        ws: { reclaimTtl: 100 },
+      })
+
+      const server = buildTestServer([], state)
+      const handlers = buildSocketHandlers(state)
+      const putHandler = handlers[2].handler as TestHandler
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
+      server.close(ws, CloseCode.Abnormal, '')
 
-      const fn = () => updateTicket({
+      jest.advanceTimersByTime(101)
+
+      const promise = putHandler({
         method: 'PUT',
         headers: new Headers({
           authorization: `Bearer ${BASE64_32}`,
@@ -912,10 +922,7 @@ describe('buildTestServer()', () => {
         },
       }, undefined)
 
-      server.close(ws, CloseCode.Abnormal, '')
-      jest.advanceTimersByTime(101)
-
-      expect(fn).toThrow(new NotFoundError())
+      await expect(promise).rejects.toThrow(new NotFoundError())
     })
 
     test('when a willing close occurs', () => {

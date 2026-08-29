@@ -39,7 +39,8 @@ test('when superseded AND reconnect enabled', async () => {
   await waitFor(() => handler.mock.calls.length > 0)
 
   ws2.close()
-  app.close(true)
+
+  await app.close(true)
 
   expect(handler).toHaveBeenCalledOnce()
 
@@ -86,7 +87,8 @@ test('when superseded AND reconnect disabled', async () => {
   await waitFor(() => handler.mock.calls.length > 0)
 
   ws2.close()
-  app.close(true)
+
+  await app.close(true)
 
   expect(handler).toHaveBeenCalledOnce()
 
