@@ -3,7 +3,7 @@ import { mock, test, expect } from 'bun:test'
 import { CloseCode, createApp } from 'sleepy-serv'
 import { waitFor } from '../../helpers'
 
-test('when the server disconnects the client', async () => {
+test('when the server drops the client', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const port = app.server.port!

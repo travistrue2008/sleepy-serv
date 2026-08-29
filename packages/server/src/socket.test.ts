@@ -721,7 +721,7 @@ describe('buildTestServer()', () => {
       expect(oldWs.close).toHaveBeenCalledOnce()
     })
 
-    test('when the disconnect heartbeat threshold elapses', () => {
+    test('when the drop heartbeat threshold elapses', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
@@ -755,7 +755,7 @@ describe('buildTestServer()', () => {
       expect(ws.close).toHaveBeenCalledOnce()
     })
 
-    test('when a heartbeat resets the disconnect threshold', async () => {
+    test('when a heartbeat resets the drop threshold', async () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
@@ -2251,17 +2251,17 @@ describe('buildSocketCommands()', () => {
   })
 
   describe('drop()', () => {
-    const DISCONNECT_ID = '00000000-0000-0000-0000-999999999999'
+    const DROP_ID = '00000000-0000-0000-0000-999999999999'
 
     test('when the client has no active socket', () => {
       const state = buildSocketState()
       const commands = buildSocketCommands(state)
 
-      const fn = () => commands.drop(DISCONNECT_ID)
+      const fn = () => commands.drop(DROP_ID)
 
       expect(fn).toThrow(
         new ReferenceError(
-          `No active socket for client: ${DISCONNECT_ID}`,
+          `No active socket for client: ${DROP_ID}`,
         ),
       )
     })
@@ -2270,10 +2270,10 @@ describe('buildSocketCommands()', () => {
       const state = buildSocketState()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
-      const ws = buildSocket(DISCONNECT_ID)
+      const ws = buildSocket(DROP_ID)
 
       server.open(ws)
-      commands.drop(DISCONNECT_ID)
+      commands.drop(DROP_ID)
 
       expect(ws.close).toHaveBeenCalledOnce()
       expect(ws.close).toHaveBeenCalledWith(undefined, undefined)
@@ -2283,10 +2283,10 @@ describe('buildSocketCommands()', () => {
       const state = buildSocketState()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
-      const ws = buildSocket(DISCONNECT_ID)
+      const ws = buildSocket(DROP_ID)
 
       server.open(ws)
-      commands.drop(DISCONNECT_ID, 4000, 'kicked')
+      commands.drop(DROP_ID, 4000, 'kicked')
 
       expect(ws.close).toHaveBeenCalledOnce()
       expect(ws.close).toHaveBeenCalledWith(4000, 'kicked')

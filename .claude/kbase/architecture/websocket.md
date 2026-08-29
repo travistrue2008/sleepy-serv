@@ -96,9 +96,9 @@ Both are wrapped in try/catch so a throwing hook does not break the connection l
 
 ## Client `close()` behavior
 
-`close()` returns a `Promise<void>` that resolves after the socket's `close` event fires. Internally, it stores a resolve callback in `#closeResolve`; `#handleClose` emits the `disconnect` event first, then calls `#closeResolve()`. This guarantees `disconnect` fires before `close()` resolves. If the socket is null (mid-reconnect), `close()` resolves immediately. The `#closing` flag is only set by `close()`, not by server-initiated or involuntary closes.
+`close()` returns a `Promise<void>` that resolves after the socket's `close` event fires. Internally, it stores a resolve callback in `#closeResolve`; `#handleClose` emits the `close` event first, then calls `#closeResolve()`. This guarantees the `close` event fires before the `close()` method resolves. If the socket is null (mid-reconnect), `close()` resolves immediately. The `#closing` flag is only set by `close()`, not by server-initiated or involuntary closes.
 
-The `disconnect` event fires on ALL closes -- client-initiated, server-initiated, and reconnect-eligible. This is deliberate: app-level cleanup (removing a player from a lobby, updating UI) should run on every close, not just terminal ones. The reconnect decision happens after the emit.
+The client `close` event (`client.on('close', handler)`) fires on ALL socket closes -- client-initiated, server-initiated, and reconnect-eligible. This is deliberate: app-level cleanup (removing a player from a lobby, updating UI) should run on every close, not just terminal ones. The reconnect decision happens after the emit.
 
 ## Presence / heartbeat (both directions)
 

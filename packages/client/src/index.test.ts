@@ -559,7 +559,7 @@ describe('SleepySocketClient', () => {
       expect(client.isReconnecting).toBe(false)
     })
 
-    test('when the disconnect handler is registered', async () => {
+    test('when the close handler is registered', async () => {
       const handler = mock()
       const { client } = await connectAndOpen()
 
