@@ -25,7 +25,7 @@ test('when closed from client AND reconnect enabled', async () => {
   await app.close(true)
 
   expect(handler).toHaveBeenCalledOnce()
-  expect(handler).toHaveBeenCalledWith({ code: CloseCode.Normal })
+  expect(handler).toHaveBeenCalledWith({ code: CloseCode.Ok })
   expect(onClose).toHaveBeenCalledOnce()
   expect(onClose).toHaveBeenCalledWith(client.id, CloseReason.Ok)
 })
@@ -49,7 +49,7 @@ test('when closed from client AND reconnect disabled', async () => {
   await app.close(true)
 
   expect(handler).toHaveBeenCalledOnce()
-  expect(handler).toHaveBeenCalledWith({ code: CloseCode.Normal })
+  expect(handler).toHaveBeenCalledWith({ code: CloseCode.Ok })
   expect(onClose).toHaveBeenCalledOnce()
   expect(onClose).toHaveBeenCalledWith(client.id, CloseReason.Ok)
 })

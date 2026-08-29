@@ -554,7 +554,7 @@ export default class SleepySocketClient {
     if (
       !this.#closing &&
       this.#reconnectConfig &&
-      event.code !== CloseCode.Normal
+      event.code !== CloseCode.Ok
     ) {
       this.#scheduleReconnect(0, this.#reconnectConfig)
     }
@@ -697,7 +697,7 @@ export default class SleepySocketClient {
     return this.#socket
       ? new Promise<void>(resolve => {
         this.#closeResolve = resolve
-        this.#socket!.close(CloseCode.Normal)
+        this.#socket!.close(CloseCode.Ok)
       })
       : Promise.resolve()
   }

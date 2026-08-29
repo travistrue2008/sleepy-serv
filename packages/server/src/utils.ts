@@ -146,7 +146,7 @@ export type WebSocketRequest = BaseRequest & {
 export type Request = EndpointRequest | WebSocketRequest
 
 export const CloseCode = {
-  Normal: 1000,
+  Ok: 1000,
   Abnormal: 1006,
   Reaped: 4999,
 } as const

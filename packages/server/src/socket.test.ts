@@ -810,7 +810,7 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, CloseCode.Normal, '')
+      server.close(ws, CloseCode.Ok, '')
 
       const fn = () => server.close(ws, CloseCode.Abnormal, '')
 
@@ -823,7 +823,7 @@ describe('buildTestServer()', () => {
       const newSocket = buildSocket(CLIENT_ID)
 
       server.open(oldSocket)
-      server.close(oldSocket, CloseCode.Normal, '')
+      server.close(oldSocket, CloseCode.Ok, '')
       server.open(newSocket)
 
       const res = await updateTicket({
@@ -876,7 +876,7 @@ describe('buildTestServer()', () => {
 
       server.open(ws)
       jest.advanceTimersByTime(state.dropThreshold + 100)
-      server.close(ws, CloseCode.Normal, '')
+      server.close(ws, CloseCode.Ok, '')
 
       const res = await updateTicket({
         method: 'PUT',
@@ -940,7 +940,7 @@ describe('buildTestServer()', () => {
         },
       }, undefined)
 
-      server.close(ws, CloseCode.Normal, '')
+      server.close(ws, CloseCode.Ok, '')
 
       expect(fn).toThrow(new NotFoundError())
     })
@@ -996,7 +996,7 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, CloseCode.Normal, '')
+      server.close(ws, CloseCode.Ok, '')
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
@@ -1034,7 +1034,7 @@ describe('buildTestServer()', () => {
 
       server.open(ws)
       jest.advanceTimersByTime(101)
-      server.close(ws, CloseCode.Normal, '')
+      server.close(ws, CloseCode.Ok, '')
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
@@ -1054,7 +1054,7 @@ describe('buildTestServer()', () => {
 
       server.open(oldWs)
       server.open(newWs)
-      server.close(oldWs, CloseCode.Normal, '')
+      server.close(oldWs, CloseCode.Ok, '')
 
       expect(state.activeSessions.size).toBe(1)
       expect(state.onClose).toHaveBeenCalledOnce()
@@ -1079,7 +1079,7 @@ describe('buildTestServer()', () => {
 
       server.open(ws)
 
-      const fn = () => server.close(ws, CloseCode.Normal, '')
+      const fn = () => server.close(ws, CloseCode.Ok, '')
 
       expect(fn).not.toThrow()
       expect(state.activeSessions.size).toBe(0)
@@ -2065,7 +2065,7 @@ describe('buildSocketCommands()', () => {
       jest.advanceTimersByTime(state.dropThreshold + 100)
 
       server.open(ws)
-      server.close(ws, CloseCode.Normal, '')
+      server.close(ws, CloseCode.Ok, '')
 
       expect(fn).toThrow(
         new ReferenceError(`No active socket for client: ${CLIENT_ID}`),
@@ -2113,7 +2113,7 @@ describe('buildSocketCommands()', () => {
       const webSockets = clientIds.map(buildSocket)
 
       webSockets.forEach(ws => server.open(ws))
-      server.close(webSockets[0], CloseCode.Normal, '')
+      server.close(webSockets[0], CloseCode.Ok, '')
 
       const filterFn = mock((_cid, data) => data.clientId !== clientIds[3])
 

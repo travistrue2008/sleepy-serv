@@ -23,6 +23,6 @@ test('when the server drops the client', async () => {
   expect(handler).toHaveBeenCalledOnce()
 
   expect(handler).toHaveBeenCalledWith({
-    code: CloseCode.Normal,
+    code: CloseCode.Ok,
   })
 })

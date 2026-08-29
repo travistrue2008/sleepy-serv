@@ -70,7 +70,7 @@ export const StatusCode = {
 export type StatusCode = typeof StatusCode[keyof typeof StatusCode]
 
 export const CloseCode = {
-  Normal: 1000,
+  Ok: 1000,
   Abnormal: 1006,
   Reaped: 4999,
 } as const

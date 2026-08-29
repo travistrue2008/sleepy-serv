@@ -422,7 +422,7 @@ function buildErrorMessage (
 function getCloseReason (ws: SocketConnection, code: number): CloseReason {
   if (ws.data.reaped) {
     return CloseReason.Reaped
-  } else if (code === CloseCode.Normal) {
+  } else if (code === CloseCode.Ok) {
     return CloseReason.Ok
   }
 
@@ -547,7 +547,7 @@ export function buildSocketServer (
 
       activeSessions.delete(ws.data.clientId)
 
-      if (code !== CloseCode.Normal || ws.data.reaped) {
+      if (code !== CloseCode.Ok || ws.data.reaped) {
         inactiveSessions.set(ws.data.clientId, {
           token: exists.token,
           expiresAt: Date.now() + reclaimTtl,

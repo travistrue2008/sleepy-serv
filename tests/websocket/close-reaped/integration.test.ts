@@ -36,7 +36,7 @@ test('when reaped AND reconnect enabled', async () => {
 
   expect(handler).toHaveBeenCalledTimes(2)
   expect(handler).toHaveBeenNthCalledWith(1, { code: CloseCode.Reaped })
-  expect(handler).toHaveBeenNthCalledWith(2, { code: CloseCode.Normal })
+  expect(handler).toHaveBeenNthCalledWith(2, { code: CloseCode.Ok })
   expect(onClose).toHaveBeenCalledTimes(2)
 
   expect(onClose).toHaveBeenNthCalledWith(

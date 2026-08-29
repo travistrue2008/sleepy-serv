@@ -115,7 +115,7 @@ class MockWebSocket {
     this.readyState = 3
 
     this.#emit('close', {
-      wasClean: code === CloseCode.Normal,
+      wasClean: code === CloseCode.Ok,
       code,
     })
   }
@@ -570,7 +570,7 @@ describe('SleepySocketClient', () => {
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: CloseCode.Normal,
+        code: CloseCode.Ok,
       })
     })
 
@@ -747,13 +747,13 @@ describe('SleepySocketClient', () => {
       })
 
       client.on('close', handler)
-      socket.close(CloseCode.Normal)
+      socket.close(CloseCode.Ok)
 
       expect(client.isConnected).toBe(false)
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: CloseCode.Normal,
+        code: CloseCode.Ok,
       })
     })
 
@@ -779,7 +779,7 @@ describe('SleepySocketClient', () => {
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: CloseCode.Normal,
+        code: CloseCode.Ok,
       })
     })
 
