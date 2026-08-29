@@ -434,6 +434,7 @@ describe('SleepySocketClient', () => {
     test('when successful', async () => {
       const { client, socket } = await connectAndOpen()
 
+      expect(client.isConnecting).toBe(false)
       expect(client.isConnected).toBe(true)
       expect(client.queueType).toBe(Queue.None)
       expect(client.isSecure).toBe(false)
@@ -525,7 +526,9 @@ describe('SleepySocketClient', () => {
 
       await client.close()
 
-      await expect(client.close()).rejects.toThrow()
+      const fn = () => client.close()
+
+      expect(fn).toThrow(new Error('Socket is closed'))
     })
 
     test('when successful', async () => {
@@ -541,6 +544,36 @@ describe('SleepySocketClient', () => {
       await expect(fn).toThrow(new Error('Socket is closed'))
     })
 
+    test('when the socket is null', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      socket.drop()
+
+      await client.close()
+
+      expect(client.isConnected).toBe(false)
+      expect(client.isReconnecting).toBe(false)
+    })
+
+    test('when the disconnect handler is registered', async () => {
+      const handler = mock()
+      const { client } = await connectAndOpen()
+
+      client.on('disconnect', handler)
+
+      await client.close()
+
+      expect(handler).toHaveBeenCalledOnce()
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Normal,
+      })
+    })
+
     test('when reconnect is disabled and the socket drops', async () => {
       const handler = mock()
 
@@ -551,6 +584,7 @@ describe('SleepySocketClient', () => {
       client.on('disconnect', handler)
       socket.drop()
 
+      expect(client.isReconnecting).toBe(false)
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
@@ -650,18 +684,57 @@ describe('SleepySocketClient', () => {
   })
 
   describe('reconnect', () => {
-    test('when the socket drops unexpectedly', async () => {
-      const { socket } = await connectAndOpen({
+    test('when isConnecting transitions during reconnect', async () => {
+      const { client, socket } = await connectAndOpen({
         reconnect: {
           random: () => 0,
         },
       })
 
+      expect(client.isConnecting).toBe(false)
+
       socket.drop()
+
+      expect(client.isConnecting).toBe(false)
+
+      jest.advanceTimersByTime(500)
+
+      await settle()
+
+      expect(client.isConnecting).toBe(true)
+
+      lastSocket().open()
+      lastSocket().receive(sendWelcome(CLIENT_ID))
+
+      await settle()
+
+      expect(client.isConnecting).toBe(false)
+      expect(client.isConnected).toBe(true)
+    })
+
+    test('when the socket drops unexpectedly', async () => {
+      const handler = mock()
+
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      client.on('disconnect', handler)
+      socket.drop()
+
+      expect(client.isReconnecting).toBe(true)
 
       const next = await reconnect()
 
       expect(next).not.toBe(socket)
+      expect(client.isReconnecting).toBe(false)
+      expect(handler).toHaveBeenCalledOnce()
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Abnormal,
+      })
     })
 
     test('when a clean close was not app-initiated', async () => {
@@ -685,11 +758,15 @@ describe('SleepySocketClient', () => {
     })
 
     test('when the app closes the client', async () => {
+      const handler = mock()
+
       const { client, socket } = await connectAndOpen({
         reconnect: {
           random: () => 0,
         },
       })
+
+      client.on('disconnect', handler)
 
       await client.close()
 
@@ -698,6 +775,12 @@ describe('SleepySocketClient', () => {
       await settle()
 
       expect(MockWebSocket.last).toBe(socket)
+      expect(client.isReconnecting).toBe(false)
+      expect(handler).toHaveBeenCalledOnce()
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Normal,
+      })
     })
 
     test('when an app-initiated close reports 1006', async () => {
@@ -719,12 +802,15 @@ describe('SleepySocketClient', () => {
     })
 
     test('when reconnecting', async () => {
+      const handler = mock()
+
       const { client, socket } = await connectAndOpen({
         reconnect: {
           random: () => 0,
         },
       })
 
+      client.on('disconnect', handler)
       socket.drop()
 
       const postDropStatus = client.isConnected
@@ -760,6 +846,12 @@ describe('SleepySocketClient', () => {
           },
         },
       )
+
+      expect(handler).toHaveBeenCalledOnce()
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Abnormal,
+      })
     })
 
     test('when "opts.ctx" is provided', async () => {
@@ -1065,60 +1157,62 @@ describe('SleepySocketClient', () => {
     })
   })
 
-  describe('notification', () => {
-    test('when a notification arrives', async () => {
-      const { client, socket } = await connectAndOpen()
+  describe('messages', () => {
+    describe('notification', () => {
+      test('when a notification arrives', async () => {
+        const { client, socket } = await connectAndOpen()
 
-      const message = notification('state_changed', { score: 1 })
-      const received: unknown[] = []
+        const message = notification('state_changed', { score: 1 })
+        const received: unknown[] = []
 
-      client.on('notification', message => received.push(message))
-      socket.receive(message)
+        client.on('notification', message => received.push(message))
+        socket.receive(message)
 
-      expect(received).toStrictEqual([message])
-    })
-
-    test('when a handler is removed with off()', async () => {
-      const { client, socket } = await connectAndOpen()
-
-      const received: unknown[] = []
-      const handler = (message: unknown) => received.push(message)
-
-      const notifications = [
-        notification('state_changed', { score: 1 }),
-        notification('state_changed', { score: 2 }),
-      ]
-
-      client.on('notification', handler)
-      socket.receive(notifications[0])
-      client.off('notification', handler)
-      socket.receive(notifications[1])
-
-      expect(received).toStrictEqual([notifications[0]])
-    })
-
-    test('when a notification arrives before timeout', async () => {
-      const { client, socket } = await connectAndOpen()
-
-      jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
-      socket.receive(notification('state_changed', { score: 1 }))
-      jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
-
-      expect(client.isConnected).toBe(true)
-    })
-  })
-
-  describe('#handleMessage()', () => {
-    test('when an unknown message type arrives', async () => {
-      const { socket } = await connectAndOpen()
-
-      const fn = () => socket.receive({
-        id: id(),
-        type: 'garbage',
-        timestamp: TIMESTAMP,
+        expect(received).toStrictEqual([message])
       })
 
-      expect(fn).toThrow(new RangeError('Unknown message type: "garbage"'))
+      test('when a handler is removed with off()', async () => {
+        const { client, socket } = await connectAndOpen()
+
+        const received: unknown[] = []
+        const handler = (message: unknown) => received.push(message)
+
+        const notifications = [
+          notification('state_changed', { score: 1 }),
+          notification('state_changed', { score: 2 }),
+        ]
+
+        client.on('notification', handler)
+        socket.receive(notifications[0])
+        client.off('notification', handler)
+        socket.receive(notifications[1])
+
+        expect(received).toStrictEqual([notifications[0]])
+      })
+
+      test('when a notification arrives before timeout', async () => {
+        const { client, socket } = await connectAndOpen()
+
+        jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+        socket.receive(notification('state_changed', { score: 1 }))
+        jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+
+        expect(client.isConnected).toBe(true)
+      })
+    })
+
+    describe('unknown', () => {
+      test('when an unknown message type arrives', async () => {
+        const { socket } = await connectAndOpen()
+
+        const fn = () => socket.receive({
+          id: id(),
+          type: 'garbage',
+          timestamp: TIMESTAMP,
+        })
+
+        expect(fn).toThrow(new RangeError('Unknown message type: "garbage"'))
+      })
     })
   })
 
