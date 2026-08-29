@@ -563,7 +563,7 @@ describe('SleepySocketClient', () => {
       const handler = mock()
       const { client } = await connectAndOpen()
 
-      client.on('disconnect', handler)
+      client.on('close', handler)
 
       await client.close()
 
@@ -581,7 +581,7 @@ describe('SleepySocketClient', () => {
         reconnect: false,
       })
 
-      client.on('disconnect', handler)
+      client.on('close', handler)
       socket.drop()
 
       expect(client.isReconnecting).toBe(false)
@@ -721,7 +721,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      client.on('disconnect', handler)
+      client.on('close', handler)
       socket.drop()
 
       expect(client.isReconnecting).toBe(true)
@@ -746,7 +746,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      client.on('disconnect', handler)
+      client.on('close', handler)
       socket.close(CloseCode.Normal)
 
       expect(client.isConnected).toBe(false)
@@ -766,7 +766,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      client.on('disconnect', handler)
+      client.on('close', handler)
 
       await client.close()
 
@@ -810,7 +810,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      client.on('disconnect', handler)
+      client.on('close', handler)
       socket.drop()
 
       const postDropStatus = client.isConnected

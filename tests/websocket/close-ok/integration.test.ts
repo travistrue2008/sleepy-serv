@@ -17,7 +17,7 @@ test('when closed from client AND reconnect enabled', async () => {
     },
   })
 
-  client.on('disconnect', handler)
+  client.on('close', handler)
 
   await client.close()
 
@@ -41,7 +41,7 @@ test('when closed from client AND reconnect disabled', async () => {
     reconnect: false,
   })
 
-  client.on('disconnect', handler)
+  client.on('close', handler)
 
   await client.close()
 

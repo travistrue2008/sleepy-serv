@@ -17,7 +17,7 @@ test('when closed from client AND reconnect enabled', async () => {
     },
   })
 
-  client.on('disconnect', handler)
+  client.on('close', handler)
   client.socket!.close(4000)
 
   console.log('client.isConnected', client.isConnected)
@@ -56,7 +56,7 @@ test('when closed from client AND reconnect disabled', async () => {
     reconnect: false,
   })
 
-  client.on('disconnect', handler)
+  client.on('close', handler)
   client.socket!.close(4000)
 
   await waitFor(() => !client.isConnected)

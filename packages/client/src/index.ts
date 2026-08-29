@@ -549,7 +549,7 @@ export default class SleepySocketClient {
     this.#dispatchedMessages = []
     this.#socket = null
 
-    this.#emit('disconnect', { code: event.code })
+    this.#emit('close', { code: event.code })
 
     if (
       !this.#closing &&

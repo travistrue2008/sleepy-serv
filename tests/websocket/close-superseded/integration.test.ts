@@ -17,7 +17,7 @@ test('when superseded AND reconnect enabled', async () => {
     },
   })
 
-  client.on('disconnect', handler)
+  client.on('close', handler)
 
   const reclaimRes = await fetch(
     `http://${host}:${port}/ws/${client.id}`,
@@ -62,7 +62,7 @@ test('when superseded AND reconnect disabled', async () => {
     reconnect: false,
   })
 
-  client.on('disconnect', handler)
+  client.on('close', handler)
 
   const reclaimRes = await fetch(
     `http://${host}:${port}/ws/${client.id}`,

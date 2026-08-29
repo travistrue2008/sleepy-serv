@@ -26,7 +26,7 @@ test('when reaped AND reconnect enabled', async () => {
     },
   })
 
-  client.on('disconnect', handler)
+  client.on('close', handler)
 
   await waitFor(() => !client.isConnected)
   await waitFor(() => client.isConnected)
@@ -72,7 +72,7 @@ test('when reaped AND reconnect disabled', async () => {
     reconnect: false,
   })
 
-  client.on('disconnect', handler)
+  client.on('close', handler)
 
   await waitFor(() => !client.isConnected)
   await wait(100)
