@@ -4,7 +4,11 @@ import querystring from 'querystring'
 import readline from 'node:readline'
 
 import { stdin, stdout } from 'node:process'
-import { toSegments, executeMiddlewareChain } from './utils'
+
+import {
+  toSegments,
+  executeMiddlewareChain,
+} from './utils'
 
 import {
   buildSocketState,
@@ -23,9 +27,12 @@ import {
 import type { BunRequest } from 'bun'
 
 import type {
+  AsyncHandlerResult,
   HttpMethod,
   Middleware,
+  MiddlewareChain,
   EndpointRequest,
+  ActiveSessions,
   AppOptions,
   Server,
 } from './utils'
@@ -37,6 +44,7 @@ import type {
 } from './socket'
 
 export * from './errors'
+export { StatusCode, CloseCode, CloseReason } from './utils'
 
 export {
   parseJsonBody,
@@ -44,16 +52,23 @@ export {
   validateSchemas,
 } from './middleware'
 
-export { HttpMethod, StatusCode } from './utils'
+export type { SocketCommands } from './socket'
+export type { HttpMethod, ActiveSessions } from './utils'
 
 export type {
   AppOptions,
+  AsyncHandlerResult,
+  BaseRequest,
   EndpointRequest,
   FormattedError,
+  Handler,
   Middleware,
+  MiddlewareChain,
   NextFn,
+  HandlerResult,
   Request,
   Server,
+  SocketConnection,
   SocketOptions,
   WebSocketRequest,
 } from './utils'
@@ -64,15 +79,13 @@ export type {
   ValidationSchemas,
 } from './middleware'
 
-export type { SocketCommands } from './socket'
-
 type OutputRoutes = Record<string, string[]>
 type ServerRoutes = Record<string, Record<string, EndpointHandler>>
 
 type EndpointHandler = (
   bunReq: BunRequest,
   server: Server,
-) => Promise<Response>
+) => AsyncHandlerResult
 
 type DirEntry = {
   path: string
@@ -89,7 +102,7 @@ type RoutePath = {
 type ChainRoute = {
   method: HttpMethod
   path: string
-  chain: Middleware[]
+  chain: MiddlewareChain
 }
 
 type ModuleRoute = {
@@ -154,10 +167,20 @@ function defaultMethodMap (): Record<string, EndpointHandler> {
 function buildEndpointRequest (
   bunReq: BunRequest,
   server: Server,
+  activeSessions: ActiveSessions,
 ): EndpointRequest {
   const url = new URL(bunReq.url)
   const qs = url.search.replace('?', '')
-  const json = () => bunReq.json()
+
+  let bodyPromise: Promise<unknown> | null = null
+
+  const json = (): Promise<unknown> => {
+    if (!bodyPromise) {
+      bodyPromise = bunReq.json()
+    }
+
+    return bodyPromise
+  }
 
   return {
     method: bunReq.method as HttpMethod,
@@ -168,6 +191,9 @@ function buildEndpointRequest (
     raw: bunReq,
     server,
     json,
+    ws: {
+      active: activeSessions,
+    },
   }
 }
 
@@ -279,9 +305,10 @@ function buildRoutePaths (
       .join('') || '/'
 
     const metaMiddlewarePath = selectMetaPaths(metadata, modulePath)
+    const rawMethod = segments[lastIndex].toUpperCase()
 
     return {
-      method: segments[lastIndex].toUpperCase() as HttpMethod,
+      method: rawMethod as HttpMethod,
       path: joinedPath,
       metaMiddlewarePath,
       modulePath,
@@ -376,10 +403,17 @@ function buildSocketRoutes (mergedRoutes: ChainRoute[]): SocketRoute[] {
   }))
 }
 
-function buildModuleRoutes (socketRoutes: SocketRoute[]): ModuleRoute[] {
+function buildModuleRoutes (
+  socketRoutes: SocketRoute[],
+  state: SocketState,
+): ModuleRoute[] {
   return socketRoutes.map(route => {
     const handler: EndpointHandler = async (bunReq, server) => {
-      const req = buildEndpointRequest(bunReq, server)
+      const req = buildEndpointRequest(
+        bunReq,
+        server,
+        state.activeSessions,
+      )
 
       return executeMiddlewareChain(req, route.chain)
     }
@@ -440,7 +474,7 @@ async function buildRoutes (
   )
 
   const socketRoutes = buildSocketRoutes(mergedRoutes)
-  const moduleRoutes = buildModuleRoutes(socketRoutes)
+  const moduleRoutes = buildModuleRoutes(socketRoutes, state)
   const serverRoutes = buildServerRoutes(moduleRoutes)
   const outputRoutes = buildOutputRoutes(moduleRoutes)
 

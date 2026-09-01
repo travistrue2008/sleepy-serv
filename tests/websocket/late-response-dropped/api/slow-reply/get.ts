@@ -1,6 +1,6 @@
-import type { Request } from 'sleepy-serv'
+import type { AsyncHandlerResult, Request } from 'sleepy-serv'
 
-export default async function (_req: Request): Promise<Response> {
+export default async function (_req: Request): AsyncHandlerResult {
   /* replies well after the client has already timed out this request */
   await Bun.sleep(250)
 

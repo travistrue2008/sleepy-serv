@@ -90,7 +90,36 @@ export type FormattedError = {
   message: string
 }
 
-export type NextFn = (data?: unknown) => Response | Promise<Response>
+export type AsyncHandlerResult = Promise<Response>
+export type HandlerResult = Response | AsyncHandlerResult
+export type NextFn = (data?: unknown) => HandlerResult
+
+export type Middleware = (
+  req: Request,
+  res: unknown,
+  next: NextFn,
+) => HandlerResult
+
+export type Handler = (
+  req: Request,
+  res: unknown,
+) => HandlerResult
+
+export type MiddlewareChain = (Middleware | Handler)[]
+
+export type ActiveSession = {
+  token: string
+  ws: SocketConnection
+}
+
+export type InactiveSession = {
+  token: string
+  expiresAt: number
+  app: unknown
+}
+
+export type ActiveSessions = ReadonlyMap<string, ActiveSession>
+export type Session = ActiveSession | InactiveSession
 
 export type BaseRequest = {
   method: HttpMethod
@@ -99,6 +128,9 @@ export type BaseRequest = {
   params: Record<string, string>
   query: Record<string, unknown>
   json: () => Promise<unknown>
+  ws: {
+    active: ActiveSessions
+  }
 }
 
 export type EndpointRequest = BaseRequest & {
@@ -113,18 +145,31 @@ export type WebSocketRequest = BaseRequest & {
 
 export type Request = EndpointRequest | WebSocketRequest
 
-export type Middleware = (
-  req: Request,
-  res: unknown,
-  next: NextFn | null,
-) => unknown
+export const CloseCode = {
+  Ok: 1000,
+  Abnormal: 1006,
+  Reaped: 4999,
+} as const
+
+export type CloseCode = typeof CloseCode[keyof typeof CloseCode]
+
+export const CloseReason = {
+  Ok: 'ok',
+  Dropped: 'dropped',
+  Reaped: 'reaped',
+  Superseded: 'superseded',
+} as const
+
+export type CloseReason = typeof CloseReason[keyof typeof CloseReason]
 
 export type SocketOptions = {
-  disconnectThreshold?: number
+  dropThreshold?: number
   heartbeatInterval?: number
   maxTickets?: number
   reclaimTtl?: number
   ticketTtl?: number
+  onOpen?: (clientId: string) => void
+  onClose?: (clientId: string, reason: CloseReason) => void
 }
 
 export type SocketData = {
@@ -132,6 +177,13 @@ export type SocketData = {
   superseded: boolean
   reaped: boolean
   reaperHandle: ReturnType<typeof setTimeout> | null
+  app: unknown
+}
+
+export type SocketConnection = {
+  data: SocketData
+  send: (data: string) => unknown
+  close: (code?: number, reason?: string) => void
 }
 
 export type Server = BunServer<SocketData>
@@ -174,8 +226,8 @@ export function formatError (
 
 export async function executeMiddlewareChain (
   req: Request,
-  chain: Middleware[],
-): Promise<Response> {
+  chain: MiddlewareChain,
+): AsyncHandlerResult {
   if (!chain.length) {
     throw new RangeError('Middleware chain is empty')
   }
@@ -183,15 +235,14 @@ export async function executeMiddlewareChain (
   const executeMiddleware = async (
     index: number,
     res: unknown,
-  ): Promise<Response> => {
-    const currentMiddleware = chain[index]
-    const isLastMiddleware = index === chain.length - 1
+  ): AsyncHandlerResult => {
+    const isLast = index === chain.length - 1
+    const fn = chain[index]
+    const next = (data?: unknown) => executeMiddleware(index + 1, data)
 
-    const next = !isLastMiddleware ?
-      (data?: unknown) => executeMiddleware(index + 1, data)
-      : null
-
-    const result = await currentMiddleware(req, res, next)
+    const result = isLast
+      ? await (fn as Handler)(req, res)
+      : await (fn as Middleware)(req, res, next)
 
     if (result instanceof Response) {
       return result

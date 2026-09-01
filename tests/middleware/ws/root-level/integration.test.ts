@@ -3,19 +3,19 @@ import { StatusCode, createApp } from 'sleepy-serv'
 import { createRequestor, Fmt } from '../../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
-import type { NextFn, Request } from 'sleepy-serv'
+import type { NextFn, HandlerResult, Request } from 'sleepy-serv'
 import type { TicketBody } from '../../../helpers'
 
 function root (
   req: Request,
   _res: unknown,
-  next: NextFn | null,
-): Response | Promise<Response> {
+  next: NextFn,
+): HandlerResult {
   if (req.query.err !== undefined) {
     throw new Error('Middleware error triggered')
   }
 
-  return next!(['From root middleware'])
+  return next(['From root middleware'])
 }
 
 describe('POST', () => {
@@ -65,7 +65,7 @@ describe('PUT', () => {
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const port = app.server.port!
-    const client = await SleepySocketClient.connect(host, port)
+    const client = await SleepySocketClient.open(host, port)
     const res = await req.put(`/ws/${client.id}?err`, Fmt.Json)
 
     await client.close()
@@ -86,7 +86,7 @@ describe('PUT', () => {
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const port = app.server.port!
-    const client = await SleepySocketClient.connect(host, port)
+    const client = await SleepySocketClient.open(host, port)
 
     const res = await req.put(`/ws/${client.id}`, Fmt.Json, {
       headers: new Headers({

@@ -10,6 +10,8 @@ import {
 
 import {
   StatusCode,
+  CloseCode,
+  CloseReason,
   toSegments,
   formatError,
   executeMiddlewareChain,
@@ -17,6 +19,7 @@ import {
 
 import {
   RequestError,
+  BadRequestError,
   NotFoundError,
   UnauthorizedError,
   MethodNotAllowedError,
@@ -29,11 +32,17 @@ import type { ValidateFunction } from 'ajv'
 import type { WebSocketHandler } from 'bun'
 
 import type {
+  AsyncHandlerResult,
   HttpMethod,
   Request,
+  MiddlewareChain,
   WebSocketRequest,
-  Middleware,
   SocketData,
+  SocketConnection,
+  ActiveSession,
+  ActiveSessions,
+  InactiveSession,
+  Session,
   AppOptions,
 } from './utils'
 
@@ -44,57 +53,8 @@ import type {
   ResponseMessage,
 } from './messages'
 
-export type Ticket = {
-  clientId: string
-  expiresAt: number
-}
-
-export type SocketConnection = {
-  data: SocketData
-  send: (data: string) => unknown
-  close: () => void
-}
-
-export type ActiveSession = {
-  token: string
-  ws: SocketConnection
-}
-
-export type InactiveSession = {
-  token: string
-  expiresAt: number
-}
-
-export type Session = ActiveSession | InactiveSession
-
-export type SocketState = {
-  disconnectThreshold: number
-  heartbeatInterval: number
-  maxTickets: number
-  reclaimTtl: number
-  ticketTtl: number
-  tickets: Map<string, Ticket>
-  activeSessions: Map<string, ActiveSession>
-  inactiveSessions: Map<string, InactiveSession>
-}
-
-export type SocketRoute = {
-  method: HttpMethod
-  path: string
-  segments: string[]
-  chain: Middleware[]
-}
-
-export type SocketEndpoint = {
-  method: HttpMethod
-  path: string
-  handler: (req: Request, res: unknown) => Response
-}
-
-export type SocketCommands = {
-  send: (clientId: string, event: string, body: unknown) => void
-  broadcast: (event: string, body: unknown) => void
-}
+type SocketHandler = (req: Request, res: unknown) => AsyncHandlerResult
+type FilterFn = (clientId: string, data: unknown) => boolean
 
 type UpgradeData = {
   clientId?: string
@@ -104,6 +64,12 @@ type UpgradeData = {
 type UpgradeContext = {
   data?: UpgradeData
   [key: string]: unknown
+}
+
+type SocketEndpoint = {
+  method: HttpMethod
+  path: string
+  handler: SocketHandler
 }
 
 type CreateSocketRequest = {
@@ -123,6 +89,39 @@ type UpdateTicketRequest = {
   params: {
     clientId: string
   }
+}
+
+export type Ticket = {
+  clientId: string
+  expiresAt: number
+  data: unknown
+}
+
+export type SocketState = {
+  dropThreshold: number
+  heartbeatInterval: number
+  maxTickets: number
+  reclaimTtl: number
+  ticketTtl: number
+  tickets: Map<string, Ticket>
+  activeSessions: Map<string, ActiveSession>
+  inactiveSessions: Map<string, InactiveSession>
+  onOpen: ((clientId: string) => void) | null
+  onClose: ((clientId: string, reason: CloseReason) => void) | null
+}
+
+export type SocketRoute = {
+  method: HttpMethod
+  path: string
+  segments: string[]
+  chain: MiddlewareChain
+}
+
+export type SocketCommands = {
+  send: (clientId: string, event: string, body: unknown) => void
+  sendToGroup: (fn: FilterFn, event: string, body: unknown) => void
+  broadcast: (event: string, body: unknown) => void
+  drop: (clientId: string, code?: number, reason?: string) => void
 }
 
 const ajv = new Ajv({
@@ -230,7 +229,7 @@ function isSessionActive (session: InactiveSession): boolean {
   return !session.expiresAt || session.expiresAt > Date.now()
 }
 
-function randomTicket (): string {
+function randomTicketHash (): string {
   return crypto.randomBytes(24).toString('base64url')
 }
 
@@ -246,6 +245,30 @@ function parseMessage (raw: string | Buffer): RawMessage | undefined {
 
     return undefined
   }
+}
+
+async function parseJsonBody (req: Request): Promise<unknown> {
+  try {
+    const body = await req.json()
+
+    return body
+  } catch {
+    throw new BadRequestError('Invalid JSON')
+  }
+}
+
+async function parseJsonBodyAppData (req: Request): Promise<unknown> {
+  const contentType = req.headers.get('content-type')
+  const usingJsonBody = contentType?.startsWith('application/json')
+
+  if (!usingJsonBody) {
+    return null
+  }
+
+  const rawBody = await parseJsonBody(req)
+  const appData = (rawBody as Record<string, unknown> | null)?.data ?? null
+
+  return appData
 }
 
 function sweepInactiveSessions (state: SocketState): void {
@@ -338,6 +361,7 @@ function buildParams (
 function buildRequest (
   params: Record<string, string>,
   message: RequestMessage,
+  activeSessions: ActiveSessions,
 ): WebSocketRequest {
   const { id, clientId, method, route } = message
   const headers = new Headers(message.headers ?? {})
@@ -353,6 +377,9 @@ function buildRequest (
     params,
     query,
     json,
+    ws: {
+      active: activeSessions,
+    },
   }
 }
 
@@ -364,13 +391,12 @@ async function buildOutgoingMessage (
   const text = await response.text()
   const contentType = response.headers.get('content-type') ?? ''
   const usingJson = contentType.includes('application/json')
-  const body = usingJson ? JSON.parse(text) : text
 
   return createMessage(clientId, MessageType.Response, {
     id,
     status: response.status,
     headers: response.headers,
-    body,
+    body: usingJson ? JSON.parse(text) : text,
   })
 }
 
@@ -393,9 +419,19 @@ function buildErrorMessage (
   })
 }
 
+function getCloseReason (ws: SocketConnection, code: number): CloseReason {
+  if (ws.data.reaped) {
+    return CloseReason.Reaped
+  } else if (code === CloseCode.Ok) {
+    return CloseReason.Ok
+  }
+
+  return CloseReason.Dropped
+}
+
 export function buildSocketState (opts: AppOptions = {}): SocketState {
   return {
-    disconnectThreshold: opts.ws?.disconnectThreshold ?? 120_000,
+    dropThreshold: opts.ws?.dropThreshold ?? 120_000,
     heartbeatInterval: opts.ws?.heartbeatInterval ?? 30_000,
     maxTickets: opts.ws?.maxTickets ?? 100_000,
     reclaimTtl: opts.ws?.reclaimTtl ?? 300_000,
@@ -403,6 +439,8 @@ export function buildSocketState (opts: AppOptions = {}): SocketState {
     tickets: new Map(),
     activeSessions: new Map(),
     inactiveSessions: new Map(),
+    onOpen: opts.ws?.onOpen ?? null,
+    onClose: opts.ws?.onClose ?? null,
   }
 }
 
@@ -411,14 +449,16 @@ export function buildSocketServer (
   state: SocketState,
 ): WebSocketHandler<SocketData> {
   const {
-    disconnectThreshold,
+    dropThreshold,
     heartbeatInterval,
     reclaimTtl,
     activeSessions,
     inactiveSessions,
+    onOpen,
+    onClose,
   } = state
 
-  function armReaper (ws: SocketConnection): void {
+  function armReaper (ws: SocketConnection) {
     if (ws.data.reaperHandle) {
       clearTimeout(ws.data.reaperHandle)
     }
@@ -426,8 +466,28 @@ export function buildSocketServer (
     ws.data.reaperHandle = setTimeout(() => {
       ws.data.reaped = true
 
-      ws.close()
-    }, disconnectThreshold)
+      ws.close(CloseCode.Reaped)
+    }, dropThreshold)
+  }
+
+  function invokeOpen (ws: SocketConnection) {
+    if (onOpen) {
+      try {
+        onOpen(ws.data.clientId)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  }
+
+  function invokeClose (ws: SocketConnection, reason: CloseReason) {
+    if (onClose) {
+      try {
+        onClose(ws.data.clientId, reason)
+      } catch (err) {
+        console.error(err)
+      }
+    }
   }
 
   return {
@@ -465,6 +525,7 @@ export function buildSocketServer (
       )
 
       ws.send(JSON.stringify(welcomeMessage))
+      invokeOpen(ws)
     },
     close (ws: SocketConnection, code: number): void {
       if (ws.data.reaperHandle) {
@@ -472,23 +533,29 @@ export function buildSocketServer (
       }
 
       if (ws.data.superseded) {
+        invokeClose(ws, CloseReason.Superseded)
+
         return
       }
 
-      const existingSession = activeSessions.get(ws.data.clientId)
+      const reason = getCloseReason(ws, code)
+      const exists = activeSessions.get(ws.data.clientId)
 
-      if (!existingSession || existingSession.ws !== ws) {
+      if (!exists || exists.ws !== ws) {
         return
       }
 
       activeSessions.delete(ws.data.clientId)
 
-      if (code !== 1000 || ws.data.reaped) {
+      if (code !== CloseCode.Ok || ws.data.reaped) {
         inactiveSessions.set(ws.data.clientId, {
-          token: existingSession.token,
+          token: exists.token,
           expiresAt: Date.now() + reclaimTtl,
+          app: ws.data.app,
         })
       }
+
+      invokeClose(ws, reason)
     },
     async message (ws: SocketConnection, raw: string | Buffer): Promise<void> {
       const incomingMsg = parseMessage(raw)
@@ -514,7 +581,7 @@ export function buildSocketServer (
         const { id, clientId } = message
         const route = matchRoute(routes, message)
         const params = buildParams(route, message)
-        const req = buildRequest(params, message)
+        const req = buildRequest(params, message, activeSessions)
         const res = await executeMiddlewareChain(req, route.chain)
         const outgoingMsg = await buildOutgoingMessage(id, clientId, res)
 
@@ -539,7 +606,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     inactiveSessions,
   } = state
 
-  function bindTicket (clientId: string): string {
+  function issueTicket (clientId: string, data: unknown): string {
     for (const [key, entry] of tickets) {
       if (entry.expiresAt > Date.now()) {
         break
@@ -552,38 +619,36 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
       throw new ServiceUnavailableError('Unable to issue ticket')
     }
 
-    const ticket = randomTicket()
+    const hash = randomTicketHash()
     const expiresAt = Date.now() + ticketTtl
 
-    tickets.set(ticket, {
+    tickets.set(hash, {
       clientId,
       expiresAt,
+      data,
     })
 
-    return ticket
+    return hash
   }
 
-  function redeemTicket (ticket: string): string | undefined {
-    const entry = ticket ? tickets.get(ticket) : undefined
+  function redeemTicket (hash: string): Ticket | undefined {
+    const entry = hash ? tickets.get(hash) : undefined
 
     if (!entry) {
       return undefined
     }
 
-    tickets.delete(ticket)
+    tickets.delete(hash)
 
-    if (entry.expiresAt <= Date.now()) {
-      return undefined
-    }
+    return entry.expiresAt > Date.now() ? entry : undefined
 
-    return entry.clientId
   }
 
   return [
     {
       method: 'GET',
       path: '/ws',
-      handler (req: Record<string, unknown>, res: unknown): Response {
+      handler (req: Request, res: unknown): AsyncHandlerResult {
         const validReq = validateSchema(req, createSocketValidator)
 
         if (typeof res !== 'object') {
@@ -591,16 +656,18 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
         }
 
         const ctx: UpgradeContext = res ? { ...res } : {}
+        const ticket = redeemTicket(validReq.query.ticket)
+
+        if (!ticket) {
+          throw new NotFoundError()
+        }
 
         ctx.data = ctx.data ?? {}
-        ctx.data.clientId = redeemTicket(validReq.query.ticket)
+        ctx.data.clientId = ticket.clientId
         ctx.data.superseded = false
         ctx.data.reaped = false
         ctx.data.reaperHandle = null
-
-        if (!ctx.data.clientId) {
-          throw new NotFoundError()
-        }
+        ctx.data.app = ticket.data
 
         const useSocket = validReq.server.upgrade(validReq.raw, ctx)
 
@@ -608,20 +675,22 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
           throw new NotFoundError()
         }
 
-        return new Response()
+        return Promise.resolve(new Response())
       },
     },
     {
       method: 'POST',
       path: '/ws',
-      handler (req: Record<string, unknown>, res: unknown): Response {
+      async handler (req: Request, res: unknown): AsyncHandlerResult {
         validateSchema(req, createTicketValidator)
 
         const clientId = crypto.randomUUID()
+        const appData = await parseJsonBodyAppData(req)
+        const ticket = issueTicket(clientId, appData)
 
         return Response.json({
           clientId,
-          ticket: bindTicket(clientId),
+          ticket,
           data: res,
         }, { status: StatusCode.Created })
       },
@@ -629,10 +698,10 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     {
       method: 'PUT',
       path: '/ws/:clientId',
-      handler (req: Record<string, unknown>, res: unknown): Response {
+      async handler (req: Request, res: unknown): AsyncHandlerResult {
         const validReq = validateSchema(req, updateTicketValidator)
-        const authHeader = validReq.headers.get('authorization')
-        const token = authHeader!.slice('Bearer '.length)
+        const authHeader = validReq.headers.get('authorization')!
+        const token = authHeader.slice('Bearer '.length)
 
         let session: Session | undefined =
           activeSessions.get(validReq.params.clientId)
@@ -655,9 +724,11 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
           throw new UnauthorizedError('Invalid token')
         }
 
+        const appData = 'ws' in session ? session.ws.data.app : session.app
+
         return Response.json({
           clientId: validReq.params.clientId,
-          ticket: bindTicket(validReq.params.clientId),
+          ticket: issueTicket(validReq.params.clientId, appData),
           data: res,
         })
       },
@@ -666,15 +737,11 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
 }
 
 export function buildSocketCommands (state: SocketState): SocketCommands {
-  function sendToClient (
-    clientId: string,
-    event: string,
-    body: unknown,
-  ): void {
+  function sendToClient (clientId: string, event: string, body: unknown) {
     const session = state.activeSessions.get(clientId)
 
     if (!session) {
-      throw new ReferenceError(`No live socket for client: ${clientId}`)
+      throw new ReferenceError(`No active socket for client: ${clientId}`)
     }
 
     const message = createMessage(clientId, MessageType.Notification, {
@@ -690,10 +757,28 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
     send (clientId, event, body) {
       sendToClient(clientId, event, body)
     },
+    sendToGroup (fn, event, body) {
+      for (const [clientId, session] of state.activeSessions) {
+        const allow = fn(clientId, session.ws.data)
+
+        if (allow) {
+          sendToClient(clientId, event, body)
+        }
+      }
+    },
     broadcast (event, body) {
       for (const clientId of state.activeSessions.keys()) {
         sendToClient(clientId, event, body)
       }
+    },
+    drop (clientId, code, reason) {
+      const session = state.activeSessions.get(clientId)
+
+      if (!session) {
+        throw new ReferenceError(`No active socket for client: ${clientId}`)
+      }
+
+      session.ws.close(code, reason)
     },
   }
 }

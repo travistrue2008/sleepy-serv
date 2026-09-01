@@ -3,18 +3,18 @@ import { StatusCode, createApp } from 'sleepy-serv'
 import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
-import type { NextFn, Request } from 'sleepy-serv'
+import type { NextFn, HandlerResult, Request } from 'sleepy-serv'
 
 function root (
   req: Request,
   _res: unknown,
-  next: NextFn | null,
-): Response | Promise<Response> {
+  next: NextFn,
+): HandlerResult {
   if (req.query.err !== undefined) {
     throw new Error('Error from root middleware')
   }
 
-  return next!(['From root middleware'])
+  return next(['From root middleware'])
 }
 
 describe('REST', () => {
@@ -58,7 +58,7 @@ describe('WebSocket', () => {
 
     const host = app.server.url.hostname
     const port = app.server.port!
-    const client = await SleepySocketClient.connect(host, port)
+    const client = await SleepySocketClient.open(host, port)
 
     const res = await client.get('/', {
       query: {
@@ -93,7 +93,7 @@ describe('WebSocket', () => {
 
     const host = app.server.url.hostname
     const port = app.server.port!
-    const client = await SleepySocketClient.connect(host, port)
+    const client = await SleepySocketClient.open(host, port)
     const res = await client.get('/')
 
     await client.close()

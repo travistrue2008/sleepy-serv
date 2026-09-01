@@ -1,5 +1,5 @@
 import { MessageType, createMessage } from './messages.js'
-import { joinRoute } from './utils.js'
+import { CloseCode, joinRoute } from './utils.js'
 
 export * from './messages.js'
 export * from './utils.js'
@@ -22,13 +22,14 @@ export type ReconnectOptions = {
   random?: () => number
 }
 
-export type ConnectOptions = {
+export type OpenOptions = {
   queue?: Queue
   secure?: boolean
   timeout?: number
   serverTimeout?: number
   mountPath?: string
   reconnect?: ReconnectOptions | false
+  ctx?: unknown
 }
 
 export type RequestOptions = {
@@ -57,7 +58,7 @@ export type NotificationMessage = {
   body: unknown
 }
 
-export type EventHandler = (payload: NotificationMessage) => void
+export type EventHandler = (payload: unknown) => void
 
 export type TicketData = {
   clientId: string
@@ -74,7 +75,7 @@ type ReconnectConfig = {
 type DispatchedMessage = {
   id: string
   ready: boolean
-  timer: ReturnType<typeof setTimeout>
+  timer: TimeoutHandle
   response: ResponseMessage | null
   resolve: (value: ResponseMessage) => void
   reject: (reason: Error) => void
@@ -89,10 +90,24 @@ type NormalizedRequestOpts = {
 const RECONNECT_JITTER = 0.5
 const JSON_CONTENT_TYPE = 'application/json;charset=utf-8'
 
+export class HandshakeError extends Error {
+  status: number
+  body: unknown
+
+  constructor (status: number, body: unknown) {
+    super(`Handshake rejected (${status})`)
+
+    this.name = 'HandshakeError'
+    this.status = status
+    this.body = body
+  }
+}
+
 export default class SleepySocketClient {
   #id: string | null = null
   #queueType: Queue = Queue.None
   #ready = false
+  #connecting = false
   #closing = false
   #secure = false
   #timeout = 30_000
@@ -103,14 +118,17 @@ export default class SleepySocketClient {
   #port: number | null = null
   #token: string | null = null
   #socket: WebSocket | null = null
-  #random: () => number = Math.random
-  #livenessTimer: ReturnType<typeof setTimeout> | null = null
-  #heartbeatTimer: ReturnType<typeof setInterval> | null = null
-  #reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  #livenessTimer: TimeoutHandle | null = null
+  #heartbeatTimer: IntervalHandle | null = null
+  #reconnectTimer: TimeoutHandle | null = null
   #reconnectConfig: ReconnectConfig | null = null
+  #ctx: unknown
   #connectionData: unknown = null
   #listeners = new Map<string, Set<EventHandler>>()
   #dispatchedMessages: DispatchedMessage[] = []
+
+  #random: () => number = Math.random
+  #closeResolve: (() => void) | null = null
 
   get id (): string | null {
     return this.#id
@@ -118,6 +136,14 @@ export default class SleepySocketClient {
 
   get isConnected (): boolean {
     return this.#ready
+  }
+
+  get isConnecting (): boolean {
+    return this.#connecting
+  }
+
+  get isReconnecting (): boolean {
+    return !this.isConnected && this.#reconnectTimer !== null
   }
 
   get isSecure (): boolean {
@@ -156,10 +182,10 @@ export default class SleepySocketClient {
     return this.#connectionData
   }
 
-  static async connect (
+  static async open (
     host: string,
     port: number,
-    opts: ConnectOptions = {},
+    opts: OpenOptions = {},
   ): Promise<SleepySocketClient> {
     if (opts.queue && !Object.values(Queue).includes(opts.queue)) {
       throw new RangeError(`Invalid queue type: ${opts.queue}`)
@@ -179,6 +205,7 @@ export default class SleepySocketClient {
     client.#timeout = opts.timeout ?? 30_000
     client.#serverTimeout = opts.serverTimeout ?? 120_000
     client.#mountPath = opts.mountPath ?? ''
+    client.#ctx = opts.ctx
 
     if (opts.reconnect !== false) {
       client.#reconnectConfig = {
@@ -195,22 +222,55 @@ export default class SleepySocketClient {
     return client
   }
 
-  #baseUrl (): string {
+  #getEndpointBaseUrl (): string {
     const protocol = this.#secure ? 'https' : 'http'
 
     return `${protocol}://${this.#host}:${this.#port}${this.#mountPath}`
   }
 
+  #getSocketUrl (ticket: string): string {
+    const protocol = this.#secure ? 'wss' : 'ws'
+    const authority = `${this.#host}:${this.#port}${this.#mountPath}`
+
+    return `${protocol}://${authority}/ws?ticket=${ticket}`
+  }
+
+  async #handleError (response: Response): Promise<void> {
+    const body = await response.json().catch(() => null)
+
+    if (!body) {
+      const msg = await response.text()
+
+      throw new Error(msg)
+    }
+
+    throw new HandshakeError(response.status, body)
+  }
+
   async #createTicket (): Promise<TicketData> {
-    const response = await fetch(`${this.#baseUrl()}/ws`, {
+    const url = `${this.#getEndpointBaseUrl()}/ws`
+
+    const response = await fetch(url, {
       method: 'POST',
+      ...(this.#ctx ? {
+        headers: {
+          'content-type': JSON_CONTENT_TYPE,
+        },
+        body: JSON.stringify({
+          data: this.#ctx,
+        }),
+      } : {}),
     })
+
+    if (!response.ok) {
+      await this.#handleError(response)
+    }
 
     return await response.json() as TicketData
   }
 
   async #reclaimTicket (): Promise<TicketData | null> {
-    const url = `${this.#baseUrl()}/ws/${this.#id}`
+    const url = `${this.#getEndpointBaseUrl()}/ws/${this.#id}`
 
     const response = await fetch(url, {
       method: 'PUT',
@@ -220,7 +280,11 @@ export default class SleepySocketClient {
     })
 
     if (!response.ok) {
-      return null
+      if ([401, 404].includes(response.status)) {
+        return null
+      }
+
+      await this.#handleError(response)
     }
 
     return await response.json() as TicketData
@@ -238,19 +302,12 @@ export default class SleepySocketClient {
     return this.#createTicket()
   }
 
-  #socketUrl (ticket: string): string {
-    const protocol = this.#secure ? 'wss' : 'ws'
-    const authority = `${this.#host}:${this.#port}${this.#mountPath}`
-
-    return `${protocol}://${authority}/ws?ticket=${ticket}`
-  }
-
   #openSocket (
     res: TicketData,
     succeed: () => void,
     fail: (message: string) => void,
   ): void {
-    const socket = new WebSocket(this.#socketUrl(res.ticket))
+    const socket = new WebSocket(this.#getSocketUrl(res.ticket))
 
     this.#socket = socket
     this.#connectionData = res.data
@@ -292,7 +349,9 @@ export default class SleepySocketClient {
   }
 
   #establish (): Promise<void> {
-    return new Promise((resolve, reject) => {
+    this.#connecting = true
+
+    return new Promise<void>((resolve, reject) => {
       let settled = false
 
       const timer = setTimeout(() => {
@@ -329,8 +388,29 @@ export default class SleepySocketClient {
       }
 
       this.#requestTicket()
-        .then(ticketData => this.#openSocket(ticketData, succeed, fail))
-        .catch(() => fail('Connection failed.'))
+        .then(ticketData => this.#openSocket(
+          ticketData,
+          succeed,
+          fail,
+        ))
+        .catch(err => {
+          if (err instanceof HandshakeError) {
+            if (settled) {
+              return
+            }
+
+            settled = true
+
+            clearTimeout(timer)
+            reject(err)
+
+            return
+          }
+
+          fail('Connection failed.')
+        })
+    }).finally(() => {
+      this.#connecting = false
     })
   }
 
@@ -340,7 +420,7 @@ export default class SleepySocketClient {
     }
 
     this.#livenessTimer = setTimeout(() => {
-      this.#socket?.close()
+      this.#socket?.close(CloseCode.Reaped)
     }, this.serverTimeout)
   }
 
@@ -352,18 +432,16 @@ export default class SleepySocketClient {
     this.#reconnectTimer = setTimeout(async () => {
       this.#reconnectTimer = null
 
-      if (this.#closing) {
-        return
-      }
-
       try {
-        await this.#establish()
-      } catch {
-        if (this.#closing) {
-          return
+        if (!this.#closing) {
+          await this.#establish()
         }
+      } catch (err) {
+        const isHandshakeError = err instanceof HandshakeError
 
-        this.#scheduleReconnect(attempt + 1, config)
+        if (!this.#closing && !isHandshakeError) {
+          this.#scheduleReconnect(attempt + 1, config)
+        }
       }
     }, delay)
   }
@@ -459,6 +537,8 @@ export default class SleepySocketClient {
 
     if (this.#livenessTimer) {
       clearTimeout(this.#livenessTimer)
+
+      this.#livenessTimer = null
     }
 
     for (const entry of this.#dispatchedMessages) {
@@ -469,19 +549,21 @@ export default class SleepySocketClient {
     this.#dispatchedMessages = []
     this.#socket = null
 
-    if (this.#closing) {
-      return
+    this.#emit('close', { code: event.code })
+
+    if (
+      !this.#closing &&
+      this.#reconnectConfig &&
+      event.code !== CloseCode.Ok
+    ) {
+      this.#scheduleReconnect(0, this.#reconnectConfig)
     }
 
-    if (!this.#reconnectConfig) {
-      if (!event.wasClean) {
-        throw new Error(`Socket closed unexpectedly (code: ${event.code}).`)
-      }
+    if (this.#closeResolve) {
+      this.#closeResolve()
 
-      return
+      this.#closeResolve = null
     }
-
-    this.#scheduleReconnect(0, this.#reconnectConfig)
   }
 
   #handleRequest (data: ResponseMessage): void {
@@ -562,7 +644,7 @@ export default class SleepySocketClient {
     }
   }
 
-  #emit (event: string, payload: NotificationMessage): void {
+  #emit (event: string, payload: unknown): void {
     const handlers = this.#listeners.get(event)
 
     if (!handlers) {
@@ -590,9 +672,9 @@ export default class SleepySocketClient {
     this.#listeners.get(event)?.delete(handler)
   }
 
-  async close (): Promise<void> {
+  close (): Promise<void> {
     if (this.#closing) {
-      throw new Error('Socket is closed')
+      return Promise.reject(new Error('Socket is closed'))
     }
 
     this.#closing = true
@@ -602,19 +684,22 @@ export default class SleepySocketClient {
 
     if (this.#livenessTimer) {
       clearTimeout(this.#livenessTimer)
+
+      this.#livenessTimer = null
     }
 
     if (this.#reconnectTimer) {
       clearTimeout(this.#reconnectTimer)
+
+      this.#reconnectTimer = null
     }
 
-    this.#reconnectTimer = null
-
-    if (this.#socket) {
-      await this.#socket.close()
-
-      this.#socket = null
-    }
+    return this.#socket
+      ? new Promise<void>(resolve => {
+        this.#closeResolve = resolve
+        this.#socket!.close(CloseCode.Ok)
+      })
+      : Promise.resolve()
   }
 
   head (route: string, opts: RequestOptions = {}): Promise<ResponseMessage> {

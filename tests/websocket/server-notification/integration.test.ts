@@ -10,7 +10,7 @@ test('when the server broadcasts', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const port = app.server.port!
-  const client = await SleepySocketClient.connect(host, port)
+  const client = await SleepySocketClient.open(host, port)
 
   client.on('notification', message => received.push(message))
   app.commands.broadcast('state_changed', { score: 1 })
@@ -35,7 +35,7 @@ test('when the server sends to a clientId', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const port = app.server.port!
-  const client = await SleepySocketClient.connect(host, port)
+  const client = await SleepySocketClient.open(host, port)
 
   client.on('notification', message => received.push(message))
   app.commands.send(client.id!, 'player_joined', { name: 'x' })
@@ -62,18 +62,14 @@ test('when the server sends to an unknown clientId', async () => {
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
   const port = app.server.port!
-  const client = await SleepySocketClient.connect(host, port)
+  const client = await SleepySocketClient.open(host, port)
 
   client.on('notification', message => received.push(message))
 
-  const fn = () => app.commands.send(
-    CLIENT_ID,
-    'state_changed',
-    { score: 1 },
-  )
+  const fn = () => app.commands.send(CLIENT_ID, 'state_changed', { score: 1 })
 
   expect(fn).toThrow(
-    new ReferenceError(`No live socket for client: ${CLIENT_ID}`),
+    new ReferenceError(`No active socket for client: ${CLIENT_ID}`),
   )
 
   await client.close()

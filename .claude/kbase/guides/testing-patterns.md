@@ -11,7 +11,7 @@ For test styles, the boot model, and the server integration helpers, see [Testin
   real timers. Bun has no directory-scoped hooks, so this per-file gate on `Bun.main`
   (which resolves to the running test file under `bun test`) is the mechanism.
 - Package tests fast-forward with `jest.advanceTimersByTime(ms)`. E2E tests instead use
-  small real thresholds (server `ws.disconnectThreshold` / `heartbeatInterval`, client
+  small real thresholds (server `ws.dropThreshold` / `heartbeatInterval`, client
   `timeout` / `reconnect.minDelay`, around 100ms) plus `waitFor()` from
   `tests/src/helpers.js` to await genuine wall-clock events.
 - Bun's `bun:test` exposes Jest-compatible fake timer APIs (`jest.useFakeTimers`,
@@ -25,6 +25,30 @@ flakiness or complexity without proving anything extra, e.g. `packages/client/sr
 client's own logic (registry, queueing, timeouts) doesn't depend on real network behavior. Real
 servers/sockets are still the right call for true end-to-end tests that specifically verify
 client↔server wire compatibility.
+
+## Bun `server.stop()` after server-initiated WebSocket close
+
+`server.stop()` returns a `Promise<void>` that resolves once every connection
+has closed. In Bun 1.3.14, this promise never resolved after a server-initiated
+`ServerWebSocket.close()` call (reaper, supersede, or `commands.drop()`). Bun's
+internal connection tracking failed to deregister server-initiated closures, so
+`stop()` waited forever for connections it thought were still open. Client-initiated
+closes were unaffected. This was Bun bug
+[#36223](https://github.com/oven-sh/bun/issues/36223), fixed in Bun 1.4.0.
+
+In E2E tests that trigger server-initiated closes (close-reaped, close-superseded,
+disconnect), `app.close(true)` is called without `await` as a workaround. Tests
+that only use client-initiated closes (close-willing, close-dropped) can safely
+`await app.close(true)`.
+
+## Bun 1.4.0: async close events
+
+Bun 1.4.0 fires the client-side WebSocket `close` event asynchronously after
+`socket.close()` is called, unlike 1.3.14 which fired it synchronously. This means
+`client.isConnected` may still be `true` immediately after `socket.close()`. E2E
+tests that need to wait for a disconnect-then-reconnect cycle should check for the
+socket reference changing (`client.socket !== oldSocket`) or wait for
+`!client.isConnected` first, rather than assuming the close has already happened.
 
 ## Isolation across the shared process
 

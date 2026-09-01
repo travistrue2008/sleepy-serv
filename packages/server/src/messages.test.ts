@@ -22,7 +22,7 @@ const QUERY = { page: '2' }
 const BODY = { a: 1 }
 
 const WELCOME_BODY = {
-  heartbeatInterval: 30000,
+  heartbeatInterval: 30_000,
   token: 'test-token',
 }
 

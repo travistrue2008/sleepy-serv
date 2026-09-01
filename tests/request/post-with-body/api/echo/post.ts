@@ -1,7 +1,11 @@
+import { parseJsonBody } from 'sleepy-serv'
+
 import type { Request } from 'sleepy-serv'
 
-export default async function (req: Request): Promise<Response> {
-  const body = await req.json()
+type PreviousResult = Record<string, unknown>
 
-  return Response.json({ received: body }, { status: 201 })
-}
+export default [
+  parseJsonBody(),
+  (_req: Request, res: PreviousResult) =>
+    Response.json({ received: res }, { status: 201 }),
+]

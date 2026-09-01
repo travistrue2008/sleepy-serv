@@ -2,7 +2,7 @@ import { SignJWT, jwtVerify } from 'jose'
 import { UnauthorizedError } from 'sleepy-serv'
 
 import type { JWTPayload } from 'jose'
-import type { NextFn, Request } from 'sleepy-serv'
+import type { AsyncHandlerResult, NextFn, Request } from 'sleepy-serv'
 
 /*
   A working example of authentication through the middleware system. The JWT
@@ -53,7 +53,7 @@ export async function authenticate (
   req: Request,
   res: Accum | null,
   next: NextFn,
-): Promise<Response> {
+): AsyncHandlerResult {
   const header = req.headers.get('authorization')
 
   if (!header?.startsWith('Bearer ')) {

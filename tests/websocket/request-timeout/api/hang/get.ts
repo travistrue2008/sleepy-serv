@@ -1,5 +1,5 @@
-import type { Request } from 'sleepy-serv'
+import type { HandlerResult, Request } from 'sleepy-serv'
 
-export default function (_req: Request): Promise<Response> {
+export default function (_req: Request): HandlerResult {
   return new Promise(() => { })
 }

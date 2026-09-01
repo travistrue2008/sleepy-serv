@@ -1,5 +1,9 @@
-import SleepySocketClient, { Queue, MessageType } from './'
-import { StatusCode, id } from './utils'
+import SleepySocketClient, {
+  Queue,
+  MessageType,
+  HandshakeError,
+} from './'
+import { StatusCode, CloseCode, id } from './utils'
 
 import {
   jest,
@@ -12,7 +16,7 @@ import {
 } from 'bun:test'
 
 import type {
-  ConnectOptions,
+  OpenOptions,
   NotificationMessage,
   ResponseMessage,
 } from './'
@@ -27,15 +31,10 @@ type MockEvent = {
 
 type MockListener = (event: MockEvent) => void
 
-type TicketBody = {
-  ticket?: string
-  clientId?: string
-  data?: unknown
-}
-
 type MockResponse = {
   ok: boolean
-  json: () => Promise<TicketBody>
+  status?: number
+  json: () => Promise<unknown>
 }
 
 /*
@@ -112,12 +111,12 @@ class MockWebSocket {
     this.sent.push(data)
   }
 
-  close (): void {
+  close (code: number): void {
     this.readyState = 3
 
     this.#emit('close', {
-      wasClean: true,
-      code: 1000,
+      wasClean: code === CloseCode.Ok,
+      code,
     })
   }
 
@@ -140,7 +139,7 @@ class MockWebSocket {
 
   /* simulate an abnormal closure (e.g. network drop, server crash) */
 
-  drop (code = 1006): void {
+  drop (code = CloseCode.Abnormal): void {
     this.readyState = 3
 
     this.#emit('close', {
@@ -207,11 +206,11 @@ function mockTicketFetch (): FetchMock {
   }))
 }
 
-async function connectAndOpen (opts?: ConnectOptions): Promise<{
+async function connectAndOpen (opts?: OpenOptions): Promise<{
   client: SleepySocketClient
   socket: MockWebSocket
 }> {
-  const promise = SleepySocketClient.connect('localhost', 3000, opts)
+  const promise = SleepySocketClient.open('localhost', 3000, opts)
 
   await settle()
 
@@ -325,9 +324,9 @@ describe('Queue', () => {
 })
 
 describe('SleepySocketClient', () => {
-  describe('.connect()', () => {
+  describe('.open()', () => {
     test('when "opts.queue" is invalid', async () => {
-      const promise = SleepySocketClient.connect('localhost', 3000, {
+      const promise = SleepySocketClient.open('localhost', 3000, {
         /* deliberately invalid: the guard under test is a runtime one */
         // @ts-expect-error
         queue: 'nope',
@@ -343,13 +342,51 @@ describe('SleepySocketClient', () => {
         throw new Error('Down')
       }))
 
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
+
+      await expect(promise).rejects.toThrow(new Error('Connection failed.'))
+    })
+
+    test('when the server rejects the handshake', async () => {
+      const BODY_ERROR = {
+        message: 'Game is full',
+      }
+
+      installFetchMock(mock(async (_url, _opts) => ({
+        ok: false,
+        status: 409,
+        json: async () => BODY_ERROR,
+      })))
+
+      const promise = SleepySocketClient.open('localhost', 3000)
+
+      await expect(promise).rejects.toThrow(
+        new HandshakeError(409, BODY_ERROR),
+      )
+
+      await expect(promise).rejects.toMatchObject({
+        status: 409,
+        body: BODY_ERROR,
+      })
+    })
+
+    test('when the server rejects with unparseable body', async () => {
+      installFetchMock(mock(async (_url, _opts) => ({
+        ok: false,
+        status: 500,
+        text: async () => 'A problem occurred',
+        json: async () => {
+          throw new SyntaxError('Bad')
+        },
+      })))
+
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       await expect(promise).rejects.toThrow(new Error('Connection failed.'))
     })
 
     test('when connecting to a server fails', async () => {
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       await settle()
 
@@ -359,7 +396,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when connecting to a server times out', async () => {
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       jest.advanceTimersByTime(30_000)
 
@@ -367,7 +404,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when opened but no welcome frame arrives', async () => {
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       await settle()
 
@@ -379,7 +416,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when the first frame is not a welcome', async () => {
-      const promise = SleepySocketClient.connect('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', 3000)
 
       await settle()
 
@@ -397,6 +434,7 @@ describe('SleepySocketClient', () => {
     test('when successful', async () => {
       const { client, socket } = await connectAndOpen()
 
+      expect(client.isConnecting).toBe(false)
       expect(client.isConnected).toBe(true)
       expect(client.queueType).toBe(Queue.None)
       expect(client.isSecure).toBe(false)
@@ -460,6 +498,26 @@ describe('SleepySocketClient', () => {
 
       expect(client.mountPath).toBe('/test-mount-path')
     })
+
+    test('when "opts.ctx" is provided', async () => {
+      const ctx = {
+        gameId: 'g1',
+        playerId: 'p1',
+      }
+
+      await connectAndOpen({ ctx })
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/ws',
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json;charset=utf-8',
+          },
+          body: JSON.stringify({ data: ctx }),
+        },
+      )
+    })
   })
 
   describe('close()', () => {
@@ -468,12 +526,13 @@ describe('SleepySocketClient', () => {
 
       await client.close()
 
-      await expect(client.close()).rejects.toThrow()
+      const fn = () => client.close()
+
+      expect(fn).toThrow(new Error('Socket is closed'))
     })
 
     test('when successful', async () => {
       const { client } = await connectAndOpen()
-
       const fn = () => client.get('/')
 
       expect(client.isConnected).toBe(true)
@@ -485,14 +544,52 @@ describe('SleepySocketClient', () => {
       await expect(fn).toThrow(new Error('Socket is closed'))
     })
 
+    test('when the socket is null', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      socket.drop()
+
+      await client.close()
+
+      expect(client.isConnected).toBe(false)
+      expect(client.isReconnecting).toBe(false)
+    })
+
+    test('when the close handler is registered', async () => {
+      const handler = mock()
+      const { client } = await connectAndOpen()
+
+      client.on('close', handler)
+
+      await client.close()
+
+      expect(handler).toHaveBeenCalledOnce()
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Ok,
+      })
+    })
+
     test('when reconnect is disabled and the socket drops', async () => {
-      const { socket } = await connectAndOpen({
+      const handler = mock()
+
+      const { client, socket } = await connectAndOpen({
         reconnect: false,
       })
 
-      const fn = () => socket.drop()
+      client.on('close', handler)
+      socket.drop()
 
-      expect(fn).toThrow(new Error('Socket closed unexpectedly (code: 1006).'))
+      expect(client.isReconnecting).toBe(false)
+      expect(handler).toHaveBeenCalledOnce()
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Abnormal,
+      })
     })
   })
 
@@ -587,40 +684,89 @@ describe('SleepySocketClient', () => {
   })
 
   describe('reconnect', () => {
-    test('when the socket drops unexpectedly', async () => {
-      const { socket } = await connectAndOpen({
-        reconnect: {
-          random: () => 0,
-        },
-      })
-
-      socket.drop()
-
-      const next = await reconnect()
-
-      expect(next).not.toBe(socket)
-    })
-
-    test('when a clean close was not app-initiated', async () => {
-      const { socket } = await connectAndOpen({
-        reconnect: {
-          random: () => 0,
-        },
-      })
-
-      socket.close()
-
-      const next = await reconnect()
-
-      expect(next).not.toBe(socket)
-    })
-
-    test('when the app closes the client', async () => {
+    test('when isConnecting transitions during reconnect', async () => {
       const { client, socket } = await connectAndOpen({
         reconnect: {
           random: () => 0,
         },
       })
+
+      expect(client.isConnecting).toBe(false)
+
+      socket.drop()
+
+      expect(client.isConnecting).toBe(false)
+
+      jest.advanceTimersByTime(500)
+
+      await settle()
+
+      expect(client.isConnecting).toBe(true)
+
+      lastSocket().open()
+      lastSocket().receive(sendWelcome(CLIENT_ID))
+
+      await settle()
+
+      expect(client.isConnecting).toBe(false)
+      expect(client.isConnected).toBe(true)
+    })
+
+    test('when the socket drops unexpectedly', async () => {
+      const handler = mock()
+
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      client.on('close', handler)
+      socket.drop()
+
+      expect(client.isReconnecting).toBe(true)
+
+      const next = await reconnect()
+
+      expect(next).not.toBe(socket)
+      expect(client.isReconnecting).toBe(false)
+      expect(handler).toHaveBeenCalledOnce()
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Abnormal,
+      })
+    })
+
+    test('when a clean close was not app-initiated', async () => {
+      const handler = mock()
+
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      client.on('close', handler)
+      socket.close(CloseCode.Ok)
+
+      expect(client.isConnected).toBe(false)
+      expect(handler).toHaveBeenCalledOnce()
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Ok,
+      })
+    })
+
+    test('when the app closes the client', async () => {
+      const handler = mock()
+
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      client.on('close', handler)
 
       await client.close()
 
@@ -629,6 +775,12 @@ describe('SleepySocketClient', () => {
       await settle()
 
       expect(MockWebSocket.last).toBe(socket)
+      expect(client.isReconnecting).toBe(false)
+      expect(handler).toHaveBeenCalledOnce()
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Ok,
+      })
     })
 
     test('when an app-initiated close reports 1006', async () => {
@@ -650,12 +802,15 @@ describe('SleepySocketClient', () => {
     })
 
     test('when reconnecting', async () => {
+      const handler = mock()
+
       const { client, socket } = await connectAndOpen({
         reconnect: {
           random: () => 0,
         },
       })
 
+      client.on('close', handler)
       socket.drop()
 
       const postDropStatus = client.isConnected
@@ -691,6 +846,57 @@ describe('SleepySocketClient', () => {
           },
         },
       )
+
+      expect(handler).toHaveBeenCalledOnce()
+
+      expect(handler).toHaveBeenCalledWith({
+        code: CloseCode.Abnormal,
+      })
+    })
+
+    test('when "opts.ctx" is provided', async () => {
+      const ctx = {
+        gameId: 'g1',
+        playerId: 'p1',
+      }
+
+      const { client, socket } = await connectAndOpen({
+        ctx,
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      socket.drop()
+
+      await reconnect()
+
+      expect(client.isConnected).toBe(true)
+
+      expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+
+      expect(globalThis.fetch).toHaveBeenNthCalledWith(
+        1,
+        'http://localhost:3000/ws',
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json;charset=utf-8',
+          },
+          body: JSON.stringify({ data: ctx }),
+        },
+      )
+
+      expect(globalThis.fetch).toHaveBeenNthCalledWith(
+        2,
+        `http://localhost:3000/ws/${CLIENT_ID}`,
+        {
+          method: 'PUT',
+          headers: {
+            authorization: `Bearer ${TOKEN}`,
+          },
+        },
+      )
     })
 
     test('when the PUT reclaim fails', async () => {
@@ -702,6 +908,7 @@ describe('SleepySocketClient', () => {
 
       installFetchMock(mock(async (_url, options) => ({
         ok: options.method === 'POST',
+        status: options.method === 'POST' ? 201 : 404,
         json: async () => ({
           ticket: TICKET,
           clientId: OTHER_CLIENT_ID,
@@ -725,6 +932,34 @@ describe('SleepySocketClient', () => {
       )
 
       expect(methods).toStrictEqual(['PUT', 'POST'])
+    })
+
+    test('when reclaim receives an app-level refusal', async () => {
+      const ERROR_BODY = {
+        message: 'Game ended',
+      }
+
+      const { socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      installFetchMock(mock(async (_url, _opts) => ({
+        ok: false,
+        status: 409,
+        json: async () => ERROR_BODY,
+      })))
+
+      socket.drop()
+
+      jest.advanceTimersByTime(500)
+
+      await settle()
+      await settle()
+
+      expect(fetchMock()).toHaveBeenCalledOnce()
+      expect(MockWebSocket.last).toBe(socket)
     })
 
     test('when the welcome returns the same clientId', async () => {
@@ -922,60 +1157,62 @@ describe('SleepySocketClient', () => {
     })
   })
 
-  describe('notification', () => {
-    test('when a notification arrives', async () => {
-      const { client, socket } = await connectAndOpen()
-      const message = notification('state_changed', { score: 1 })
-      const received: NotificationMessage[] = []
+  describe('messages', () => {
+    describe('notification', () => {
+      test('when a notification arrives', async () => {
+        const { client, socket } = await connectAndOpen()
 
-      client.on('notification', message => received.push(message))
-      socket.receive(message)
+        const message = notification('state_changed', { score: 1 })
+        const received: unknown[] = []
 
-      expect(received).toStrictEqual([message])
-    })
+        client.on('notification', message => received.push(message))
+        socket.receive(message)
 
-    test('when a handler is removed with off()', async () => {
-      const { client, socket } = await connectAndOpen()
-      const received: NotificationMessage[] = []
-
-      const handler = (message: NotificationMessage): number =>
-        received.push(message)
-
-      const notifications = [
-        notification('state_changed', { score: 1 }),
-        notification('state_changed', { score: 2 }),
-      ]
-
-      client.on('notification', handler)
-      socket.receive(notifications[0])
-      client.off('notification', handler)
-      socket.receive(notifications[1])
-
-      expect(received).toStrictEqual([notifications[0]])
-    })
-
-    test('when a notification arrives before timeout', async () => {
-      const { client, socket } = await connectAndOpen()
-
-      jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
-      socket.receive(notification('state_changed', { score: 1 }))
-      jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
-
-      expect(client.isConnected).toBe(true)
-    })
-  })
-
-  describe('#handleMessage()', () => {
-    test('when an unknown message type arrives', async () => {
-      const { socket } = await connectAndOpen()
-
-      const fn = () => socket.receive({
-        id: id(),
-        type: 'garbage',
-        timestamp: TIMESTAMP,
+        expect(received).toStrictEqual([message])
       })
 
-      expect(fn).toThrow(new RangeError('Unknown message type: "garbage"'))
+      test('when a handler is removed with off()', async () => {
+        const { client, socket } = await connectAndOpen()
+
+        const received: unknown[] = []
+        const handler = (message: unknown) => received.push(message)
+
+        const notifications = [
+          notification('state_changed', { score: 1 }),
+          notification('state_changed', { score: 2 }),
+        ]
+
+        client.on('notification', handler)
+        socket.receive(notifications[0])
+        client.off('notification', handler)
+        socket.receive(notifications[1])
+
+        expect(received).toStrictEqual([notifications[0]])
+      })
+
+      test('when a notification arrives before timeout', async () => {
+        const { client, socket } = await connectAndOpen()
+
+        jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+        socket.receive(notification('state_changed', { score: 1 }))
+        jest.advanceTimersByTime(SERVER_TIMEOUT - 1_000)
+
+        expect(client.isConnected).toBe(true)
+      })
+    })
+
+    describe('unknown', () => {
+      test('when an unknown message type arrives', async () => {
+        const { socket } = await connectAndOpen()
+
+        const fn = () => socket.receive({
+          id: id(),
+          type: 'garbage',
+          timestamp: TIMESTAMP,
+        })
+
+        expect(fn).toThrow(new RangeError('Unknown message type: "garbage"'))
+      })
     })
   })
 
@@ -1104,9 +1341,7 @@ describe('SleepySocketClient', () => {
 
     test('when timeout occurs', async () => {
       const { client, socket } = await connectAndOpen()
-
       const promise = client.get('/')
-
       const sent = JSON.parse(socket.sent[0])
 
       jest.advanceTimersByTime(30_000)
@@ -1142,9 +1377,7 @@ describe('SleepySocketClient', () => {
 
     test('when malformed response comes back (missing ID)', async () => {
       const { client, socket } = await connectAndOpen()
-
       const promise = client.get('/')
-
       const sent = JSON.parse(socket.sent[0])
 
       socket.receive({
@@ -1174,9 +1407,7 @@ describe('SleepySocketClient', () => {
 
     test('when successful', async () => {
       const { client, socket } = await connectAndOpen()
-
       const promise = client.get('/')
-
       const sent = JSON.parse(socket.sent[0])
 
       socket.receive(response(sent.id, { userId: '123' }))
@@ -1309,8 +1540,8 @@ describe('SleepySocketClient', () => {
 
     test('when calls respond out-of-order (queue = NONE)', async () => {
       const { client, socket } = await connectAndOpen({ queue: Queue.None })
-      const order: number[] = []
 
+      const order: number[] = []
       const p1 = client.get('/a').then(() => order.push(1))
       const p2 = client.get('/b').then(() => order.push(2))
       const p3 = client.get('/c').then(() => order.push(3))
@@ -1332,7 +1563,6 @@ describe('SleepySocketClient', () => {
       const { client, socket } = await connectAndOpen({ queue: Queue.Fifo })
 
       const order: number[] = []
-
       const p1 = client.get('/a').then(() => order.push(1))
       const p2 = client.get('/b').then(() => order.push(2))
       const p3 = client.get('/c').then(() => order.push(3))
@@ -1354,7 +1584,6 @@ describe('SleepySocketClient', () => {
       const { client, socket } = await connectAndOpen({ queue: Queue.Lifo })
 
       const order: number[] = []
-
       const p1 = client.get('/a').then(() => order.push(1))
       const p2 = client.get('/b').then(() => order.push(2))
       const p3 = client.get('/c').then(() => order.push(3))
