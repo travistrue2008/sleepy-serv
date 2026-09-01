@@ -8,6 +8,81 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Connection context (`ctx`).** `OpenOptions.ctx` lets the client attach
+  arbitrary app data to the initial connection. The server stores it in
+  `ws.data.app` and preserves it through inactive sessions. `PUT` reclaim
+  sends no body; the server is the source of truth for app data.
+
+- **Close codes and reasons.** `CloseCode` (exported from both packages)
+  has three members: `Ok` (1000), `Abnormal` (1006), and `Reaped` (4999).
+  `CloseReason` (server only) has four: `Ok`, `Dropped`, `Reaped`, and
+  `Superseded`. Protocol-level codes count down from 4999; app codes start
+  at 4000.
+
+- **Socket lifecycle hooks.** `createApp` accepts `opts.ws.onOpen` and
+  `opts.ws.onClose`. `onOpen(clientId)` fires after the welcome message is
+  sent. `onClose(clientId, reason)` fires during the close handler. Both
+  are wrapped in try/catch so a throwing hook does not break the connection
+  lifecycle.
+
+- **`commands.drop(clientId, code?, reason?)`.** Closes a client's
+  connection from the server side. Default code is `CloseCode.Ok` (1000),
+  which tells the client not to reconnect. Passing a custom code (e.g.
+  4000) allows the client to reconnect.
+
+- **`commands.sendToGroup(fn, event, body)`.** Sends a notification to a
+  filtered subset of connected clients. The filter function receives
+  `(clientId, data)` and returns a boolean.
+
+- **Client state getters.** `isConnecting` (true during `#establish()`),
+  `isReconnecting` (true when a reconnect timer is pending and the client
+  is not connected).
+
+- **`HandshakeError`.** Exported from `sleepy-socket`. Thrown when the
+  server rejects a handshake with a non-ok HTTP response and a JSON body.
+  Carries `status` and `body`. During reconnect, a `HandshakeError` is
+  treated as terminal (no retry).
+
+### Changed
+
+- **Breaking (`sleepy-socket`):** `SleepySocketClient.connect()` renamed
+  to `SleepySocketClient.open()`. The `ConnectOptions` type is now
+  `OpenOptions`.
+
+- **Breaking (`sleepy-socket`):** the client `disconnect` event is now
+  `close`. Use `client.on('close', handler)` instead of
+  `client.on('disconnect', handler)`.
+
+- **Breaking (`sleepy-serv`):** `commands.disconnect()` renamed to
+  `commands.drop()`.
+
+- **Breaking (`sleepy-serv`):** `disconnectThreshold` option renamed to
+  `dropThreshold`.
+
+- **Breaking (both):** `CloseCode.Normal` renamed to `CloseCode.Ok`.
+
+- **Breaking (`sleepy-serv`):** `CloseReason.Willing` renamed to
+  `CloseReason.Ok`.
+
+- **Close-code-based reconnect.** The client now reconnects based on the
+  close code, not just the `#closing` flag. Code 1000 (`CloseCode.Ok`) is
+  terminal. Non-1000 codes (network drop, reap, app-level kick) trigger
+  reconnect.
+
+- **`client.close()` is truly async.** The returned promise resolves only
+  after the socket's `close` event fires. The `close` event is guaranteed
+  to fire before the promise resolves.
+
+- **The client `close` event fires on all closes.** Client-initiated,
+  server-initiated, and reconnect-eligible closes all emit the event. This
+  is for centralized cleanup (removing a player from a lobby, updating UI).
+
+- **Bun 1.4.0.** The minimum Bun version is now 1.4.0. This fixes a bug
+  where `server.stop()` never resolved after a server-initiated
+  `ws.close()` (Bun #36223).
+
 ## [0.9.0] - 2026-08-13
 
 ### Added
