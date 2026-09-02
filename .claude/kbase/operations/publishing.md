@@ -119,6 +119,28 @@ This cuts both ways and both directions matter here:
 - The GitHub Release is created with `GITHUB_TOKEN` so it cannot re-trigger anything.
 - The push needs an App token, purely because of the ruleset bypass above.
 
+## CI vs. Publish responsibility split
+
+Integrity checks (test, lint, typecheck) live in the CI workflow (`ci.yml`),
+which runs on every push and PR. The Publish workflow (`publish.yml`) does not
+duplicate them; it runs `bun test` as a safety net but relies on CI having
+already caught lint and type errors before the PR was merged.
+
+This split exists because type errors and lint violations were previously only
+caught at publish time, since the CI workflow only ran tests. A TypeScript error
+in `tests/websocket/server-notification/integration.test.ts` slipped through a
+merged PR and blocked a publish (2026-09-02). Moving the checks to CI ensures
+they gate every PR.
+
+The Publish workflow's only pre-publish integrity check beyond `bun test` is the
+changelog content gate (`bun .github/scripts/changelog.js check`), which
+verifies the `[Unreleased]` section is non-empty.
+
+Both workflows read their Bun version from the `BUN_VERSION` repository
+variable (set per environment in GitHub Settings > Environments). Changing the
+Bun version for CI and publish requires updating the variable in both the `test`
+and `publish` environments.
+
 ## Changelog
 
 `CHANGELOG.md` at the repo root, [Keep a Changelog](https://keepachangelog.com/) format,
