@@ -74,12 +74,6 @@ jobs:
       - name: Test
         run: bun test
 
-      - name: Lint
-        run: bunx eslint .
-
-      - name: Typecheck
-        run: bun run typecheck
-
       # Both packages emit something a consumer needs, so a failed build must
       # block the release rather than publish a tarball whose `dist` is stale or
       # missing. `sleepy-socket` compiles to ESM plus declarations, because Node

@@ -12,7 +12,10 @@ test('when the server broadcasts', async () => {
   const port = app.server.port!
   const client = await SleepySocketClient.open(host, port)
 
-  client.on('notification', message => received.push(message))
+  client.on('notification', message => {
+    received.push(message as NotificationMessage)
+  })
+
   app.commands.broadcast('state_changed', { score: 1 })
 
   await waitFor(() => received.length > 0)
@@ -37,7 +40,10 @@ test('when the server sends to a clientId', async () => {
   const port = app.server.port!
   const client = await SleepySocketClient.open(host, port)
 
-  client.on('notification', message => received.push(message))
+  client.on('notification', message => {
+    received.push(message as NotificationMessage)
+  })
+
   app.commands.send(client.id!, 'player_joined', { name: 'x' })
 
   await waitFor(() => received.length > 0)
@@ -64,7 +70,9 @@ test('when the server sends to an unknown clientId', async () => {
   const port = app.server.port!
   const client = await SleepySocketClient.open(host, port)
 
-  client.on('notification', message => received.push(message))
+  client.on('notification', message => {
+    received.push(message as NotificationMessage)
+  })
 
   const fn = () => app.commands.send(CLIENT_ID, 'state_changed', { score: 1 })
 
