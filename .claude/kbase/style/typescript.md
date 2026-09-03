@@ -689,6 +689,27 @@ handlers are returned in is typed the other way, deriving from Bun. See
   and a non-UUID literal fails to compile. Only the argument-less
   `mock()` degrades.
 
+### `export type` vs runtime `export` for const objects
+
+When a `const` object like `HttpMethod` or `StatusCode` is both a runtime
+value and a type (via `typeof`), the package entry point must re-export it
+with a plain `export { X }`, not `export type { X }`. A type-only export
+strips the runtime value, so consumers get the type but `HttpMethod.Get`
+at runtime is a `ReferenceError`.
+
+This was a real bug: during the TypeScript migration, `HttpMethod` was
+changed from `export { HttpMethod }` to `export type { HttpMethod }` in
+`packages/server/src/index.ts`. The type export satisfied the
+type-checker, so the error was invisible until a consumer tried to use
+the value at runtime. The fix was moving `HttpMethod` back to the
+runtime export line alongside `StatusCode`, `CloseCode`, and
+`CloseReason`, and removing the redundant `export type`.
+
+Rule: if a symbol is used as both a value and a type, always use a plain
+`export`. A runtime `export` re-exports the type implicitly; adding
+`export type` on top is redundant at best and destructive if it replaces
+the runtime export.
+
 ## References
 
 - [Linting](./linting.md) for the shared style rules, which the

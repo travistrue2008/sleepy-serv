@@ -21,7 +21,7 @@ Here's a minimalist example on how to connect and make a request:
 ```js
 import SleepySocketClient from 'sleepy-socket'
 
-const client = await SleepySocketClient.connect('localhost', 3000)
+const client = await SleepySocketClient.open('localhost', 3000)
 const res = await client.get('/users')
 
 console.log(res.status) // 200
@@ -30,7 +30,7 @@ console.log(res.body) // the parsed response body
 await client.close()
 ```
 
-`connect()` is the only supported way to create a client. It's `async` because it doesn't resolve until the connection is fully established: it requests a ticket over HTTP, opens the WebSocket, and waits for the server's `welcome` message. Once it resolves, the client is ready to make requests.
+`open()` is the only supported way to create a client. It's `async` because it doesn't resolve until the connection is fully established: it requests a ticket over HTTP, opens the WebSocket, and waits for the server's `welcome` message. Once it resolves, the client is ready to make requests.
 
 ### Making Requests
 
@@ -121,14 +121,42 @@ client.on('notification', message => {
 
 If one of your handlers throws, the error is caught and logged, and the remaining handlers still receive the message.
 
+### Close Event
+
+The client emits a `close` event whenever the socket closes, regardless of the reason:
+
+```js
+client.on('close', payload => {
+  console.log(payload.code) // the WebSocket close code (e.g. 1000)
+})
+```
+
+This fires on client-initiated closes (`client.close()`), server-initiated closes (`commands.drop()`), and unexpected drops (network loss, reaping). It is intended for centralized cleanup, such as removing a player from a lobby or updating UI state. The reconnect decision happens after the event fires.
+
+### Connection Context
+
+You can attach arbitrary app data to the initial connection using the `ctx` option:
+
+```js
+const client = await SleepySocketClient.open('localhost', 3000, {
+  ctx: { gameId: 'abc', playerId: 'p1' },
+})
+```
+
+The server stores this in `ws.data.app` and preserves it through reconnects. On a reclaim (`PUT /ws/:clientId`), the client sends no body; the server is the source of truth for the connection context.
+
 ### Reconnection
 
-The client reconnects automatically when the socket drops. It reclaims its previous session, so `client.id` stays the same across a reconnect and you don't need to re-establish application state.
+The client reconnects automatically when the socket closes with a non-1000 code. A close code of `CloseCode.Ok` (1000) is treated as intentional and terminal, so `client.close()` and a server-side `commands.drop(clientId)` (which defaults to code 1000) do not trigger reconnect. Non-1000 codes such as network drops (`CloseCode.Abnormal`, 1006), server reaping (`CloseCode.Reaped`, 4999), and app-level kicks with a custom code (e.g. 4000) do trigger reconnect.
+
+The client reclaims its previous session on reconnect, so `client.id` stays the same and you don't need to re-establish application state. If reclaim fails (expired session or invalid token), the client falls back to a fresh identity via `POST /ws`.
+
+If the server rejects a reconnect handshake with an error response (surfaced as a `HandshakeError`), reconnect stops. A server-level rejection (such as "game is full") will not resolve on its own, so retrying would be wasteful.
 
 You can tune the backoff:
 
 ```js
-const client = await SleepySocketClient.connect('localhost', 3000, {
+const client = await SleepySocketClient.open('localhost', 3000, {
   reconnect: {
     minDelay: 1_000,
     maxDelay: 10_000,
@@ -140,7 +168,7 @@ const client = await SleepySocketClient.connect('localhost', 3000, {
 Set `reconnect` to `false` to turn it off entirely:
 
 ```js
-const client = await SleepySocketClient.connect('localhost', 3000, {
+const client = await SleepySocketClient.open('localhost', 3000, {
   reconnect: false,
 })
 ```
@@ -156,7 +184,7 @@ For example, if you fire three requests that take 300ms, 100ms, and 200ms:
 ```js
 import SleepySocketClient, { Queue } from 'sleepy-socket'
 
-const client = await SleepySocketClient.connect('localhost', 3000, {
+const client = await SleepySocketClient.open('localhost', 3000, {
   queue: Queue.Fifo,
 })
 
@@ -181,7 +209,7 @@ The three queue types resolve those promises differently:
 If the server was created with a `mountPath`, give the client the same value:
 
 ```js
-const client = await SleepySocketClient.connect('localhost', 3000, {
+const client = await SleepySocketClient.open('localhost', 3000, {
   mountPath: '/api/v2',
 })
 
@@ -192,14 +220,14 @@ The routes you pass to request methods stay mount-relative. The client joins the
 
 ## API
 
-### `SleepySocketClient.connect(host, port, opts)`
+### `SleepySocketClient.open(host, port, opts)`
 
-This static method creates a client, connects it, and resolves once the server has acknowledged the connection. It's the only supported way to construct a client.
+This static method creates a client, opens the connection, and resolves once the server has acknowledged it. It's the only supported way to construct a client.
 
 The parameters are:
 - `host`: the hostname, without a scheme, such as `'localhost'`
 - `port`: the port number
-- `opts`: an optional options object
+- `opts`: an optional `OpenOptions` object
 
 The `opts` object can contain these optional properties:
 - `queue`: how responses are handed back, one of `Queue.None`, `Queue.Fifo`, or `Queue.Lifo`. Defaults to `Queue.None`. An unrecognized value throws a `RangeError`.
@@ -208,6 +236,7 @@ The `opts` object can contain these optional properties:
 - `serverTimeout`: how long the client tolerates silence from the server, in milliseconds, before it considers the connection dead and closes it. Defaults to `120_000`.
 - `mountPath`: the server's mount path prefix. Defaults to `''`.
 - `reconnect`: an options object for reconnection behavior, or `false` to disable it
+- `ctx`: arbitrary app data to attach to the connection. Sent in the `POST /ws` body on the initial connect. Not sent on reclaim.
 
 The `reconnect` object can contain these optional properties:
 - `minDelay`: the starting backoff delay in milliseconds. Defaults to `500`.
@@ -223,7 +252,7 @@ They throw synchronously if the client isn't connected, and their promises rejec
 
 ### `on(event, handler)`
 
-Registers a handler for an event. The only event emitted is `'notification'`. Registering the same function twice is a no-op, since handlers are stored in a set.
+Registers a handler for an event. The client emits two events: `'notification'` for server-pushed messages, and `'close'` when the socket closes (for any reason). Registering the same function twice is a no-op, since handlers are stored in a set.
 
 ### `off(event, handler)`
 
@@ -231,7 +260,7 @@ Removes a previously registered handler. It's safe to call with a handler that w
 
 ### `close()`
 
-Closes the connection and rejects any in-flight requests. It returns a promise, so it's worth awaiting before your process exits.
+Closes the connection and rejects any in-flight requests. The returned promise resolves only after the socket's `close` event fires, so the `close` event handler runs before `await client.close()` returns.
 
 Note that closing is permanent. There's no reopen, and calling `close()` a second time throws. If you're calling it in a `finally` block, guard it with `isConnected`:
 
@@ -250,6 +279,8 @@ try {
 All of these are read-only:
 - `id`: the server-assigned client id, which survives reconnects
 - `isConnected`: whether the client is currently connected and ready for requests
+- `isConnecting`: whether the client is in the process of establishing a connection
+- `isReconnecting`: whether a reconnect timer is pending and the client is not connected
 - `socket`: the underlying `WebSocket`, or `null` while disconnected
 - `connectionData`: whatever payload the server attached when the connection was established. This is where application data such as an auth token shows up.
 - `token`: the reclaim token used internally to restore the session after a drop. This is not an application auth token; that would be on `connectionData`.
@@ -267,6 +298,22 @@ Contains the valid values for the `queue` option: `Queue.None`, `Queue.Fifo`, an
 ### `MessageType`
 
 Contains the message type names used on the wire: `MessageType.Welcome`, `MessageType.Heartbeat`, `MessageType.Request`, `MessageType.Response`, and `MessageType.Notification`. A response message's `type` is always `MessageType.Response`, and a notification's is always `MessageType.Notification`.
+
+### `CloseCode`
+
+Contains the WebSocket close codes used by the protocol: `CloseCode.Ok` (1000), `CloseCode.Abnormal` (1006), and `CloseCode.Reaped` (4999). Protocol-level codes count down from 4999; app codes start at 4000.
+
+### `StatusCode`
+
+A const object covering the full range of HTTP status codes (1xx through 5xx), so you can reference statuses by name instead of by number.
+
+### `HandshakeError`
+
+A class thrown when the server rejects a handshake with a non-ok HTTP response and a JSON body. It has two properties:
+- `status`: the HTTP status code (e.g. 409)
+- `body`: the parsed JSON body from the server
+
+During reconnect, a `HandshakeError` is treated as terminal. The reconnect loop stops rather than retrying.
 
 ## Errors
 

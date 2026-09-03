@@ -12,10 +12,7 @@ A directory-driven web server designed for REST-ful applications
 Here's a minimalist example on how to create a sleepy-serv app:
 
 ```js
-import {
-  middleware,
-  createApp,
-} from 'sleepy-serv'
+import { createApp } from 'sleepy-serv'
 
 const PORT = 3000
 
@@ -29,7 +26,7 @@ The parameter for `import.meta.dirname` can be any directory you prefer, but it'
 `sleepy-serv` was originally built for NodeJS, but it was ported to `bun` recently (before the initial release). The `createApp()` function merely calls `Bun.serve()` under-the-hood, and returns the `app` object that contains these properties:
 - `routes`: Contains a list of all of the routes defined by the file structure. This is useful for debugging.
 - `server`: this is the object that's returned from `Bun.serve()`. The `server` object has an `async` `.stop()` method on it, but prefer `app.close()` (see [Shutting Down](#shutting-down)), which stops the server and releases everything else the app holds.
-- `commands`: WebSocket helpers for pushing messages out to connected clients: `send(clientId, event, body)` and `broadcast(event, body)`.
+- `commands`: WebSocket helpers for interacting with connected clients: `send(clientId, event, body)`, `sendToGroup(fn, event, body)`, `broadcast(event, body)`, and `drop(clientId, code?, reason?)`.
 - `close`: an `async` function that shuts the app down. See [Shutting Down](#shutting-down).
 
 ### Shutting Down
@@ -488,3 +485,47 @@ const app = await createApp(PORT, import.meta.dirname, {
   onClose: () => console.info('closing down...'),
 })
 ```
+
+### `ws`
+
+WebSocket tuning and lifecycle hooks:
+
+```js
+const app = await createApp(PORT, import.meta.dirname, {
+  ws: {
+    heartbeatInterval: 30_000,
+    dropThreshold: 120_000,
+    reclaimTtl: 300_000,
+    ticketTtl: 10_000,
+    onOpen: clientId => console.log('connected:', clientId),
+    onClose: (clientId, reason) => console.log('closed:', clientId, reason),
+  },
+})
+```
+
+- `heartbeatInterval`: how often the client should send heartbeats, in milliseconds. Sent to the client in the welcome message. Defaults to `30_000`.
+- `dropThreshold`: how long the server waits without an inbound message before reaping the connection, in milliseconds. Defaults to `120_000`.
+- `reclaimTtl`: how long an inactive (reaped/dropped) session stays reclaimable, in milliseconds. Defaults to `300_000`.
+- `ticketTtl`: how long a minted upgrade ticket stays valid, in milliseconds. Defaults to `10_000`.
+- `onOpen(clientId)`: fires after a client's welcome message is sent. Wrapped in try/catch so a throwing hook does not break the connection.
+- `onClose(clientId, reason)`: fires when a connection closes. `reason` is a `CloseReason` value: `'ok'`, `'dropped'`, `'reaped'`, or `'superseded'`. Also wrapped in try/catch.
+
+## Commands
+
+The `app.commands` object exposes four methods for interacting with connected clients:
+
+- `send(clientId, event, body)`: push a notification to one client. Throws a `ReferenceError` if no active socket exists for that `clientId`.
+- `sendToGroup(fn, event, body)`: push a notification to a filtered subset of clients. The filter function receives `(clientId, data)` and returns a boolean.
+- `broadcast(event, body)`: push a notification to all connected clients.
+- `drop(clientId, code?, reason?)`: close a client's connection from the server side. The default code is `CloseCode.Ok` (1000), which tells the client not to reconnect. Passing a custom code (e.g. 4000) allows the client to reconnect.
+
+## Exports
+
+`sleepy-serv` exports several runtime constants and types:
+
+- `CloseCode`: WebSocket close codes: `Ok` (1000), `Abnormal` (1006), `Reaped` (4999)
+- `CloseReason`: close reason values: `Ok`, `Dropped`, `Reaped`, `Superseded`
+- `StatusCode`: the full range of HTTP status codes (1xx through 5xx)
+- `HttpMethod`: HTTP verbs: `Head`, `Get`, `Post`, `Put`, `Patch`, `Delete`
+- Error classes for every 4xx and 5xx status (e.g. `NotFoundError`, `UnauthorizedError`, `InternalServerError`)
+- Middleware helpers: `parseJsonBody`, `validateSchemas`, `setValidationFormats`
