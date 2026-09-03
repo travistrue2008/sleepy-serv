@@ -10,7 +10,7 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 - [Request Flow](./architecture/request-flow.md): route build pipeline; the `res` accumulator model.
 - [Middleware](./architecture/middleware.md): resolution order, built-ins, catch-all validators vs the `/ws` handshake.
 - [Errors](./architecture/errors.md): how errors map to HTTP status.
-- [Real-time / WebSocket Layer](./architecture/websocket.md): `/ws` upgrade, message model, welcome handshake, heartbeat/presence, the active/inactive session model, close codes and reasons, lifecycle hooks, server commands (`send`/`broadcast`/`sendToGroup`/`drop`), client state getters, client `close()` behavior, connection context (`ctx`), `HandshakeError`, client bundling constraints, handshake resource bounding, identifier naming (`id` vs `clientId`), and the open defect that inbound frames are not bound to their socket.
+- [Real-time / WebSocket Layer](./architecture/websocket.md): `/ws` upgrade, message model, welcome handshake, heartbeat/presence, the active/inactive session model, close codes and reasons, lifecycle hooks, WebSocket commands (`send`/`broadcast`/`drop` via `app.ws` and `req.ws`), client state getters, client `close()` behavior, connection context (`ctx`), `HandshakeError`, client bundling constraints, handshake resource bounding, identifier naming (`id` vs `clientId`), and the open defect that inbound frames are not bound to their socket.
 - [Testing](./architecture/testing.md): test styles (unit / integration / E2E).
 
 ## Operations

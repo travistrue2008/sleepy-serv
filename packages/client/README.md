@@ -131,7 +131,7 @@ client.on('close', payload => {
 })
 ```
 
-This fires on client-initiated closes (`client.close()`), server-initiated closes (`commands.drop()`), and unexpected drops (network loss, reaping). It is intended for centralized cleanup, such as removing a player from a lobby or updating UI state. The reconnect decision happens after the event fires.
+This fires on client-initiated closes (`client.close()`), server-initiated closes (`ws.drop()`), and unexpected drops (network loss, reaping). The reconnect decision happens after the event fires.
 
 ### Connection Context
 
@@ -147,7 +147,7 @@ The server stores this in `ws.data.app` and preserves it through reconnects. On 
 
 ### Reconnection
 
-The client reconnects automatically when the socket closes with a non-1000 code. A close code of `CloseCode.Ok` (1000) is treated as intentional and terminal, so `client.close()` and a server-side `commands.drop(clientId)` (which defaults to code 1000) do not trigger reconnect. Non-1000 codes such as network drops (`CloseCode.Abnormal`, 1006), server reaping (`CloseCode.Reaped`, 4999), and app-level kicks with a custom code (e.g. 4000) do trigger reconnect.
+The client reconnects automatically when the socket closes with a non-1000 code. A close code of `CloseCode.Ok` (1000) is treated as intentional and terminal, so `client.close()` and a server-side `ws.drop(clientId)` (which defaults to code 1000) do not trigger reconnect. Non-1000 codes such as network drops (`CloseCode.Abnormal`, 1006), server reaping (`CloseCode.Reaped`, 4999), and app-level kicks with a custom code (e.g. 4000) do trigger reconnect.
 
 The client reclaims its previous session on reconnect, so `client.id` stays the same and you don't need to re-establish application state. If reclaim fails (expired session or invalid token), the client falls back to a fresh identity via `POST /ws`.
 
@@ -318,7 +318,7 @@ During reconnect, a `HandshakeError` is treated as terminal. The reconnect loop 
 ## Errors
 
 Most failures surface as thrown errors or rejected promises:
-- `Invalid queue type: <value>`: a `RangeError` thrown by `connect()` when `queue` isn't a valid `Queue` value. This is thrown before any network call is made.
+- `Invalid queue type: <value>`: a `RangeError` thrown by `open()` when `queue` isn't a valid `Queue` value. This is thrown before any network call is made.
 - `Connection failed.`: the connection couldn't be established
 - `Connection timed out.`: the connection wasn't established within `timeout` milliseconds
 - `opts.headers must be a Headers instance`: a `TypeError` thrown when a request's `headers` option isn't a `Headers` object
