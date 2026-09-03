@@ -8,6 +8,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`HttpMethod` runtime export restored.** The runtime value export of
+  `HttpMethod` from `sleepy-serv` was accidentally dropped during the
+  TypeScript migration, leaving only a type export. Consumers using
+  `HttpMethod.Get` at runtime would get a reference error. The value is
+  now re-exported alongside `StatusCode`, `CloseCode`, and `CloseReason`.
+
 ## [0.10.0] - 2026-09-02
 
 ### Added
@@ -84,14 +92,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Bun 1.4.0.** The minimum Bun version is now 1.4.0. This fixes a bug
   where `server.stop()` never resolved after a server-initiated
   `ws.close()` (Bun #36223).
-
-### Fixed
-
-- **`HttpMethod` runtime export restored.** The runtime value export of
-  `HttpMethod` from `sleepy-serv` was accidentally dropped during the
-  TypeScript migration, leaving only a type export. Consumers using
-  `HttpMethod.Get` at runtime would get a reference error. The value is
-  now re-exported alongside `StatusCode`, `CloseCode`, and `CloseReason`.
 
 ## [0.9.0] - 2026-08-13
 
