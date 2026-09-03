@@ -37,6 +37,7 @@ import type {
   Request,
   MiddlewareChain,
   SocketCommands,
+  SessionEntry,
   WebSocketRequest,
   SocketData,
   SocketConnection,
@@ -745,6 +746,23 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
   }
 
   return {
+    query (fn) {
+      const results: SessionEntry[] = []
+      let index = 0
+
+      for (const [clientId, session] of state.activeSessions) {
+        if (fn(clientId, session.ws.data, index)) {
+          results.push({
+            clientId,
+            app: session.ws.data.app,
+          })
+        }
+
+        index += 1
+      }
+
+      return results
+    },
     send (fn, event, body) {
       let index = 0
 
@@ -762,14 +780,16 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
         sendToClient(clientId, event, body)
       }
     },
-    drop (clientId, code, reason) {
-      const session = state.activeSessions.get(clientId)
+    drop (fn, code, reason) {
+      let index = 0
 
-      if (!session) {
-        throw new ReferenceError(`No active socket for client: ${clientId}`)
+      for (const [clientId, session] of state.activeSessions) {
+        if (fn(clientId, session.ws.data, index)) {
+          session.ws.close(code, reason)
+        }
+
+        index += 1
       }
-
-      session.ws.close(code, reason)
     },
   }
 }

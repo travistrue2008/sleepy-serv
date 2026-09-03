@@ -248,6 +248,7 @@ describe('executeMiddlewareChain()', () => {
     query: {},
     json: async () => null,
     ws: {
+      query () { return [] },
       send () {},
       broadcast () {},
       drop () {},

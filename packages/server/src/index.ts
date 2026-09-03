@@ -51,7 +51,7 @@ export {
   validateSchemas,
 } from './middleware'
 
-export type { FilterFn, SocketCommands } from './utils'
+export type { FilterFn, SessionEntry, SocketCommands } from './utils'
 
 export type {
   AppOptions,
