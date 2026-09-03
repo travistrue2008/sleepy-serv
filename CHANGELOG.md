@@ -8,6 +8,34 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`req.ws` in endpoint handlers.** Endpoint handlers (both HTTP and
+  WebSocket) now have access to WebSocket commands via `req.ws`. Handlers
+  can call `req.ws.send()`, `req.ws.broadcast()`, and `req.ws.drop()`
+  directly, enabling server-push as a side effect of handling a request.
+
+- **`FilterFn` receives `index`.** The filter function passed to
+  `ws.send(fn, event, body)` now receives a third argument: the
+  zero-based index of the client in the active sessions iteration.
+
+### Changed
+
+- **Breaking (`sleepy-serv`):** `app.commands` renamed to `app.ws`.
+  The `SocketCommands` type is unchanged.
+
+- **Breaking (`sleepy-serv`):** `send(clientId, event, body)` removed.
+  `sendToGroup(fn, event, body)` renamed to `send(fn, event, body)`. All
+  sending is now filter-based. To target one client:
+  `ws.send(id => id === targetId, event, body)`.
+
+- **Breaking (`sleepy-serv`):** `req.ws.active` removed. The active
+  sessions map is no longer exposed on the request object. Use the
+  commands (`req.ws.send`, `req.ws.broadcast`, `req.ws.drop`) instead.
+
+- **`ActiveSessions` type no longer exported.** It was only used by
+  `req.ws.active`, which has been removed.
+
 ## [0.11.0] - 2026-09-03
 
 ### Fixed
