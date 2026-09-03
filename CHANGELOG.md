@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-09-03
+
 ### Added
 
 - **`req.ws` in endpoint handlers.** Endpoint handlers (both HTTP and
@@ -365,5 +367,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [0.8.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.7.0...0.8.0
 [0.9.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.8.0...0.9.0
 [0.10.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.9.0...0.10.0
-[Unreleased]: https://github.com/travistrue2008/sleepy-serv/compare/0.11.0...HEAD
 [0.11.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.10.0...0.11.0
+[Unreleased]: https://github.com/travistrue2008/sleepy-serv/compare/0.12.0...HEAD
+[0.12.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.11.0...0.12.0
