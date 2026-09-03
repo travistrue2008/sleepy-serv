@@ -8,6 +8,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`query(fn)` on `SocketCommands`.** Filters active sessions and
+  returns `SessionEntry[]` (`{ clientId, app }`), providing read-only
+  inspection without leaking internal socket handles.
+
+- **`SessionEntry` type exported from `sleepy-serv`.** The return shape
+  of `query()`: `{ clientId: string, app: unknown }`.
+
+### Changed
+
+- **Breaking (`sleepy-serv`):** `drop(clientId, code?, reason?)`
+  replaced with `drop(fn, code?, reason?)`. All dropping is now
+  filter-based, like `send()`. To drop one client:
+  `ws.drop(id => id === targetId)`.
+
 ## [0.12.0] - 2026-09-03
 
 ### Added

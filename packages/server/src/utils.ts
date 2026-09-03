@@ -121,6 +121,11 @@ export type InactiveSession = {
 export type ActiveSessions = ReadonlyMap<string, ActiveSession>
 export type Session = ActiveSession | InactiveSession
 
+export type SessionEntry = {
+  clientId: string
+  app: unknown
+}
+
 export type FilterFn = (
   clientId: string,
   data: unknown,
@@ -128,9 +133,10 @@ export type FilterFn = (
 ) => boolean
 
 export type SocketCommands = {
+  query: (fn: FilterFn) => SessionEntry[]
   send: (fn: FilterFn, event: string, body: unknown) => void
   broadcast: (event: string, body: unknown) => void
-  drop: (clientId: string, code?: number, reason?: string) => void
+  drop: (fn: FilterFn, code?: number, reason?: string) => void
 }
 
 export type BaseRequest = {
