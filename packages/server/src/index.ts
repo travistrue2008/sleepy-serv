@@ -44,7 +44,7 @@ import type {
 } from './socket'
 
 export * from './errors'
-export { StatusCode, CloseCode, CloseReason } from './utils'
+export { StatusCode, CloseCode, CloseReason, HttpMethod } from './utils'
 
 export {
   parseJsonBody,
@@ -53,7 +53,7 @@ export {
 } from './middleware'
 
 export type { SocketCommands } from './socket'
-export type { HttpMethod, ActiveSessions } from './utils'
+export type { ActiveSessions } from './utils'
 
 export type {
   AppOptions,
