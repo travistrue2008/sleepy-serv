@@ -121,6 +121,18 @@ export type InactiveSession = {
 export type ActiveSessions = ReadonlyMap<string, ActiveSession>
 export type Session = ActiveSession | InactiveSession
 
+export type FilterFn = (
+  clientId: string,
+  data: unknown,
+  index: number,
+) => boolean
+
+export type SocketCommands = {
+  send: (fn: FilterFn, event: string, body: unknown) => void
+  broadcast: (event: string, body: unknown) => void
+  drop: (clientId: string, code?: number, reason?: string) => void
+}
+
 export type BaseRequest = {
   method: HttpMethod
   route: string
@@ -128,9 +140,7 @@ export type BaseRequest = {
   params: Record<string, string>
   query: Record<string, unknown>
   json: () => Promise<unknown>
-  ws: {
-    active: ActiveSessions
-  }
+  ws: SocketCommands
 }
 
 export type EndpointRequest = BaseRequest & {

@@ -32,7 +32,7 @@ import type {
   Middleware,
   MiddlewareChain,
   EndpointRequest,
-  ActiveSessions,
+  SocketCommands,
   AppOptions,
   Server,
 } from './utils'
@@ -40,7 +40,6 @@ import type {
 import type {
   SocketRoute,
   SocketState,
-  SocketCommands,
 } from './socket'
 
 export * from './errors'
@@ -52,8 +51,7 @@ export {
   validateSchemas,
 } from './middleware'
 
-export type { SocketCommands } from './socket'
-export type { ActiveSessions } from './utils'
+export type { FilterFn, SocketCommands } from './utils'
 
 export type {
   AppOptions,
@@ -127,8 +125,8 @@ type CloseFn = (force?: boolean) => Promise<void>
 
 export type App = {
   server: Server
-  commands: SocketCommands
   routes: OutputRoutes
+  ws: SocketCommands
   close: CloseFn
 }
 
@@ -167,7 +165,7 @@ function defaultMethodMap (): Record<string, EndpointHandler> {
 function buildEndpointRequest (
   bunReq: BunRequest,
   server: Server,
-  activeSessions: ActiveSessions,
+  ws: SocketCommands,
 ): EndpointRequest {
   const url = new URL(bunReq.url)
   const qs = url.search.replace('?', '')
@@ -191,9 +189,7 @@ function buildEndpointRequest (
     raw: bunReq,
     server,
     json,
-    ws: {
-      active: activeSessions,
-    },
+    ws,
   }
 }
 
@@ -405,15 +401,11 @@ function buildSocketRoutes (mergedRoutes: ChainRoute[]): SocketRoute[] {
 
 function buildModuleRoutes (
   socketRoutes: SocketRoute[],
-  state: SocketState,
+  ws: SocketCommands,
 ): ModuleRoute[] {
   return socketRoutes.map(route => {
     const handler: EndpointHandler = async (bunReq, server) => {
-      const req = buildEndpointRequest(
-        bunReq,
-        server,
-        state.activeSessions,
-      )
+      const req = buildEndpointRequest(bunReq, server, ws)
 
       return executeMiddlewareChain(req, route.chain)
     }
@@ -451,6 +443,7 @@ function buildOutputRoutes (moduleRoutes: ModuleRoute[]): OutputRoutes {
 async function buildRoutes (
   rootPath: string,
   state: SocketState,
+  ws: SocketCommands,
   opts: AppOptions,
 ): Promise<AppRoutes> {
   const basePath = `${rootPath}/api`
@@ -474,7 +467,7 @@ async function buildRoutes (
   )
 
   const socketRoutes = buildSocketRoutes(mergedRoutes)
-  const moduleRoutes = buildModuleRoutes(socketRoutes, state)
+  const moduleRoutes = buildModuleRoutes(socketRoutes, ws)
   const serverRoutes = buildServerRoutes(moduleRoutes)
   const outputRoutes = buildOutputRoutes(moduleRoutes)
 
@@ -489,10 +482,16 @@ function buildServer (
   port: number,
   routes: AppRoutes,
   state: SocketState,
+  ws: SocketCommands,
   opts: AppOptions,
 ): Server {
   const hostname = opts.hostname || '0.0.0.0'
-  const websocketServer = buildSocketServer(routes.socket, state)
+
+  const websocketServer = buildSocketServer(
+    routes.socket,
+    state,
+    ws,
+  )
 
   return Bun.serve({
     port,
@@ -561,15 +560,15 @@ export async function createApp (
   opts: AppOptions = {},
 ): Promise<App> {
   const state = buildSocketState(opts)
-  const routes = await buildRoutes(rootPath, state, opts)
-  const server = buildServer(port, routes, state, opts)
-  const commands = buildSocketCommands(state)
+  const ws = buildSocketCommands(state)
+  const routes = await buildRoutes(rootPath, state, ws, opts)
+  const server = buildServer(port, routes, state, ws, opts)
   const close = processIO(port, server, opts)
 
   return {
     routes: routes.output,
     server,
-    commands,
+    ws,
     close,
   }
 }

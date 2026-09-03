@@ -248,7 +248,9 @@ describe('executeMiddlewareChain()', () => {
     query: {},
     json: async () => null,
     ws: {
-      active: new Map(),
+      send () {},
+      broadcast () {},
+      drop () {},
     },
   }
 

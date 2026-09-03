@@ -31,6 +31,7 @@ import {
 
 import type { UUID } from 'node:crypto'
 import type { ServerWebSocket, WebSocketHandler } from 'bun'
+import type { SocketRoute, SocketState } from './socket'
 
 import type {
   AsyncHandlerResult,
@@ -122,8 +123,13 @@ function welcomeToken (ws: SocketMock): string {
   return body.token
 }
 
-function buildTestServer (...args: TestServerArgs): TestServer {
-  return buildSocketServer(...args) as TestServer
+function buildTestServer (
+  routes: SocketRoute[],
+  state: SocketState,
+): TestServer {
+  const ws = buildSocketCommands(state)
+
+  return buildSocketServer(routes, state, ws) as TestServer
 }
 
 class TestError extends RequestError {
@@ -606,46 +612,6 @@ describe('buildTestServer()', () => {
           headers: {},
           body: 'Success',
         })
-      })
-
-      test('when "req.ws.active" reflects connected sockets', async () => {
-        const server = buildTestServer([
-          {
-            method: 'GET',
-            path: '/',
-            chain: [
-              (req: ServerRequest) => Response.json({
-                count: req.ws.active.size,
-              }),
-            ],
-            segments: [],
-          },
-        ], state)
-
-        const ws = buildSocket(CLIENT_ID)
-
-        server.open(ws)
-
-        const incomingMessage = JSON.stringify({
-          id: ID,
-          clientId: CLIENT_ID,
-          type: MessageType.Request,
-          method: 'GET',
-          route: '/',
-          timestamp: TIMESTAMP,
-          headers: HEADERS,
-          query: {},
-          body: null,
-        })
-
-        await server.message(ws, incomingMessage)
-
-        expect(ws.send).toHaveBeenCalledTimes(2)
-
-        /* ignore first call (welcome) */
-        const response = JSON.parse(ws.send.mock.calls[1][0])
-
-        expect(response.body).toStrictEqual({ count: 1 })
       })
 
       test('when route and method match with dynamic params', async () => {
@@ -2035,70 +2001,6 @@ describe('buildSocketHandlers()', () => {
 
 describe('buildSocketCommands()', () => {
   describe('send()', () => {
-    test('when target connection does not exist', () => {
-      const targetClientId = crypto.randomUUID()
-      const state = buildSocketState()
-      const server = buildTestServer([], state)
-      const commands = buildSocketCommands(state)
-
-      const fn = () => commands.send(targetClientId, EVENT, {
-        ok: true,
-      })
-
-      server.open(buildSocket(CLIENT_ID))
-
-      expect(fn).toThrow(
-        new ReferenceError(`No active socket for client: ${targetClientId}`),
-      )
-    })
-
-    test('when target connection is NOT active', () => {
-      const state = buildSocketState()
-      const server = buildTestServer([], state)
-      const commands = buildSocketCommands(state)
-      const ws = buildSocket(CLIENT_ID)
-
-      const fn = () => commands.send(CLIENT_ID, EVENT, {
-        ok: true,
-      })
-
-      jest.advanceTimersByTime(state.dropThreshold + 100)
-
-      server.open(ws)
-      server.close(ws, CloseCode.Ok, '')
-
-      expect(fn).toThrow(
-        new ReferenceError(`No active socket for client: ${CLIENT_ID}`),
-      )
-    })
-
-    test('when target connection is active', () => {
-      const state = buildSocketState()
-      const server = buildTestServer([], state)
-      const commands = buildSocketCommands(state)
-      const ws = buildSocket(CLIENT_ID)
-
-      server.open(ws)
-      commands.send(CLIENT_ID, EVENT, { score: 1 })
-
-      /* ignore first call (welcome) */
-      const notification = JSON.parse(ws.send.mock.calls[1][0])
-
-      expect(notification).toStrictEqual({
-        id: notification.id,
-        clientId: CLIENT_ID,
-        type: MessageType.Notification,
-        timestamp: TIMESTAMP,
-        event: EVENT,
-        headers: {},
-        body: {
-          score: 1,
-        },
-      })
-    })
-  })
-
-  describe('sendToGroup()', () => {
     test('when invoked', () => {
       const clientIds = [
         crypto.randomUUID(),
@@ -2115,11 +2017,9 @@ describe('buildSocketCommands()', () => {
       webSockets.forEach(ws => server.open(ws))
       server.close(webSockets[0], CloseCode.Ok, '')
 
-      const filterFn = mock((_cid, data) => data.clientId !== clientIds[3])
+      const filterFn = mock((clientId, _data) => clientId !== clientIds[3])
 
-      commands.sendToGroup(filterFn, EVENT, { score: 1 })
-
-      console.log('length:', webSockets.length)
+      commands.send(filterFn, EVENT, { score: 1 })
 
       const notifications = webSockets.map(ws => {
         return ws.send.mock.calls.map(call => {
@@ -2190,18 +2090,21 @@ describe('buildSocketCommands()', () => {
         1,
         clientIds[1],
         webSockets[1].data,
+        0,
       )
 
       expect(filterFn).toHaveBeenNthCalledWith(
         2,
         clientIds[2],
         webSockets[2].data,
+        1,
       )
 
       expect(filterFn).toHaveBeenNthCalledWith(
         3,
         clientIds[3],
         webSockets[3].data,
+        2,
       )
     })
   })

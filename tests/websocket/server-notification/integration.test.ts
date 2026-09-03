@@ -16,7 +16,7 @@ test('when the server broadcasts', async () => {
     received.push(message as NotificationMessage)
   })
 
-  app.commands.broadcast('state_changed', { score: 1 })
+  app.ws.broadcast('state_changed', { score: 1 })
 
   await waitFor(() => received.length > 0)
   await client.close()
@@ -44,7 +44,7 @@ test('when the server sends to a clientId', async () => {
     received.push(message as NotificationMessage)
   })
 
-  app.commands.send(client.id!, 'player_joined', { name: 'x' })
+  app.ws.send(id => id === client.id!, 'player_joined', { name: 'x' })
 
   await waitFor(() => received.length > 0)
   await client.close()
@@ -61,9 +61,7 @@ test('when the server sends to a clientId', async () => {
   })
 })
 
-test('when the server sends to an unknown clientId', async () => {
-  const CLIENT_ID = '00000000-0000-0000-0000-000000000000'
-
+test('when the filter matches no clients', async () => {
   const received: NotificationMessage[] = []
   const app = await createApp(0, import.meta.dirname)
   const host = app.server.url.hostname
@@ -74,11 +72,7 @@ test('when the server sends to an unknown clientId', async () => {
     received.push(message as NotificationMessage)
   })
 
-  const fn = () => app.commands.send(CLIENT_ID, 'state_changed', { score: 1 })
-
-  expect(fn).toThrow(
-    new ReferenceError(`No active socket for client: ${CLIENT_ID}`),
-  )
+  app.ws.send(() => false, 'state_changed', { score: 1 })
 
   await client.close()
   await app.close(true)

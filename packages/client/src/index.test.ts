@@ -184,7 +184,7 @@ function sendWelcome (clientId: string): unknown {
  */
 
 async function settle () {
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 6; ++i) {
     await Promise.resolve()
   }
 }
