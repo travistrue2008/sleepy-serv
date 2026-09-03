@@ -91,6 +91,12 @@ Two consequences that are easy to trip over:
   (`bunx npm@11 publish`); bun is still used for install, test, and version bumping.
   Ubuntu runners ship npm 10.x by default, which predates OIDC support (needs >= 11.5.1).
 
+## Merge strategy
+
+The repository only allows **squash merges**. Merge commits and rebase merges
+are disabled in the repo settings. Use `gh pr merge --squash` (not `--merge`
+or `--rebase`).
+
 ## Repository rulesets are invisible to the branch-protection API
 
 `main` is protected by a **ruleset** requiring pull requests and a passing `build`
