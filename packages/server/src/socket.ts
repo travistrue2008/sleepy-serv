@@ -36,11 +36,11 @@ import type {
   HttpMethod,
   Request,
   MiddlewareChain,
+  SocketCommands,
   WebSocketRequest,
   SocketData,
   SocketConnection,
   ActiveSession,
-  ActiveSessions,
   InactiveSession,
   Session,
   AppOptions,
@@ -54,7 +54,6 @@ import type {
 } from './messages'
 
 type SocketHandler = (req: Request, res: unknown) => AsyncHandlerResult
-type FilterFn = (clientId: string, data: unknown) => boolean
 
 type UpgradeData = {
   clientId?: string
@@ -115,13 +114,6 @@ export type SocketRoute = {
   path: string
   segments: string[]
   chain: MiddlewareChain
-}
-
-export type SocketCommands = {
-  send: (clientId: string, event: string, body: unknown) => void
-  sendToGroup: (fn: FilterFn, event: string, body: unknown) => void
-  broadcast: (event: string, body: unknown) => void
-  drop: (clientId: string, code?: number, reason?: string) => void
 }
 
 const ajv = new Ajv({
@@ -361,7 +353,7 @@ function buildParams (
 function buildRequest (
   params: Record<string, string>,
   message: RequestMessage,
-  activeSessions: ActiveSessions,
+  ws: SocketCommands,
 ): WebSocketRequest {
   const { id, clientId, method, route } = message
   const headers = new Headers(message.headers ?? {})
@@ -376,10 +368,8 @@ function buildRequest (
     headers,
     params,
     query,
+    ws,
     json,
-    ws: {
-      active: activeSessions,
-    },
   }
 }
 
@@ -447,6 +437,7 @@ export function buildSocketState (opts: AppOptions = {}): SocketState {
 export function buildSocketServer (
   routes: SocketRoute[],
   state: SocketState,
+  commands: SocketCommands,
 ): WebSocketHandler<SocketData> {
   const {
     dropThreshold,
@@ -581,7 +572,7 @@ export function buildSocketServer (
         const { id, clientId } = message
         const route = matchRoute(routes, message)
         const params = buildParams(route, message)
-        const req = buildRequest(params, message, activeSessions)
+        const req = buildRequest(params, message, commands)
         const res = await executeMiddlewareChain(req, route.chain)
         const outgoingMsg = await buildOutgoingMessage(id, clientId, res)
 
@@ -754,16 +745,16 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
   }
 
   return {
-    send (clientId, event, body) {
-      sendToClient(clientId, event, body)
-    },
-    sendToGroup (fn, event, body) {
-      for (const [clientId, session] of state.activeSessions) {
-        const allow = fn(clientId, session.ws.data)
+    send (fn, event, body) {
+      let index = 0
 
-        if (allow) {
+      /* TODO: look into concurrency at some point */
+      for (const [clientId, session] of state.activeSessions) {
+        if (fn(clientId, session.ws.data, index)) {
           sendToClient(clientId, event, body)
         }
+
+        index += 1
       }
     },
     broadcast (event, body) {

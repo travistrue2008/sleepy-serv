@@ -35,7 +35,9 @@ const BASE_REQUEST: WebSocketRequest = {
   query: {},
   json: async () => null,
   ws: {
-    active: new Map(),
+    send () {},
+    broadcast () {},
+    drop () {},
   },
 }
 

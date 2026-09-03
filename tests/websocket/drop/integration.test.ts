@@ -14,7 +14,7 @@ test('when the server drops the client', async () => {
   })
 
   client.on('close', handler)
-  app.commands.drop(client.id!)
+  app.ws.drop(client.id!)
 
   await waitFor(() => !client.isConnected)
 
