@@ -131,7 +131,7 @@ client.on('close', payload => {
 })
 ```
 
-This fires on client-initiated closes (`client.close()`), server-initiated closes (`ws.drop()`), and unexpected drops (network loss, reaping). The reconnect decision happens after the event fires.
+This fires on client-initiated closes (`client.close()`), server-initiated closes (`ws.drop()`), and unexpected drops (network loss, reaping). It is intended for centralized cleanup, such as removing a player from a lobby or updating UI state. The reconnect decision happens after the event fires.
 
 ### Connection Context
 
