@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-02
+
 ### Added
 
 - **Connection context (`ctx`).** `OpenOptions.ctx` lets the client attach
@@ -331,5 +333,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [0.6.2]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.1...0.6.2
 [0.7.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.2...0.7.0
 [0.8.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.7.0...0.8.0
-[Unreleased]: https://github.com/travistrue2008/sleepy-serv/compare/0.9.0...HEAD
 [0.9.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.8.0...0.9.0
+[Unreleased]: https://github.com/travistrue2008/sleepy-serv/compare/0.10.0...HEAD
+[0.10.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.9.0...0.10.0
