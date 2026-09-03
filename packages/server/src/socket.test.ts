@@ -2153,43 +2153,150 @@ describe('buildSocketCommands()', () => {
     })
   })
 
-  describe('drop()', () => {
-    const DROP_ID = '00000000-0000-0000-0000-999999999999'
-
-    test('when the client has no active socket', () => {
+  describe('query()', () => {
+    test('when no sessions match the filter', () => {
       const state = buildSocketState()
       const commands = buildSocketCommands(state)
+      const result = commands.query(() => false)
 
-      const fn = () => commands.drop(DROP_ID)
-
-      expect(fn).toThrow(
-        new ReferenceError(
-          `No active socket for client: ${DROP_ID}`,
-        ),
-      )
+      expect(result).toStrictEqual([])
     })
 
-    test('when the client has a active socket', () => {
+    test('when sessions match the filter', () => {
+      const clientIds = [
+        '00000000-0000-0000-0000-000000000020',
+        '00000000-0000-0000-0000-000000000021',
+        '00000000-0000-0000-0000-000000000022',
+      ]
+
       const state = buildSocketState()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
-      const ws = buildSocket(DROP_ID)
+
+      const sockets = clientIds.map(id => {
+        const ws = buildSocket(id)
+
+        ws.data.app = { name: id }
+
+        return ws
+      })
+
+      sockets.forEach(ws => server.open(ws))
+
+      const result = commands.query(
+        id => id !== clientIds[1],
+      )
+
+      expect(result).toStrictEqual([
+        {
+          clientId: clientIds[0],
+          app: { name: clientIds[0] },
+        },
+        {
+          clientId: clientIds[2],
+          app: { name: clientIds[2] },
+        },
+      ])
+    })
+
+    test('when all sessions match', () => {
+      const clientIds = [
+        '00000000-0000-0000-0000-000000000030',
+        '00000000-0000-0000-0000-000000000031',
+      ]
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+
+      const sockets = clientIds.map(id => {
+        const ws = buildSocket(id)
+
+        ws.data.app = { role: 'player' }
+
+        return ws
+      })
+
+      sockets.forEach(ws => server.open(ws))
+
+      const result = commands.query(() => true)
+
+      expect(result).toStrictEqual([
+        {
+          clientId: clientIds[0],
+          app: { role: 'player' },
+        },
+        {
+          clientId: clientIds[1],
+          app: { role: 'player' },
+        },
+      ])
+    })
+  })
+
+  describe('drop()', () => {
+    test('when no sessions match the filter', () => {
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+
+      const ws = buildSocket(
+        '00000000-0000-0000-0000-000000000040',
+      )
 
       server.open(ws)
-      commands.drop(DROP_ID)
+      commands.drop(() => false)
 
-      expect(ws.close).toHaveBeenCalledOnce()
-      expect(ws.close).toHaveBeenCalledWith(undefined, undefined)
+      expect(ws.close).not.toHaveBeenCalled()
+    })
+
+    test('when sessions match the filter', () => {
+      const clientIds = [
+        '00000000-0000-0000-0000-000000000050',
+        '00000000-0000-0000-0000-000000000051',
+        '00000000-0000-0000-0000-000000000052',
+      ]
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const sockets = clientIds.map(buildSocket)
+
+      sockets.forEach(ws => server.open(ws))
+      commands.drop(id => id !== clientIds[1])
+
+      expect(sockets[0].close).toHaveBeenCalledOnce()
+
+      expect(sockets[0].close).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+      )
+
+      expect(sockets[1].close).not.toHaveBeenCalled()
+      expect(sockets[2].close).toHaveBeenCalledOnce()
+
+      expect(sockets[2].close).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+      )
     })
 
     test('when a custom code and reason are provided', () => {
       const state = buildSocketState()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
-      const ws = buildSocket(DROP_ID)
+
+      const ws = buildSocket(
+        '00000000-0000-0000-0000-000000000060',
+      )
 
       server.open(ws)
-      commands.drop(DROP_ID, 4000, 'kicked')
+
+      commands.drop(
+        id => id === '00000000-0000-0000-0000-000000000060',
+        4000,
+        'kicked',
+      )
 
       expect(ws.close).toHaveBeenCalledOnce()
       expect(ws.close).toHaveBeenCalledWith(4000, 'kicked')

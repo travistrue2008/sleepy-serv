@@ -26,7 +26,7 @@ The parameter for `import.meta.dirname` can be any directory you prefer, but it'
 `sleepy-serv` was originally built for NodeJS, but it was ported to `bun` recently (before the initial release). The `createApp()` function merely calls `Bun.serve()` under-the-hood, and returns the `app` object that contains these properties:
 - `routes`: Contains a list of all of the routes defined by the file structure. This is useful for debugging.
 - `server`: this is the object that's returned from `Bun.serve()`. The `server` object has an `async` `.stop()` method on it, but prefer `app.close()` (see [Shutting Down](#shutting-down)), which stops the server and releases everything else the app holds.
-- `ws`: WebSocket commands for interacting with connected clients: `send(fn, event, body)`, `broadcast(event, body)`, and `drop(clientId, code?, reason?)`.
+- `ws`: WebSocket commands for interacting with connected clients: `query(fn)`, `send(fn, event, body)`, `broadcast(event, body)`, and `drop(fn, code?, reason?)`.
 - `close`: an `async` function that shuts the app down. See [Shutting Down](#shutting-down).
 
 ### Shutting Down
@@ -512,11 +512,12 @@ const app = await createApp(PORT, import.meta.dirname, {
 
 ## WebSocket Commands
 
-The `app.ws` object exposes three methods for interacting with connected clients:
+The `app.ws` object exposes four methods for interacting with connected clients:
 
+- `query(fn)`: return a filtered list of active sessions. The filter function receives `(clientId, data, index)` and returns a boolean. Each entry in the returned array is a `SessionEntry` with `clientId` and `app` (the application context). To list all sessions: `app.ws.query(() => true)`.
 - `send(fn, event, body)`: push a notification to clients matching a filter. The filter function receives `(clientId, data, index)` and returns a boolean. To target one client: `app.ws.send(id => id === targetId, event, body)`.
 - `broadcast(event, body)`: push a notification to all connected clients.
-- `drop(clientId, code?, reason?)`: close a client's connection from the server side. The default code is `CloseCode.Ok` (1000), which tells the client not to reconnect. Passing a custom code (e.g. 4000) allows the client to reconnect.
+- `drop(fn, code?, reason?)`: close connections matching a filter. The filter function receives `(clientId, data, index)` and returns a boolean. The default code is `CloseCode.Ok` (1000), which tells the client not to reconnect. Passing a custom code (e.g. 4000) allows the client to reconnect. To drop one client: `app.ws.drop(id => id === targetId)`.
 
 The same commands are available inside endpoint handlers via `req.ws`:
 
@@ -540,5 +541,8 @@ This works from both HTTP and WebSocket transports.
 - `CloseReason`: close reason values: `Ok`, `Dropped`, `Reaped`, `Superseded`
 - `StatusCode`: the full range of HTTP status codes (1xx through 5xx)
 - `HttpMethod`: HTTP verbs: `Head`, `Get`, `Post`, `Put`, `Patch`, `Delete`
+- `SessionEntry`: the shape returned by `query()`: `{ clientId: string, app: unknown }`
+- `FilterFn`: the filter callback type: `(clientId: string, data: unknown, index: number) => boolean`
+- `SocketCommands`: the type for `app.ws` and `req.ws`
 - Error classes for every 4xx and 5xx status (e.g. `NotFoundError`, `UnauthorizedError`, `InternalServerError`)
 - Middleware helpers: `parseJsonBody`, `validateSchemas`, `setValidationFormats`
