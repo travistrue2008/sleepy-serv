@@ -24,8 +24,8 @@ Before starting any phase:
 1. **`$bump`** is required. It must be one of: `major`, `minor`, `patch`. If missing or invalid, stop and tell the user.
 2. Parse `$ARGUMENTS` for an optional `skip=<value>`. If present, the value must be `auto-merge` or `auto-publish`. If present with any other value, stop and tell the user the value is invalid.
 3. Determine the skip behavior:
-   - `skip=auto-merge`: run phases 1-4, skip phases 5-6
-   - `skip=auto-publish`: run phases 1-5, skip phase 6
+   - `skip=auto-merge`: run phases 1-5, skip phases 6-7
+   - `skip=auto-publish`: run phases 1-6, skip phase 7
    - No skip: run all phases
 
 ## Phase 1: Clean and Sync Branches
@@ -40,7 +40,15 @@ Before starting any phase:
 
 3. Check if any files in `.claude/kbase/` were modified. If so, stage, commit, and push those changes.
 
-## Phase 2: Sync CHANGELOG
+## Phase 2: Lint
+
+1. Run the lint script:
+   ```
+   bun .claude/skills/pr/scripts/lint.js
+   ```
+   If it exits non-zero, report the error and stop. The script runs `lint:fix` then `lint`, and commits any fixes automatically.
+
+## Phase 3: Sync CHANGELOG
 
 This phase uses your reasoning, not a script.
 
@@ -61,7 +69,7 @@ This phase uses your reasoning, not a script.
    - **Stop**: halt skill execution
 7. If the user chooses Proceed, edit `CHANGELOG.md` with the drafted entries, then stage, commit, and push.
 
-## Phase 3: Update README Docs
+## Phase 4: Update README Docs
 
 1. Run the find-readmes script:
    ```
@@ -78,7 +86,7 @@ This phase uses your reasoning, not a script.
    - **Stop**: halt skill execution
 5. If the user chooses Proceed, stage, commit, and push.
 
-## Phase 4: Manage PR
+## Phase 5: Manage PR
 
 The PR description is assembled from two sections:
 - **Changelog**: the `## Unreleased` entries from `CHANGELOG.md` (may be empty)
@@ -106,7 +114,7 @@ The PR description is assembled from two sections:
    - **Proceed**: continue to auto-merge
    - **Stop**: halt skill execution
 
-## Phase 5: Auto-Merge
+## Phase 6: Auto-Merge
 
 Skip this phase entirely if `skip=auto-merge` is set.
 
@@ -116,7 +124,7 @@ Skip this phase entirely if `skip=auto-merge` is set.
    ```
    If it exits non-zero, report the error and stop.
 
-## Phase 6: Auto-Publish
+## Phase 7: Auto-Publish
 
 Skip this phase entirely if `skip=auto-merge` or `skip=auto-publish` is set.
 
