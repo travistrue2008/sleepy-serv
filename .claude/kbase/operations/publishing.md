@@ -153,15 +153,20 @@ and `publish` environments.
 one file covering both packages (they version in lockstep, so splitting it would mean
 deciding which package every entry belongs to).
 
-Entries accumulate under `## [Unreleased]` during normal development and are reviewed in
+Entries accumulate under `## Unreleased` during normal development and are reviewed in
 the PR alongside the code. At release, the workflow renames that heading to the version
-with the date and opens a fresh empty `[Unreleased]`. The extracted section becomes the
+with the date and opens a fresh empty `Unreleased`. The extracted section becomes the
 GitHub Release body.
+
+Version headings use inline NPM links rather than reference-style links at the bottom
+of the file: `## [0.13.0](https://www.npmjs.com/package/sleepy-serv/v/0.13.0) - <date>`.
+The `changelog.js` promote command generates this format automatically. The `Unreleased`
+heading carries no link since there is nothing to point at yet.
 
 Two ordering details this depends on:
 
 - Notes must be extracted **before** promotion, since promoting empties the section.
-- An empty `[Unreleased]` fails the run early. Releasing with no notes is nearly always
+- An empty `Unreleased` fails the run early. Releasing with no notes is nearly always
   a mistake, and it also blocks a double-promote.
 
 ## Tooling quirks
