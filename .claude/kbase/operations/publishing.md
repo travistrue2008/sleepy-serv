@@ -182,3 +182,5 @@ Two ordering details this depends on:
 - [Layout](../architecture/layout.md): the workspace structure these packages live in.
 - [Real-time / WebSocket Layer](../architecture/websocket.md): including the client
   bundling constraints that shape what `sleepy-socket` may import.
+- [PR Skill](./pr-skill.md): the `/pr` skill that automates the PR workflow
+  and triggers this publish workflow in its final phase.
