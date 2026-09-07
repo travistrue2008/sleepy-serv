@@ -43,13 +43,27 @@ for a `key=value` pattern and validate it.
 - `skip=` is parsed from `$ARGUMENTS` as a convention, not a system feature.
   Claude's reasoning handles the parsing and validation.
 
+## PR description structure
+
+The PR body is assembled from two sections by `manage-pr.js`:
+
+- **Changelog** (`## Changelog`): extracted from the `## Unreleased` section of
+  `CHANGELOG.md` via `changelog.js extract`. Covers package functionality changes.
+- **Structural** (`## Structural`): drafted by Claude and passed as an argument to
+  the script. Covers non-functionality changes (tooling, CI, documentation, skill
+  development, config).
+
+Either section may be empty. The script includes only sections that have content.
+The skill fails only when both are empty.
+
 ## Confirmation points
 
-The skill pauses for user review via `AskUserQuestion` at three points:
+The skill pauses for user review via `AskUserQuestion` at four points:
 
 1. After drafting CHANGELOG entries (phase 2)
 2. After updating READMEs (phase 3)
-3. Before auto-merge (phase 4, unless `skip=auto-merge`)
+3. After drafting the structural PR summary (phase 4)
+4. Before auto-merge (phase 4, unless `skip=auto-merge`)
 
 Each prompt offers **Proceed** (commit + continue) or **Stop** (halt).
 
