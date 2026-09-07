@@ -80,15 +80,29 @@ This phase uses your reasoning, not a script.
 
 ## Phase 4: Manage PR
 
-1. Run the manage-pr script:
+The PR description is assembled from two sections:
+- **Changelog**: the `## Unreleased` entries from `CHANGELOG.md` (may be empty)
+- **Structural**: non-functionality changes (tooling, CI, documentation, skill development, config)
+
+1. Identify structural changes by running `git diff main...HEAD --stat`. Look for changes that were not documented in the CHANGELOG (because they are not package functionality). If any exist, draft a concise Markdown summary of those changes. If there are no structural changes, skip this step.
+
+2. Present the drafted structural summary to the user via `AskUserQuestion`:
+   - **Proceed**: continue with this description
+   - **Stop**: halt skill execution
+
+3. Run the manage-pr script, passing the structural summary as an argument:
+   ```
+   bun .claude/skills/pr/scripts/manage-pr.js "<structural summary>"
+   ```
+   If there is no structural summary, run without arguments:
    ```
    bun .claude/skills/pr/scripts/manage-pr.js
    ```
-   If it exits non-zero, report the error and stop.
+   The script extracts the `[Unreleased]` changelog content itself and combines both sections into the final PR description. If it exits non-zero, report the error and stop.
 
-2. If `skip=auto-merge` is set, the skill is done. Do not prompt the user.
+4. If `skip=auto-merge` is set, the skill is done. Do not prompt the user.
 
-3. Otherwise, present via `AskUserQuestion`:
+5. Otherwise, present via `AskUserQuestion`:
    - **Proceed**: continue to auto-merge
    - **Stop**: halt skill execution
 

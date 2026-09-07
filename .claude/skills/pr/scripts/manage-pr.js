@@ -24,16 +24,51 @@ async function capture (args) {
   return text.trim()
 }
 
-async function main () {
-  const notes = await capture([
-    'bun', '.github/scripts/changelog.js', 'extract',
-  ])
+async function extractChangelog () {
+  const proc = Bun.spawn(
+    ['bun', '.github/scripts/changelog.js', 'extract'],
+    { stderr: 'pipe' },
+  )
 
-  if (!notes) {
+  const text = await new Response(proc.stdout).text()
+
+  await proc.exited
+
+  return text.trim()
+}
+
+function buildBody (changelog, structural) {
+  const sections = []
+
+  if (changelog) {
+    sections.push('## Changelog\n\n' + changelog)
+  }
+
+  if (structural) {
+    sections.push('## Structural\n\n' + structural)
+  }
+
+  return sections.join('\n\n')
+}
+
+async function main () {
+  const structural = Bun.argv[2] || ''
+  const changelog = await extractChangelog()
+  const body = buildBody(changelog, structural)
+
+  if (!body) {
     fail(
-      'The [Unreleased] section of CHANGELOG.md is empty. '
-      + 'Nothing to use as a PR description.',
+      'No PR description available. The [Unreleased] section '
+      + 'is empty and no structural summary was provided.',
     )
+  }
+
+  if (changelog) {
+    info('Changelog entries found.')
+  }
+
+  if (structural) {
+    info('Structural summary provided.')
   }
 
   const branch = await capture([
@@ -56,7 +91,7 @@ async function main () {
       '--base', 'main',
       '--head', branch,
       '--title', branch,
-      '--body', notes,
+      '--body', body,
     ])
     info('PR created.')
   } else {
@@ -64,7 +99,7 @@ async function main () {
     info(`Updating existing PR #${number}...`)
     await capture([
       'gh', 'pr', 'edit', String(number),
-      '--body', notes,
+      '--body', body,
     ])
     info(`PR #${number} updated.`)
   }
