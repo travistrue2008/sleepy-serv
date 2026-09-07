@@ -1,5 +1,5 @@
 /*
- *  Reads and rewrites the root CHANGELOG.md around its `## [Unreleased]`
+ *  Reads and rewrites the root CHANGELOG.md around its `## Unreleased`
  *  section.
  *
  *  Usage:
@@ -11,13 +11,14 @@
  *      Prints the Unreleased body. Used for the GitHub Release notes.
  *
  *    bun .github/scripts/changelog.js promote <version> <date>
- *      Renames `## [Unreleased]` to `## [<version>] - <date>`, inserts a fresh
- *      empty Unreleased above it, and refreshes the comparison links.
+ *      Renames `## Unreleased` to a `## [<version>](<npm>) - <date>` heading
+ *      linking to that release on npm, and inserts a fresh empty Unreleased
+ *      above it.
  */
 
-const REPO = 'https://github.com/travistrue2008/sleepy-serv'
+const NPM = 'https://www.npmjs.com/package/vite-react-file-router/v'
 const PATH = 'CHANGELOG.md'
-const UNRELEASED = '## [Unreleased]'
+const UNRELEASED = '## Unreleased'
 
 function readSections (text) {
   const start = text.indexOf(UNRELEASED)
@@ -35,10 +36,6 @@ function readSections (text) {
     body: text.slice(afterHeading, end).trim(),
     tail: text.slice(end),
   }
-}
-
-function previousVersion (tail) {
-  return tail.match(/^\n## \[([^\]]+)\]/)?.[1] ?? null
 }
 
 function check (text) {
@@ -72,27 +69,15 @@ async function promote (text, version, date) {
     process.exit(1)
   }
 
-  const previous = previousVersion(tail)
-
-  // Drop the old Unreleased link definition; a fresh one is appended below.
-  const trimmedTail = tail.replace(
-    /^\[Unreleased\]:.*$\n?/m,
-    '',
-  ).trimEnd()
-
-  const compare = previous
-    ? `${REPO}/compare/${previous}...${version}`
-    : `${REPO}/releases/tag/${version}`
-
+  // The heading carries its own link, so there is no definition block to keep
+  // in sync — and `Unreleased` stays unlinked, having nothing to point at yet.
   const next = [
     head + UNRELEASED,
     '',
-    `## [${version}] - ${date}`,
+    `## [${version}](${NPM}/${version}) - ${date}`,
     '',
     body,
-    trimmedTail,
-    `[Unreleased]: ${REPO}/compare/${version}...HEAD`,
-    `[${version}]: ${compare}`,
+    tail.trimEnd(),
     '',
   ].join('\n')
 
