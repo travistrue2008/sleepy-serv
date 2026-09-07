@@ -83,6 +83,7 @@ async function main () {
 
     if (conflictCheck) {
       await run(['git', 'merge', '--abort'])
+
       fail(
         'Merge conflicts detected. Resolve them manually '
         + 'before running the pr skill.\n\n'

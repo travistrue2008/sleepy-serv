@@ -86,6 +86,7 @@ async function main () {
 
   if (prs.length === 0) {
     info('No existing PR found. Creating one...')
+
     await capture([
       'gh', 'pr', 'create',
       '--base', 'main',
@@ -93,14 +94,18 @@ async function main () {
       '--title', branch,
       '--body', body,
     ])
+
     info('PR created.')
   } else {
     const number = prs[0].number
+
     info(`Updating existing PR #${number}...`)
+
     await capture([
       'gh', 'pr', 'edit', String(number),
       '--body', body,
     ])
+
     info(`PR #${number} updated.`)
   }
 }

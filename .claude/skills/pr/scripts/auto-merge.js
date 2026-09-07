@@ -76,6 +76,7 @@ async function waitForPrChecks (prNumber) {
 
     if (failed.length > 0) {
       const names = failed.map(c => c.name).join(', ')
+
       fail(`PR checks failed: ${names}`)
     }
 
@@ -89,6 +90,7 @@ async function waitForPrChecks (prNumber) {
     }
 
     const names = pending.map(c => c.name).join(', ')
+
     warn(`Waiting on: ${names}`)
     await sleep(POLL_INTERVAL_MS)
   }
@@ -141,9 +143,11 @@ async function main () {
   await waitForPrChecks(prNumber)
 
   info(`Merging PR #${prNumber} (squash)...`)
+
   await capture([
     'gh', 'pr', 'merge', String(prNumber), '--squash',
   ])
+
   info(`PR #${prNumber} merged.`)
 
   await waitForMainBuild()

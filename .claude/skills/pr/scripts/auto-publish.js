@@ -46,6 +46,7 @@ async function main () {
   }
 
   info(`Triggering publish workflow with bump=${bump}...`)
+
   await capture([
     'gh', 'workflow', 'run', 'publish.yml',
     '-f', `bump=${bump}`,
