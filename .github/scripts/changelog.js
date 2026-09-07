@@ -16,7 +16,7 @@
  *      above it.
  */
 
-const NPM = 'https://www.npmjs.com/package/vite-react-file-router/v'
+const NPM = 'https://www.npmjs.com/package/sleepy-serv/v'
 const PATH = 'CHANGELOG.md'
 const UNRELEASED = '## Unreleased'
 
