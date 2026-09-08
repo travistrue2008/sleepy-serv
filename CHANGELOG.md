@@ -8,6 +8,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- **Test `console.info` in `sleepy-serv`.** Added a test log statement
+  to validate the `/pr` skill's publish workflow.
+
 ## [0.16.0](https://www.npmjs.com/package/sleepy-serv/v/0.16.0) - 2026-09-08
 
 ### Removed
