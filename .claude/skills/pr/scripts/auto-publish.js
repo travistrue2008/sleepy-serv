@@ -72,6 +72,7 @@ async function syncMain (branch) {
 
     if (conflicts) {
       await run(['git', 'merge', '--abort'])
+
       fail(`
 Merge conflicts after publish. Resolve manually.
 
