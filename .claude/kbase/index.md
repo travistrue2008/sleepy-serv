@@ -16,6 +16,7 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 ## Operations
 
 - [Publishing and Releases](./operations/publishing.md): `workflow_dispatch` release model, OIDC trusted publishing, the irreversible-step-last ordering rule, registry pre-flight, and the ruleset vs branch-protection trap.
+- [PR Skill](./operations/pr-skill.md): the `/pr` skill pipeline (sync, CHANGELOG, READMEs, PR, merge, publish), script/AI separation, argument design, confirmation points.
 
 ## Guides
 

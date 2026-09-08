@@ -6,9 +6,9 @@ are versioned in lockstep and released together.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## Unreleased
 
-## [0.13.0] - 2026-09-03
+## [0.13.0](https://www.npmjs.com/package/sleepy-serv/v/0.13.0) - 2026-09-03
 
 ### Added
 
@@ -26,7 +26,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   filter-based, like `send()`. To drop one client:
   `ws.drop(id => id === targetId)`.
 
-## [0.12.0] - 2026-09-03
+## [0.12.0](https://www.npmjs.com/package/sleepy-serv/v/0.12.0) - 2026-09-03
 
 ### Added
 
@@ -56,7 +56,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`ActiveSessions` type no longer exported.** It was only used by
   `req.ws.active`, which has been removed.
 
-## [0.11.0] - 2026-09-03
+## [0.11.0](https://www.npmjs.com/package/sleepy-serv/v/0.11.0) - 2026-09-03
 
 ### Fixed
 
@@ -66,7 +66,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `HttpMethod.Get` at runtime would get a reference error. The value is
   now re-exported alongside `StatusCode`, `CloseCode`, and `CloseReason`.
 
-## [0.10.0] - 2026-09-02
+## [0.10.0](https://www.npmjs.com/package/sleepy-serv/v/0.10.0) - 2026-09-02
 
 ### Added
 
@@ -143,7 +143,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   where `server.stop()` never resolved after a server-initiated
   `ws.close()` (Bun #36223).
 
-## [0.9.0] - 2026-08-13
+## [0.9.0](https://www.npmjs.com/package/sleepy-serv/v/0.9.0) - 2026-08-13
 
 ### Added
 
@@ -169,7 +169,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `InternalServerError`'s output, matching how `RequestError` subclasses were already
   handled.
 
-## [0.8.0] - 2026-08-12
+## [0.8.0](https://www.npmjs.com/package/sleepy-serv/v/0.8.0) - 2026-08-12
 
 ### Added
 
@@ -210,7 +210,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   suite that opened and closed an app per test emitted a `MaxListenersExceededWarning` on
   the eleventh.
 
-## [0.7.0] - 2026-08-10
+## [0.7.0](https://www.npmjs.com/package/sleepy-serv/v/0.7.0) - 2026-08-10
 
 ### Added
 
@@ -297,18 +297,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   back off the client was renamed, so `connect(host, port, { secure: true })` still reads
   exactly as before; `client.secure` becomes `client.isSecure`.
 
-## [0.6.2] - 2026-07-20
+## [0.6.2](https://www.npmjs.com/package/sleepy-serv/v/0.6.2) - 2026-07-20
 
 ### Added
 
 - MIT license. Both packages now declare `"license": "MIT"` and ship a `LICENSE`
   file in their published tarballs.
 
-## [0.6.1] - 2026-07-20
+## [0.6.1](https://www.npmjs.com/package/sleepy-serv/v/0.6.1) - 2026-07-20
 
 - Fixed publish GHA bug
 
-## [0.6.0] - 2026-07-20
+## [0.6.0](https://www.npmjs.com/package/sleepy-serv/v/0.6.0) - 2026-07-20
 
 ### Added
 
@@ -349,43 +349,27 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   covers both transports.
 - The illegal file whitelist, which was already inert on `main`.
 
-## [0.5.0] - 2026-05-13
+## [0.5.0](https://www.npmjs.com/package/sleepy-serv/v/0.5.0) - 2026-05-13
 
 ### Changed
 
 - Loosened validation rules to allow endpoint and meta modules to be TypeScript files rather
   than JavaScript only.
 
-## [0.4.0] - 2026-04-13
+## [0.4.0](https://www.npmjs.com/package/sleepy-serv/v/0.4.0) - 2026-04-13
 
 ### Added
 
 - `next()` in middleware functions, for managing scoped resources.
 
-## [0.3.1] - 2025-07-30
+## [0.3.1](https://www.npmjs.com/package/sleepy-serv/v/0.3.1) - 2025-07-30
 
 ### Removed
 
 - Illegal file checks, allowing tests to be co-located in their respective directories.
 
-## [0.3.0] - 2025-03-11
+## [0.3.0](https://www.npmjs.com/package/sleepy-serv/v/0.3.0) - 2025-03-11
 
 ### Added
 
 - `res` in the middleware chain.
-
-[0.5.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.4.0...0.5.0
-[0.4.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.3.1...0.4.0
-[0.3.1]: https://github.com/travistrue2008/sleepy-serv/compare/0.3.0...0.3.1
-[0.3.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.2.1...0.3.0
-[0.6.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.5.0...0.6.0
-[0.6.1]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.0...0.6.1
-[0.6.2]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.1...0.6.2
-[0.7.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.6.2...0.7.0
-[0.8.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.7.0...0.8.0
-[0.9.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.8.0...0.9.0
-[0.10.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.9.0...0.10.0
-[0.11.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.10.0...0.11.0
-[0.12.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.11.0...0.12.0
-[Unreleased]: https://github.com/travistrue2008/sleepy-serv/compare/0.13.0...HEAD
-[0.13.0]: https://github.com/travistrue2008/sleepy-serv/compare/0.12.0...0.13.0
