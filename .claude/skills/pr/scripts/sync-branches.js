@@ -57,11 +57,13 @@ async function main () {
     const status = await capture(['git', 'status', '--porcelain'])
 
     if (status) {
+      /* eslint-disable max-len */
       fail(`
 Working tree is not clean. Commit or discard all changes before running the /pr skill.
 
 ${status}
       `.trim())
+      /* eslint-enable max-len */
     }
   }
 
