@@ -1,14 +1,8 @@
 import { existsSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { createLogger } from './utils.js'
 
-const RED = '\x1b[31m'
-const BOLD = '\x1b[1m'
-const RESET = '\x1b[0m'
-
-function fail (msg) {
-  console.error(`${RED}${BOLD}[find-readmes] Error:${RESET} ${msg}`)
-  process.exit(1)
-}
+const log = createLogger('find-readmes')
 
 function main () {
   const missing = []
@@ -39,7 +33,7 @@ function main () {
   }
 
   if (missing.length > 0) {
-    fail(
+    log.fail(
       'Missing expected READMEs:\n'
       + missing.map(p => `  - ${p}`).join('\n'),
     )
