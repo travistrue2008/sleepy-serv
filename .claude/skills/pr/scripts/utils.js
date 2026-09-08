@@ -60,7 +60,10 @@ export function createRunner (logger) {
     return text.trim()
   }
 
-  return { run, capture }
+  return {
+    run,
+    capture,
+  }
 }
 
 export async function getBranch (runner) {
@@ -94,14 +97,14 @@ export async function syncMain (branch, logger, runner) {
     if (conflicts) {
       await runner.run(['git', 'merge', '--abort'])
 
-      /* eslint-disable max-len */
+
       logger.fail(`
 Merge conflicts detected. Resolve them manually before continuing.
 
 Conflicting files:
 ${conflicts}
       `.trim())
-      /* eslint-enable max-len */
+
     }
 
     logger.fail(
