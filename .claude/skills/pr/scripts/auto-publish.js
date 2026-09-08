@@ -35,6 +35,57 @@ function sleep (ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+async function run (args) {
+  const proc = Bun.spawn(args, {
+    stdout: 'inherit',
+    stderr: 'inherit',
+  })
+
+  const code = await proc.exited
+
+  if (code !== 0) {
+    fail(`"${args.join(' ')}" exited with code ${code}`)
+  }
+}
+
+async function syncMain (branch) {
+  info('Syncing local branch with main after publish...')
+
+  await run(['git', 'checkout', 'main'])
+  await run(['git', 'pull', 'origin', 'main'])
+  await run(['git', 'checkout', branch])
+
+  const merge = Bun.spawn(
+    ['git', 'merge', 'main'],
+    {
+      stdout: 'inherit',
+      stderr: 'inherit',
+    },
+  )
+
+  const mergeCode = await merge.exited
+
+  if (mergeCode !== 0) {
+    const conflicts = await capture([
+      'git', 'diff', '--name-only', '--diff-filter=U',
+    ])
+
+    if (conflicts) {
+      await run(['git', 'merge', '--abort'])
+      fail(`
+Merge conflicts after publish. Resolve manually.
+
+Conflicting files:
+${conflicts}
+      `.trim())
+    }
+
+    fail(`Merge failed with exit code ${mergeCode}`)
+  }
+
+  info('Local branch synced with main.')
+}
+
 async function main () {
   const bump = Bun.argv[2]
 
@@ -45,6 +96,10 @@ async function main () {
     )
   }
 
+  const branch = await capture([
+    'git', 'rev-parse', '--abbrev-ref', 'HEAD',
+  ])
+
   info(`Triggering publish workflow with bump=${bump}...`)
 
   await capture([
@@ -53,6 +108,7 @@ async function main () {
   ])
 
   info('Waiting for publish workflow to start...')
+
   await sleep(POLL_INTERVAL_MS)
 
   while (true) {
@@ -71,24 +127,29 @@ async function main () {
       continue
     }
 
-    const run = runs[0]
+    const latest = runs[0]
 
-    if (run.status !== 'completed') {
-      warn(`Publish workflow is ${run.status}...`)
+    if (latest.status !== 'completed') {
+      warn(`Publish workflow is ${latest.status}...`)
+
       await sleep(POLL_INTERVAL_MS)
+
       continue
     }
 
-    if (run.conclusion !== 'success') {
-      fail(
-        `Publish workflow finished with `
-        + `conclusion: ${run.conclusion}`,
-      )
+    if (latest.conclusion !== 'success') {
+      fail(`
+Publish workflow finished with
+conclusion: ${latest.conclusion}
+      `.trim())
     }
 
     info('Publish workflow completed successfully.')
-    return
+
+    break
   }
+
+  await syncMain(branch)
 }
 
 main()

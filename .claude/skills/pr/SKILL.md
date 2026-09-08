@@ -2,7 +2,7 @@
 name: pr
 description: Automates the full PR workflow -- sync branches, update CHANGELOG/READMEs, create/update PR, optionally merge and publish.
 arguments: [bump]
-argument-hint: "<major|minor|patch> [skip=<auto-merge|auto-publish>]"
+argument-hint: "<major|minor|patch> [commit] [skip=<auto-merge|auto-publish>]"
 allowed-tools:
   - Bash
   - Skill
@@ -22,15 +22,20 @@ You are a release engineer executing a structured, multi-phase PR workflow. You 
 Before starting any phase:
 
 1. **`$bump`** is required. It must be one of: `major`, `minor`, `patch`. If missing or invalid, stop and tell the user.
-2. Parse `$ARGUMENTS` for an optional `skip=<value>`. If present, the value must be `auto-merge` or `auto-publish`. If present with any other value, stop and tell the user the value is invalid.
-3. Determine the skip behavior:
+2. Parse `$ARGUMENTS` for an optional `commit` keyword. If present, the sync script will stage, commit, and push any uncommitted changes before syncing.
+3. Parse `$ARGUMENTS` for an optional `skip=<value>`. If present, the value must be `auto-merge` or `auto-publish`. If present with any other value, stop and tell the user the value is invalid.
+4. Determine the skip behavior:
    - `skip=auto-merge`: run phases 1-5, skip phases 6-7
    - `skip=auto-publish`: run phases 1-6, skip phase 7
    - No skip: run all phases
 
 ## Phase 1: Clean and Sync Branches
 
-1. Run the sync script:
+1. Run the sync script, and pass the `--commit` flag if the `commit` keyword is present in `$ARGUMENTS`:
+   ```
+   bun .claude/skills/pr/scripts/sync-branches.js --commit
+   ```
+   Otherwise, run without the flag:
    ```
    bun .claude/skills/pr/scripts/sync-branches.js
    ```
