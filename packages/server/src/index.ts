@@ -572,3 +572,5 @@ export async function createApp (
     close,
   }
 }
+
+console.info('This is a test. Make sure to publish this.')
