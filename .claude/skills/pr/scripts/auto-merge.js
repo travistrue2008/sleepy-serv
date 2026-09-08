@@ -59,37 +59,45 @@ async function waitForPrChecks (prNumber) {
   info(`Waiting for PR #${prNumber} checks to complete...`)
 
   while (true) {
-    const json = await capture([
-      'gh', 'pr', 'checks', String(prNumber),
-      '--json', 'name,state,conclusion',
+    const requiredJson = await capture([
+      'gh', 'pr', 'checks', `${prNumber}`,
+      '--json', 'name,bucket',
+      '--required',
     ])
 
-    const checks = JSON.parse(json)
+    const required = JSON.parse(requiredJson)
+    const requiredFailed = required.filter(check => check.bucket === 'fail')
 
-    if (checks.length === 0) {
+    if (requiredFailed.length > 0) {
+      const names = requiredFailed.map(check => check.name).join(', ')
+
+      fail(`Required checks failed: ${names}`)
+    }
+
+    const allJson = await capture([
+      'gh', 'pr', 'checks', `${prNumber}`,
+      '--json', 'name,bucket',
+    ])
+
+    const all = JSON.parse(allJson)
+
+    if (all.length === 0) {
       warn('No checks found yet. Retrying...')
+
       await sleep(POLL_INTERVAL_MS)
+
       continue
     }
 
-    const failed = checks.filter(c => c.conclusion === 'FAILURE')
-
-    if (failed.length > 0) {
-      const names = failed.map(c => c.name).join(', ')
-
-      fail(`PR checks failed: ${names}`)
-    }
-
-    const pending = checks.filter(
-      c => c.state !== 'COMPLETED',
-    )
+    const pending = all.filter(check => check.bucket === 'pending')
 
     if (pending.length === 0) {
-      info('All PR checks passed.')
+      info('All checks finished. Required checks passed.')
+
       return
     }
 
-    const names = pending.map(c => c.name).join(', ')
+    const names = pending.map(check => check.name).join(', ')
 
     warn(`Waiting on: ${names}`)
     await sleep(POLL_INTERVAL_MS)
