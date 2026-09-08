@@ -1,114 +1,38 @@
-const POLL_INTERVAL_MS = 10_000
+import {
+  POLL_INTERVAL_MS,
+  createLogger,
+  createRunner,
+  getBranch,
+  syncMain,
+  sleep,
+} from './utils.js'
+
 const VALID_BUMPS = ['major', 'minor', 'patch']
-const BOLD = '\x1b[1m'
-const RED = '\x1b[31m'
-const GREEN = '\x1b[32m'
-const YELLOW = '\x1b[33m'
-const RESET = '\x1b[0m'
 
-function info (msg) {
-  console.log(`${GREEN}[auto-publish]${RESET} ${msg}`)
-}
-
-function warn (msg) {
-  console.log(`${YELLOW}[auto-publish]${RESET} ${msg}`)
-}
-
-function fail (msg) {
-  console.error(`${RED}${BOLD}[auto-publish] Error:${RESET} ${msg}`)
-  process.exit(1)
-}
-
-async function capture (args) {
-  const proc = Bun.spawn(args, { stderr: 'inherit' })
-  const text = await new Response(proc.stdout).text()
-  const code = await proc.exited
-
-  if (code !== 0) {
-    fail(`"${args.join(' ')}" exited with code ${code}`)
-  }
-
-  return text.trim()
-}
-
-function sleep (ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-async function run (args) {
-  const proc = Bun.spawn(args, {
-    stdout: 'inherit',
-    stderr: 'inherit',
-  })
-
-  const code = await proc.exited
-
-  if (code !== 0) {
-    fail(`"${args.join(' ')}" exited with code ${code}`)
-  }
-}
-
-async function syncMain (branch) {
-  info('Syncing local branch with main after publish...')
-
-  await run(['git', 'checkout', 'main'])
-  await run(['git', 'pull', 'origin', 'main'])
-  await run(['git', 'checkout', branch])
-
-  const merge = Bun.spawn(
-    ['git', 'merge', 'main'],
-    {
-      stdout: 'inherit',
-      stderr: 'inherit',
-    },
-  )
-
-  const mergeCode = await merge.exited
-
-  if (mergeCode !== 0) {
-    const conflicts = await capture([
-      'git', 'diff', '--name-only', '--diff-filter=U',
-    ])
-
-    if (conflicts) {
-      await run(['git', 'merge', '--abort'])
-
-      fail(`
-Merge conflicts after publish. Resolve manually.
-
-Conflicting files:
-${conflicts}
-      `.trim())
-    }
-
-    fail(`Merge failed with exit code ${mergeCode}`)
-  }
-
-  info('Local branch synced with main.')
-}
+const log = createLogger('auto-publish')
+const runner = createRunner(log)
+const { capture } = runner
 
 async function main () {
   const bump = Bun.argv[2]
 
   if (!bump || !VALID_BUMPS.includes(bump)) {
-    fail(
+    log.fail(
       `Invalid bump type: "${bump}". `
       + `Must be one of: ${VALID_BUMPS.join(', ')}`,
     )
   }
 
-  const branch = await capture([
-    'git', 'rev-parse', '--abbrev-ref', 'HEAD',
-  ])
+  const branch = await getBranch(runner)
 
-  info(`Triggering publish workflow with bump=${bump}...`)
+  log.info(`Triggering publish workflow with bump=${bump}...`)
 
   await capture([
     'gh', 'workflow', 'run', 'publish.yml',
     '-f', `bump=${bump}`,
   ])
 
-  info('Waiting for publish workflow to start...')
+  log.info('Waiting for publish workflow to start...')
 
   await sleep(POLL_INTERVAL_MS)
 
@@ -123,7 +47,8 @@ async function main () {
     const runs = JSON.parse(json)
 
     if (runs.length === 0) {
-      warn('No publish workflow runs found yet. Retrying...')
+      log.warn('No publish workflow runs found yet. Retrying...')
+
       await sleep(POLL_INTERVAL_MS)
       continue
     }
@@ -131,26 +56,25 @@ async function main () {
     const latest = runs[0]
 
     if (latest.status !== 'completed') {
-      warn(`Publish workflow is ${latest.status}...`)
+      log.warn(`Publish workflow is ${latest.status}...`)
 
       await sleep(POLL_INTERVAL_MS)
-
       continue
     }
 
     if (latest.conclusion !== 'success') {
-      fail(`
-Publish workflow finished with
-conclusion: ${latest.conclusion}
-      `.trim())
+      log.fail(
+        'Publish workflow finished with '
+        + `conclusion: ${latest.conclusion}`,
+      )
     }
 
-    info('Publish workflow completed successfully.')
+    log.info('Publish workflow completed successfully.')
 
     break
   }
 
-  await syncMain(branch)
+  await syncMain(branch, log, runner)
 }
 
 main()

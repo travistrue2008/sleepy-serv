@@ -1,28 +1,11 @@
-const BOLD = '\x1b[1m'
-const RED = '\x1b[31m'
-const GREEN = '\x1b[32m'
-const RESET = '\x1b[0m'
+import {
+  createLogger,
+  createRunner,
+  getBranch,
+} from './utils.js'
 
-function info (msg) {
-  console.log(`${GREEN}[manage-pr]${RESET} ${msg}`)
-}
-
-function fail (msg) {
-  console.error(`${RED}${BOLD}[manage-pr] Error:${RESET} ${msg}`)
-  process.exit(1)
-}
-
-async function capture (args) {
-  const proc = Bun.spawn(args, { stderr: 'inherit' })
-  const text = await new Response(proc.stdout).text()
-  const code = await proc.exited
-
-  if (code !== 0) {
-    fail(`"${args.join(' ')}" exited with code ${code}`)
-  }
-
-  return text.trim()
-}
+const log = createLogger('manage-pr')
+const runner = createRunner(log)
 
 async function extractChangelog () {
   const proc = Bun.spawn(
@@ -57,25 +40,24 @@ async function main () {
   const body = buildBody(changelog, structural)
 
   if (!body) {
-    fail(
-      'No PR description available. The [Unreleased] section '
-      + 'is empty and no structural summary was provided.',
+    log.fail(
+      'No PR description available. The [Unreleased] '
+      + 'section is empty and no structural summary '
+      + 'was provided.',
     )
   }
 
   if (changelog) {
-    info('Changelog entries found.')
+    log.info('Changelog entries found.')
   }
 
   if (structural) {
-    info('Structural summary provided.')
+    log.info('Structural summary provided.')
   }
 
-  const branch = await capture([
-    'git', 'rev-parse', '--abbrev-ref', 'HEAD',
-  ])
+  const branch = await getBranch(runner)
 
-  const prJson = await capture([
+  const prJson = await runner.capture([
     'gh', 'pr', 'list',
     '--head', branch,
     '--json', 'number',
@@ -85,9 +67,9 @@ async function main () {
   const prs = JSON.parse(prJson)
 
   if (prs.length === 0) {
-    info('No existing PR found. Creating one...')
+    log.info('No existing PR found. Creating one...')
 
-    await capture([
+    await runner.capture([
       'gh', 'pr', 'create',
       '--base', 'main',
       '--head', branch,
@@ -95,18 +77,18 @@ async function main () {
       '--body', body,
     ])
 
-    info('PR created.')
+    log.info('PR created.')
   } else {
     const number = prs[0].number
 
-    info(`Updating existing PR #${number}...`)
+    log.info(`Updating existing PR #${number}...`)
 
-    await capture([
+    await runner.capture([
       'gh', 'pr', 'edit', String(number),
       '--body', body,
     ])
 
-    info(`PR #${number} updated.`)
+    log.info(`PR #${number} updated.`)
   }
 }
 

@@ -1,43 +1,18 @@
-const POLL_INTERVAL_MS = 10_000
-const BOLD = '\x1b[1m'
-const RED = '\x1b[31m'
-const GREEN = '\x1b[32m'
-const YELLOW = '\x1b[33m'
-const RESET = '\x1b[0m'
+import {
+  POLL_INTERVAL_MS,
+  createLogger,
+  createRunner,
+  getBranch,
+  syncMain,
+  sleep,
+} from './utils.js'
 
-function info (msg) {
-  console.log(`${GREEN}[auto-merge]${RESET} ${msg}`)
-}
-
-function warn (msg) {
-  console.log(`${YELLOW}[auto-merge]${RESET} ${msg}`)
-}
-
-function fail (msg) {
-  console.error(`${RED}${BOLD}[auto-merge] Error:${RESET} ${msg}`)
-  process.exit(1)
-}
-
-async function capture (args) {
-  const proc = Bun.spawn(args, { stderr: 'inherit' })
-  const text = await new Response(proc.stdout).text()
-  const code = await proc.exited
-
-  if (code !== 0) {
-    fail(`"${args.join(' ')}" exited with code ${code}`)
-  }
-
-  return text.trim()
-}
-
-function sleep (ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
+const log = createLogger('auto-merge')
+const runner = createRunner(log)
+const { capture } = runner
 
 async function getPrNumber () {
-  const branch = await capture([
-    'git', 'rev-parse', '--abbrev-ref', 'HEAD',
-  ])
+  const branch = await getBranch(runner)
 
   const prJson = await capture([
     'gh', 'pr', 'list',
@@ -49,14 +24,14 @@ async function getPrNumber () {
   const prs = JSON.parse(prJson)
 
   if (prs.length === 0) {
-    fail(`No PR found for branch "${branch}".`)
+    log.fail(`No PR found for branch "${branch}".`)
   }
 
   return prs[0].number
 }
 
 async function waitForPrChecks (prNumber) {
-  info(`Waiting for PR #${prNumber} checks to complete...`)
+  log.info(`Waiting for PR #${prNumber} checks to complete...`)
 
   while (true) {
     const requiredJson = await capture([
@@ -69,9 +44,11 @@ async function waitForPrChecks (prNumber) {
     const requiredFailed = required.filter(check => check.bucket === 'fail')
 
     if (requiredFailed.length > 0) {
-      const names = requiredFailed.map(check => check.name).join(', ')
+      const names = requiredFailed
+        .map(check => check.name)
+        .join(', ')
 
-      fail(`Required checks failed: ${names}`)
+      log.fail(`Required checks failed: ${names}`)
     }
 
     const allJson = await capture([
@@ -82,7 +59,7 @@ async function waitForPrChecks (prNumber) {
     const all = JSON.parse(allJson)
 
     if (all.length === 0) {
-      warn('No checks found yet. Retrying...')
+      log.warn('No checks found yet. Retrying...')
 
       await sleep(POLL_INTERVAL_MS)
 
@@ -92,20 +69,23 @@ async function waitForPrChecks (prNumber) {
     const pending = all.filter(check => check.bucket === 'pending')
 
     if (pending.length === 0) {
-      info('All checks finished. Required checks passed.')
+      log.info('All checks finished. Required checks passed.')
 
       return
     }
 
-    const names = pending.map(check => check.name).join(', ')
+    const names = pending
+      .map(check => check.name)
+      .join(', ')
 
-    warn(`Waiting on: ${names}`)
+    log.warn(`Waiting on: ${names}`)
+
     await sleep(POLL_INTERVAL_MS)
   }
 }
 
 async function waitForMainBuild () {
-  info('Waiting for main branch build to complete...')
+  log.info('Waiting for main branch build to complete...')
 
   await sleep(POLL_INTERVAL_MS)
 
@@ -120,47 +100,54 @@ async function waitForMainBuild () {
     const runs = JSON.parse(json)
 
     if (runs.length === 0) {
-      warn('No workflow runs found on main yet. Retrying...')
+      log.warn('No workflow runs found on main yet. Retrying...')
+
       await sleep(POLL_INTERVAL_MS)
+
       continue
     }
 
     const run = runs[0]
 
     if (run.status !== 'completed') {
-      warn(`Build "${run.name}" is ${run.status}...`)
+      log.warn(`Build "${run.name}" is ${run.status}...`)
+
       await sleep(POLL_INTERVAL_MS)
+
       continue
     }
 
     if (run.conclusion !== 'success') {
-      fail(
+      log.fail(
         `Main branch build "${run.name}" `
         + `finished with conclusion: ${run.conclusion}`,
       )
     }
 
-    info('Main branch build passed.')
+    log.info('Main branch build passed.')
+
     return
   }
 }
 
 async function main () {
+  const branch = await getBranch(runner)
   const prNumber = await getPrNumber()
 
   await waitForPrChecks(prNumber)
 
-  info(`Merging PR #${prNumber} (squash)...`)
+  log.info(`Merging PR #${prNumber} (squash)...`)
 
   await capture([
     'gh', 'pr', 'merge', String(prNumber), '--squash',
   ])
 
-  info(`PR #${prNumber} merged.`)
+  log.info(`PR #${prNumber} merged.`)
 
   await waitForMainBuild()
+  await syncMain(branch, log, runner)
 
-  info('Auto-merge complete.')
+  log.info('Auto-merge complete.')
 }
 
 main()
