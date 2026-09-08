@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.17.0](https://www.npmjs.com/package/sleepy-serv/v/0.17.0) - 2026-09-08
+
 ### Added
 
 - **Test `console.info` in `sleepy-serv`.** Added a test log statement
