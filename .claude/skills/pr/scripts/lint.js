@@ -41,31 +41,30 @@ async function main () {
   info('Running lint:fix...')
   await run(['bun', 'run', 'lint:fix'])
 
+  const status = await capture([
+    'git', 'status', '--porcelain',
+  ])
+
+  if (status) {
+    info('Committing lint fixes...')
+
+    const branch = await capture([
+      'git', 'rev-parse', '--abbrev-ref', 'HEAD',
+    ])
+
+    await run(['git', 'add', '-A'])
+    await run(['git', 'commit', '-m', 'Linting'])
+    await run(['git', 'push', 'origin', branch])
+
+    info('Lint fixes committed and pushed.')
+  } else {
+    info('No lint changes to commit.')
+  }
+
   info('Running lint...')
   await run(['bun', 'run', 'lint'])
 
-  const status = await capture(['git', 'status', '--porcelain'])
-
-  if (!status) {
-    info('No lint changes to commit.')
-    return
-  }
-
-  info('Committing lint fixes...')
-
-  const branch = await capture([
-    'git', 'rev-parse', '--abbrev-ref', 'HEAD',
-  ])
-
-  await run(['git', 'add', '-A'])
-
-  await run([
-    'git', 'commit', '-m', 'Apply lint fixes',
-  ])
-
-  await run(['git', 'push', 'origin', branch])
-
-  info('Lint fixes committed and pushed.')
+  info('Lint passed.')
 }
 
 main()

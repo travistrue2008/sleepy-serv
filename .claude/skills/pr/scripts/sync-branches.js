@@ -38,20 +38,34 @@ async function capture (args) {
 }
 
 async function main () {
-  const status = await capture(['git', 'status', '--porcelain'])
+  const shouldCommit = Bun.argv.includes('--commit')
+  const branch = await capture(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
 
-  if (status) {
-    fail(
-      'Working tree is not clean. '
-      + 'Commit or discard all changes before running '
-      + 'the pr skill.\n\n'
-      + status,
-    )
+  if (shouldCommit) {
+    const status = await capture(['git', 'status', '--porcelain'])
+
+    if (status) {
+      info('Staging, committing, and pushing changes...')
+
+      await run(['git', 'add', '-A'])
+      await run(['git', 'commit', '-m', 'Implemented'])
+      await run(['git', 'push', 'origin', branch])
+    } else {
+      info('Nothing to commit.')
+    }
+  } else {
+    const status = await capture(['git', 'status', '--porcelain'])
+
+    if (status) {
+      /* eslint-disable max-len */
+      fail(`
+Working tree is not clean. Commit or discard all changes before running the /pr skill.
+
+${status}
+      `.trim())
+      /* eslint-enable max-len */
+    }
   }
-
-  const branch = await capture([
-    'git', 'rev-parse', '--abbrev-ref', 'HEAD',
-  ])
 
   if (branch === 'main') {
     fail('Cannot run the pr skill from the main branch.')

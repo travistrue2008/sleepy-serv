@@ -1,8 +1,8 @@
 ---
 name: pr
 description: Automates the full PR workflow -- sync branches, update CHANGELOG/READMEs, create/update PR, optionally merge and publish.
-arguments: [bump]
-argument-hint: "<major|minor|patch> [skip=<auto-merge|auto-publish>]"
+arguments: []
+argument-hint: "[auto-commit] [version-bump=<patch|minor|major>]"
 allowed-tools:
   - Bash
   - Skill
@@ -21,16 +21,19 @@ You are a release engineer executing a structured, multi-phase PR workflow. You 
 
 Before starting any phase:
 
-1. **`$bump`** is required. It must be one of: `major`, `minor`, `patch`. If missing or invalid, stop and tell the user.
-2. Parse `$ARGUMENTS` for an optional `skip=<value>`. If present, the value must be `auto-merge` or `auto-publish`. If present with any other value, stop and tell the user the value is invalid.
-3. Determine the skip behavior:
-   - `skip=auto-merge`: run phases 1-5, skip phases 6-7
-   - `skip=auto-publish`: run phases 1-6, skip phase 7
-   - No skip: run all phases
+1. Parse `$ARGUMENTS` for an optional `version-bump=<value>`. If present, the value must be `patch`, `minor`, or `major`. If present with any other value, stop and tell the user the value is invalid.
+2. Parse `$ARGUMENTS` for an optional `auto-commit` keyword. If present, the sync script will stage, commit, and push any uncommitted changes before syncing.
+3. Determine the phase behavior:
+   - `version-bump=` set: run all phases (1-7)
+   - No `version-bump=`: run phases 1-5, skip phases 6-7 (Auto-Merge and Auto-Publish)
 
 ## Phase 1: Clean and Sync Branches
 
-1. Run the sync script:
+1. Run the sync script. If `auto-commit` is present in `$ARGUMENTS`, pass `--commit`:
+   ```
+   bun .claude/skills/pr/scripts/sync-branches.js --commit
+   ```
+   Otherwise, run without the flag:
    ```
    bun .claude/skills/pr/scripts/sync-branches.js
    ```
@@ -108,15 +111,15 @@ The PR description is assembled from two sections:
    ```
    The script extracts the `[Unreleased]` changelog content itself and combines both sections into the final PR description. If it exits non-zero, report the error and stop.
 
-4. If `skip=auto-merge` is set, the skill is done. Do not prompt the user.
+4. If `version-bump=` was not provided, the skill is done. Do not prompt the user.
 
 5. Otherwise, present via `AskUserQuestion`:
-   - **Proceed**: continue to auto-merge
+   - **Proceed**: continue to auto-merge and auto-publish
    - **Stop**: halt skill execution
 
 ## Phase 6: Auto-Merge
 
-Skip this phase entirely if `skip=auto-merge` is set.
+Skip this phase entirely if `version-bump=` was not provided.
 
 1. Run the auto-merge script:
    ```
@@ -126,10 +129,10 @@ Skip this phase entirely if `skip=auto-merge` is set.
 
 ## Phase 7: Auto-Publish
 
-Skip this phase entirely if `skip=auto-merge` or `skip=auto-publish` is set.
+Skip this phase entirely if `version-bump=` was not provided.
 
-1. Run the auto-publish script with the bump type:
+1. Run the auto-publish script with the version bump type:
    ```
-   bun .claude/skills/pr/scripts/auto-publish.js $bump
+   bun .claude/skills/pr/scripts/auto-publish.js <version value>
    ```
    If it exits non-zero, report the error and stop.

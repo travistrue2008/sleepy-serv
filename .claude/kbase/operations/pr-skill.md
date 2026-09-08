@@ -3,18 +3,20 @@
 The `/pr` skill automates the full lifecycle from feature branch to published
 release. It lives at `.claude/skills/pr/` and is manually invoked.
 
-## Six-phase pipeline
+## Seven-phase pipeline
 
 | Phase | Type | Script |
 |-------|------|--------|
 | 1. Clean and Sync Branches | Script + AI (kbase) | `sync-branches.js` |
-| 2. Sync CHANGELOG | AI reasoning | none |
-| 3. Update README Docs | Script + AI (sub-agents) | `find-readmes.js` |
-| 4. Manage PR | Script | `manage-pr.js` |
-| 5. Auto-Merge | Script | `auto-merge.js` |
-| 6. Auto-Publish | Script | `auto-publish.js` |
+| 2. Lint | Script | `lint.js` |
+| 3. Sync CHANGELOG | AI reasoning | none |
+| 4. Update README Docs | Script + AI (sub-agents) | `find-readmes.js` |
+| 5. Manage PR | Script | `manage-pr.js` |
+| 6. Auto-Merge | Script | `auto-merge.js` |
+| 7. Auto-Publish | Script | `auto-publish.js` |
 
-Phases 5-6 are optionally skipped via the `skip=` argument.
+Phases 6-7 only run when `version-bump=` is provided. Otherwise the skill
+stops after phase 5 (Manage PR).
 
 ## Script / AI separation
 
@@ -36,12 +38,16 @@ parameter behavior, the skill instructions tell Claude to parse `$ARGUMENTS`
 for a `key=value` pattern and validate it.
 
 ```
-/pr <major|minor|patch> [skip=<auto-merge|auto-publish>]
+/pr [auto-commit] [version-bump=<patch|minor|major>]
 ```
 
-- `$bump` is positional and required. Validated against `major|minor|patch`.
-- `skip=` is parsed from `$ARGUMENTS` as a convention, not a system feature.
-  Claude's reasoning handles the parsing and validation.
+- `auto-commit`: if present, the sync script stages, commits, and pushes any
+  uncommitted changes before syncing with main. Without it, a dirty working
+  tree causes the skill to fail.
+- `version-bump=`: if set, phases 6-7 (auto-merge and auto-publish) run. The
+  value is passed to the publish workflow. If not set, those phases are skipped.
+
+No parameters are required. `/pr` alone runs phases 1-5.
 
 ## PR description structure
 
@@ -60,10 +66,10 @@ The skill fails only when both are empty.
 
 The skill pauses for user review via `AskUserQuestion` at four points:
 
-1. After drafting CHANGELOG entries (phase 2)
-2. After updating READMEs (phase 3)
-3. After drafting the structural PR summary (phase 4)
-4. Before auto-merge (phase 4, unless `skip=auto-merge`)
+1. After drafting CHANGELOG entries (phase 3)
+2. After updating READMEs (phase 4)
+3. After drafting the structural PR summary (phase 5)
+4. Before auto-merge and auto-publish (phase 5, only when `version-bump=` is set)
 
 Each prompt offers **Proceed** (commit + continue) or **Stop** (halt).
 
@@ -76,18 +82,27 @@ auto-remediate.
 
 ## Polling
 
-Phases 5-6 poll GitHub API status every 10 seconds. At 6 requests/minute,
-this consumes roughly 2.4% of GitHub's 5,000 requests/hour authenticated rate
-limit, even for long-running builds.
+Auto-merge polls PR checks using two queries per cycle: one with `--required`
+to fail-fast on required check failures, and one without to wait for all checks
+to finish. Auto-publish polls the publish workflow status. Both poll every 10
+seconds (roughly 2.4% of GitHub's 5,000 requests/hour authenticated rate limit).
+
+## Post-publish sync
+
+After a successful publish, `auto-publish.js` pulls the latest main (which
+includes the version bump commit and CHANGELOG promotion) and merges it back
+into the working branch. This prevents merge conflicts on follow-up PRs from
+the same branch. The merge is local only (no push), since the remote branch
+was deleted by the squash merge.
 
 ## Reuse
 
-Phase 4 reuses the existing `.github/scripts/changelog.js extract` command to
+Phase 5 reuses the existing `.github/scripts/changelog.js extract` command to
 pull the `[Unreleased]` section rather than reimplementing extraction logic.
 
 ## See also
 
 - [Publishing and Releases](./publishing.md): the publish workflow that
-  phase 6 triggers.
+  phase 7 triggers.
 - [Layout](../architecture/layout.md): the workspace structure the README
   discovery script navigates.
