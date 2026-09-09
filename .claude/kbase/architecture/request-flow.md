@@ -1,6 +1,6 @@
 # Request Flow
 
-`getAllFilePathsRec` recursively scans `<rootPath>/api` → `buildRoutePaths` maps each method file to `{ method, path, metaMiddlewarePath, modulePath }` → `buildChain` dynamically `import()`s each module and assembles its middleware chain → `buildMergedRoutes` folds the reserved `/ws` handshake terminals into those chains → `buildModuleRoutes` wraps each chain in a `Bun.serve` handler → `buildServerRoutes` builds the route table; `buildServer` starts it.
+Route discovery is handled by the [plugin](./plugin.md), which scans the filesystem and builds a `RouteConfig` before `createApp` runs. The core pipeline receives pre-built routes: `buildRoutes` normalizes chains and prepends `mountPath`/middleware → `buildMergedRoutes` folds the reserved `/ws` handshake terminals into those chains → `buildModuleRoutes` wraps each chain in a `Bun.serve` handler → `buildServerRoutes` builds the route table; `buildServer` starts it.
 
 ## `res` is a threaded value, not a response
 

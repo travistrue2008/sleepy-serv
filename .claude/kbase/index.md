@@ -7,6 +7,7 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 - [Overview](./architecture/overview.md): what `sleepy-serv` is; engine location and public API.
 - [Layout](./architecture/layout.md): Bun workspace and repo structure.
 - [Routing](./architecture/routing.md): directory-to-route convention, 404 vs 405.
+- [Plugin](./architecture/plugin.md): route discovery via Bun plugin; scanner, codegen, config; runtime plugin limitations.
 - [Request Flow](./architecture/request-flow.md): route build pipeline; the `res` accumulator model.
 - [Middleware](./architecture/middleware.md): resolution order, built-ins, catch-all validators vs the `/ws` handshake.
 - [Errors](./architecture/errors.md): how errors map to HTTP status.
@@ -30,6 +31,7 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 ## Ideas
 
 - [sleepy-socket Protocol](./ideas/sleepy-socket.md): outstanding protocol slices (notification/ack, client routing, player identity, gRPC forward path).
+- [Replace Dynamic Imports](./ideas/replace-dynamic-imports-plan.md): full plan for plugin + CLI + subprocess E2E architecture.
 
 ## Roadmap
 
