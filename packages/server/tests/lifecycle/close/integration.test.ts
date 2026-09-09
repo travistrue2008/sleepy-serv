@@ -1,5 +1,5 @@
-import { describe, test, expect, jest } from 'bun:test'
 import { stdin } from 'node:process'
+import { describe, test, expect, jest } from 'bun:test'
 import { createApp } from '../../../src'
 
 type MockStdin = {
@@ -23,7 +23,7 @@ describe('close()', () => {
     const restore = mockStdin(false)
 
     try {
-      const app = await createApp(0, import.meta.dirname, { onClose })
+      const app = createApp(0, { onClose })
       const origin = app.server.url.origin
 
       await app.close(true)
@@ -42,7 +42,7 @@ describe('close()', () => {
     const restore = mockStdin(true)
 
     try {
-      const app = await createApp(0, import.meta.dirname, { onClose })
+      const app = createApp(0, { onClose })
       const origin = app.server.url.origin
 
       await app.close(true)

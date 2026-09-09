@@ -5,7 +5,7 @@ import { createSocketClient } from '../../helpers'
 test('when a connection is opened', async () => {
   const onOpen = mock()
 
-  const app = await createApp(0, import.meta.dirname, {
+  const app = createApp(0, {
     ws: { onOpen },
   })
 

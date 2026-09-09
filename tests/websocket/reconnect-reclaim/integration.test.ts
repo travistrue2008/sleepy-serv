@@ -1,12 +1,12 @@
+import SleepySocketClient from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { Fmt, createRequestor } from '../../helpers'
-import { StatusCode, createApp } from 'sleepy-serv'
-import SleepySocketClient from 'sleepy-socket'
 
 import type { TicketBody } from '../../helpers'
 
 test('when reclaiming with a valid token', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
   const client = await SleepySocketClient.open(host, port)
@@ -27,7 +27,7 @@ test('when reclaiming with a valid token', async () => {
 test('when the token is wrong', async () => {
   const TOKEN_INVALID = 'not-the-real-token'
 
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
   const client = await SleepySocketClient.open(host, port)

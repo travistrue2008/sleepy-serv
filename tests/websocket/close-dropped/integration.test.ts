@@ -1,12 +1,12 @@
 import SleepySocketClient from 'sleepy-socket'
-import { mock, test, expect } from 'bun:test'
 import { CloseCode, CloseReason, createApp } from 'sleepy-serv'
+import { mock, test, expect } from 'bun:test'
 import { wait, waitFor } from '../../helpers'
 
 test('when closed from client AND reconnect enabled', async () => {
   const onClose = mock()
   const handler = mock()
-  const app = await createApp(0, import.meta.dirname, { ws: { onClose } })
+  const app = createApp(0, { ws: { onClose } })
   const host = app.server.url.hostname
   const port = app.server.port!
 
@@ -48,7 +48,7 @@ test('when closed from client AND reconnect enabled', async () => {
 test('when closed from client AND reconnect disabled', async () => {
   const onClose = mock()
   const handler = mock()
-  const app = await createApp(0, import.meta.dirname, { ws: { onClose } })
+  const app = createApp(0, { ws: { onClose } })
   const host = app.server.url.hostname
   const port = app.server.port!
 

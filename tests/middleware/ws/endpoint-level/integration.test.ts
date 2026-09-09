@@ -1,13 +1,13 @@
-import { describe, test, expect } from 'bun:test'
-import { StatusCode, createApp } from 'sleepy-serv'
-import { createRequestor, Fmt } from '../../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
+import { describe, test, expect } from 'bun:test'
+import { createRequestor, Fmt } from '../../../helpers'
 
 import type { TicketBody } from '../../../helpers'
 
 describe('POST', () => {
   test('when middleware errors', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.post('/ws?err', Fmt.Json)
 
@@ -21,7 +21,7 @@ describe('POST', () => {
   })
 
   test('when middleware is successful', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.post('/ws', Fmt.Json)
 
@@ -41,7 +41,7 @@ describe('POST', () => {
 
 describe('PUT', () => {
   test('when middleware errors', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const port = app.server.port!
@@ -59,7 +59,7 @@ describe('PUT', () => {
   })
 
   test('when middleware is successful', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const port = app.server.port!
@@ -88,7 +88,7 @@ describe('PUT', () => {
 
 describe('GET', () => {
   test('when middleware errors', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.get('/ws?ticket=asdf&err', Fmt.Json)
 
@@ -102,7 +102,7 @@ describe('GET', () => {
   })
 
   test('when middleware is successful', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const { host } = app.server.url
     const req = createRequestor(app)
     const res = await req.post('/ws', Fmt.Json)

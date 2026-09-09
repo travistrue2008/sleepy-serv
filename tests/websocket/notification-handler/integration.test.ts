@@ -1,13 +1,13 @@
 import SleepySocketClient from 'sleepy-socket'
-import { test, expect } from 'bun:test'
 import { StatusCode, createApp } from 'sleepy-serv'
+import { test, expect } from 'bun:test'
 import { Fmt, createRequestor, waitFor } from '../../helpers'
 
 import type { NotificationMessage } from 'sleepy-socket'
 
 test('when invoked from REST', async () => {
   const received: NotificationMessage[] = []
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
   const req = createRequestor(app)
@@ -47,7 +47,7 @@ test('when invoked from REST', async () => {
 
 test('when invoked from ws', async () => {
   const received: NotificationMessage[] = []
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
 

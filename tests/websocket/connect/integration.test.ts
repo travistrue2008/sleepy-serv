@@ -1,11 +1,11 @@
-import { test, expect } from 'bun:test'
-import { StatusCode, createApp } from 'sleepy-serv'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
+import { test, expect } from 'bun:test'
 
 const HEARTBEAT_INTERVAL = 20
 
 test('when the client connects', async () => {
-  const app = await createApp(0, import.meta.dirname, {
+  const app = createApp(0, {
     ws: {
       heartbeatInterval: HEARTBEAT_INTERVAL,
     },
@@ -23,7 +23,7 @@ test('when the client connects', async () => {
 })
 
 test('when a request carries the cached clientId', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
   const client = await SleepySocketClient.open(host, port)

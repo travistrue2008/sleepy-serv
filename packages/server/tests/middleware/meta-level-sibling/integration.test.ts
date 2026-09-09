@@ -3,7 +3,7 @@ import { StatusCode, createApp } from '../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 test('when sibling-level meta middleware is defined (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const req = createRequestor(app)
   const res = await req.get('/users', Fmt.Text)
 
@@ -14,7 +14,7 @@ test('when sibling-level meta middleware is defined (REST)', async () => {
 })
 
 test('when sibling-level meta middleware is defined (ws)', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const ws = await createSocketClient(app)
   const msg = await ws.get('/users')
 

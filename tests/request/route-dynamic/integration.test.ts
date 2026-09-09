@@ -1,11 +1,11 @@
-import { describe, test, expect } from 'bun:test'
-import { StatusCode, createApp } from 'sleepy-serv'
-import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
+import { describe, test, expect } from 'bun:test'
+import { Fmt, createRequestor } from '../../helpers'
 
 describe('REST', () => {
   test('when making a request on a dynamic route', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
 
     const res = await req.get('/users/123', Fmt.Json)
@@ -24,7 +24,7 @@ describe('REST', () => {
 
 describe('WebSocket', () => {
   test('when making a request on a dynamic route', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.open(host, port)

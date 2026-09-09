@@ -1,9 +1,9 @@
 import { test, expect } from 'bun:test'
-import { createApp, StatusCode } from '../../../../src'
+import { StatusCode, createApp } from '../../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when endpoint does not return a "Response" object (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const req = createRequestor(app)
   const res = await req.get('/', Fmt.Json)
 
@@ -17,7 +17,7 @@ test('when endpoint does not return a "Response" object (REST)', async () => {
 })
 
 test('when endpoint does not return a "Response" object (ws)', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const ws = await createSocketClient(app)
   const msg = await ws.get('/')
 

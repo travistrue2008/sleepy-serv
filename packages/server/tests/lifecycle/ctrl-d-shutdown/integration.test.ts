@@ -1,5 +1,5 @@
-import { test, expect } from 'bun:test'
 import path from 'node:path'
+import { test, expect } from 'bun:test'
 
 test('when the user presses Ctrl+D', async () => {
   const entry = path.join(import.meta.dirname, 'app.ts')

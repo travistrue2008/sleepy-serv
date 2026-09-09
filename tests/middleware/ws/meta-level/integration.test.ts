@@ -1,13 +1,13 @@
-import { describe, test, expect } from 'bun:test'
-import { StatusCode, createApp } from 'sleepy-serv'
-import { createRequestor, Fmt } from '../../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
+import { describe, test, expect } from 'bun:test'
+import { createRequestor, Fmt } from '../../../helpers'
 
 import type { TicketBody } from '../../../helpers'
 
 describe('POST', () => {
   test('when middleware errors (lvl 1)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.post('/ws?err=lvl_1', Fmt.Json)
 
@@ -21,7 +21,7 @@ describe('POST', () => {
   })
 
   test('when middleware errors (lvl 2)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.post('/ws?err=lvl_2', Fmt.Json)
 
@@ -35,7 +35,7 @@ describe('POST', () => {
   })
 
   test('when middleware is successful', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.post('/ws', Fmt.Json)
 
@@ -53,7 +53,7 @@ describe('POST', () => {
 
 describe('PUT', () => {
   test('when middleware errors (lvl 1)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const port = app.server.port!
@@ -71,7 +71,7 @@ describe('PUT', () => {
   })
 
   test('when middleware errors (lvl 2)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const port = app.server.port!
@@ -89,7 +89,7 @@ describe('PUT', () => {
   })
 
   test('when middleware errors (lvl 3)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const port = app.server.port!
@@ -107,7 +107,7 @@ describe('PUT', () => {
   })
 
   test('when middleware is successful', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const host = app.server.url.hostname
     const port = app.server.port!
@@ -134,7 +134,7 @@ describe('PUT', () => {
 
 describe('GET', () => {
   test('when middleware errors (lvl 1)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.get('/ws?ticket=asdf&err=lvl_1', Fmt.Json)
 
@@ -148,7 +148,7 @@ describe('GET', () => {
   })
 
   test('when middleware errors (lvl 2)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.get('/ws?ticket=asdf&err=lvl_2', Fmt.Json)
 
@@ -162,7 +162,7 @@ describe('GET', () => {
   })
 
   test('when middleware is successful', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const { host } = app.server.url
     const req = createRequestor(app)
     const res = await req.post('/ws', Fmt.Json)

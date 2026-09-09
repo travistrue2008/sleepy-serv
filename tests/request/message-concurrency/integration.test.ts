@@ -1,6 +1,6 @@
-import { describe, test, expect } from 'bun:test'
-import { createApp } from 'sleepy-serv'
 import SleepySocketClient, { Queue } from 'sleepy-socket'
+import { createApp } from 'sleepy-serv'
+import { describe, test, expect } from 'bun:test'
 
 async function makeRequests (client: SleepySocketClient): Promise<number[]> {
   const results: number[] = []
@@ -16,7 +16,7 @@ async function makeRequests (client: SleepySocketClient): Promise<number[]> {
 
 describe('WebSocket', () => {
   test('when default "queue" is used', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.open(host, port)
@@ -29,7 +29,7 @@ describe('WebSocket', () => {
   })
 
   test('when multiple calls respond out-of-order (queue = NONE)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const host = app.server.url.hostname
     const port = app.server.port!
 
@@ -46,7 +46,7 @@ describe('WebSocket', () => {
   })
 
   test('when multiple calls respond out-of-order (queue = FIFO)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const host = app.server.url.hostname
     const port = app.server.port!
 
@@ -63,7 +63,7 @@ describe('WebSocket', () => {
   })
 
   test('when multiple calls respond out-of-order (queue = LIFO)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const host = app.server.url.hostname
     const port = app.server.port!
 

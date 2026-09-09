@@ -1,7 +1,7 @@
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
 import { describe, test, expect } from 'bun:test'
 import { Fmt, createRequestor } from '../helpers'
-import { StatusCode, createApp } from 'sleepy-serv'
 
 import type { ConnectionData } from './auth'
 
@@ -15,7 +15,7 @@ import type { ConnectionData } from './auth'
 
 describe('REST', () => {
   test('when invoking a protected route omits the token', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.get('/protected', Fmt.Json)
 
@@ -26,7 +26,7 @@ describe('REST', () => {
   })
 
   test('when invoking a protected route with INVALID token', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
 
     const res = await req.get('/protected', Fmt.Json, {
@@ -42,7 +42,7 @@ describe('REST', () => {
   })
 
   test('when invoking a protected route with a VALID token', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const authRes = await req.post('/auth', Fmt.Text)
     const token = authRes.body
@@ -60,7 +60,7 @@ describe('REST', () => {
   })
 
   test('when invoking a public route without a token', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.get('/public', Fmt.Json)
 
@@ -73,7 +73,7 @@ describe('REST', () => {
 
 describe('WebSocket', () => {
   test('when invoking a protected route omits the token', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.open(host, port)
@@ -98,7 +98,7 @@ describe('WebSocket', () => {
   })
 
   test('when invoking a protected route with INVALID token', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.open(host, port)
@@ -128,7 +128,7 @@ describe('WebSocket', () => {
   })
 
   test('when invoking a protected route with a VALID token', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.open(host, port)
@@ -159,7 +159,7 @@ describe('WebSocket', () => {
   })
 
   test('when invoking a public route without a token', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.open(host, port)

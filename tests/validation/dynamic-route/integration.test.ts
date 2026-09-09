@@ -1,7 +1,7 @@
-import { describe, test, expect } from 'bun:test'
-import { StatusCode, createApp } from 'sleepy-serv'
-import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
+import { describe, test, expect } from 'bun:test'
+import { Fmt, createRequestor } from '../../helpers'
 
 const USER_ID = '00000000-0000-0000-0000-000000000001'
 
@@ -12,7 +12,7 @@ const BODY_VALID = {
 describe('REST', () => {
   describe('body', () => {
     test('when NO "email" is provided', async () => {
-      const app = await createApp(0, import.meta.dirname)
+      const app = createApp(0)
       const req = createRequestor(app)
 
       const res = await req.put(`/users/${USER_ID}`, Fmt.Json, {
@@ -38,7 +38,7 @@ describe('REST', () => {
     })
 
     test('when "email" is invalid', async () => {
-      const app = await createApp(0, import.meta.dirname)
+      const app = createApp(0)
       const req = createRequestor(app)
 
       const res = await req.put(`/users/${USER_ID}`, Fmt.Json, {
@@ -64,7 +64,7 @@ describe('REST', () => {
     })
 
     test('when successful', async () => {
-      const app = await createApp(0, import.meta.dirname)
+      const app = createApp(0)
       const req = createRequestor(app)
 
       const res = await req.put(`/users/${USER_ID}`, Fmt.Json, {
@@ -86,7 +86,7 @@ describe('REST', () => {
 describe('WebSocket', () => {
   describe('body', () => {
     test('when NO "email" is provided', async () => {
-      const app = await createApp(0, import.meta.dirname)
+      const app = createApp(0)
       const host = app.server.url.hostname
       const port = app.server.port!
       const client = await SleepySocketClient.open(host, port)
@@ -123,7 +123,7 @@ describe('WebSocket', () => {
     })
 
     test('when "email" is invalid', async () => {
-      const app = await createApp(0, import.meta.dirname)
+      const app = createApp(0)
       const host = app.server.url.hostname
       const port = app.server.port!
       const client = await SleepySocketClient.open(host, port)
@@ -160,7 +160,7 @@ describe('WebSocket', () => {
     })
 
     test('when successful', async () => {
-      const app = await createApp(0, import.meta.dirname)
+      const app = createApp(0)
       const host = app.server.url.hostname
       const port = app.server.port!
       const client = await SleepySocketClient.open(host, port)

@@ -1,9 +1,9 @@
 import { test, expect } from 'bun:test'
-import { createApp, StatusCode } from '../../../../src'
+import { StatusCode, createApp } from '../../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
 
 test('when requested resource is not found (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const req = createRequestor(app)
   const res = await req.get('/users/123/photos', Fmt.Json)
 
@@ -14,7 +14,7 @@ test('when requested resource is not found (REST)', async () => {
 })
 
 test('when requested resource is not found (ws)', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const ws = await createSocketClient(app)
   const msg = await ws.get('/users/123/photos')
 

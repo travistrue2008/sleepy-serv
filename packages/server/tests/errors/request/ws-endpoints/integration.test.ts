@@ -12,7 +12,7 @@ const TOKEN_INVALID = 'token-invalid'
 
 describe('POST', () => {
   test('when requested (REST)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.post('/ws', Fmt.Json)
 
@@ -28,7 +28,7 @@ describe('POST', () => {
   })
 
   test('when requested (ws)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
     const msg = await ws.post('/ws')
 
@@ -47,7 +47,7 @@ describe('POST', () => {
 
 describe('PUT', () => {
   test('when the "authorization" header is missing (REST)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
     const req = createRequestor(app)
 
@@ -68,7 +68,7 @@ describe('PUT', () => {
   })
 
   test('when the "authorization" header is missing (ws)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.put(`/ws/${ws.clientId}`, {
@@ -88,7 +88,7 @@ describe('PUT', () => {
   })
 
   test('when the "clientId" param is invalid (REST)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
     const req = createRequestor(app)
 
@@ -105,7 +105,7 @@ describe('PUT', () => {
   })
 
   test('when the "clientId" param is invalid (ws)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.put(`/ws/${CLIENT_ID_INVALID}`, {
@@ -127,7 +127,7 @@ describe('PUT', () => {
   })
 
   test('when the "token" header is incorrect (REST)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
     const req = createRequestor(app)
 
@@ -147,7 +147,7 @@ describe('PUT', () => {
   })
 
   test('when the "token" header is incorrect (ws)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.put(`/ws/${ws.clientId}`, {
@@ -169,7 +169,7 @@ describe('PUT', () => {
   })
 
   test('when requested (REST)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
     const req = createRequestor(app)
 
@@ -191,7 +191,7 @@ describe('PUT', () => {
   })
 
   test('when requested (ws)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.put(`/ws/${ws.clientId}`, {
@@ -215,7 +215,7 @@ describe('PUT', () => {
 
 describe('GET', () => {
   test('when NO "ticket" querystring (REST)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const res = await req.get('/ws', Fmt.Json)
 
@@ -232,7 +232,7 @@ describe('GET', () => {
   })
 
   test('when NO "ticket" querystring (ws)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
     const msg = await ws.get('/ws')
 
@@ -249,7 +249,7 @@ describe('GET', () => {
   })
 
   test('when invalid "ticket" querystring (REST)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
 
     const res = await req.get('/ws', Fmt.Json, {
@@ -267,7 +267,7 @@ describe('GET', () => {
 
   test('when invalid "ticket" querystring (ws)', async () => {
     const url = `/ws?ticket=${TICKET_INVALID}`
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
     const msg = await ws.get(url)
 
@@ -284,7 +284,7 @@ describe('GET', () => {
   })
 
   test('when providing a "ticket" querystring (REST)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const ticketRes = await req.post('/ws', Fmt.Json)
     const { ticket } = ticketRes.body as TicketBody
@@ -303,7 +303,7 @@ describe('GET', () => {
   })
 
   test('when providing a "ticket" querystring (ws)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const ws = await createSocketClient(app)
     const ticketRes = await req.post('/ws', Fmt.Json)

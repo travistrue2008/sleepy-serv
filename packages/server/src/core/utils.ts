@@ -204,6 +204,22 @@ export type SocketConnection = {
 
 export type Server = BunServer<SocketData>
 
+export type RouteDefinition = {
+  method: HttpMethod
+  path: string
+  chain: Handler | MiddlewareChain
+}
+
+export type MetaEntry = {
+  path: string
+  middleware: Middleware[]
+}
+
+export type RouteConfig = {
+  routes: RouteDefinition[]
+  meta?: MetaEntry[]
+}
+
 export type AppOptions = {
   hostname?: string
   mountPath?: string

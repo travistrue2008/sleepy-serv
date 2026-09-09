@@ -11,10 +11,13 @@
       "bun": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./core": {
-      "types": "./dist/core/index.d.ts",
-      "bun": "./src/core/index.ts",
-      "default": "./src/core/index.ts"
+    "./plugin": {
+      "bun": "./src/plugin/index.ts",
+      "default": "./src/plugin/index.ts"
+    },
+    "./plugin/builder": {
+      "bun": "./src/plugin/builder.ts",
+      "default": "./src/plugin/builder.ts"
     }
   },
   "files": [

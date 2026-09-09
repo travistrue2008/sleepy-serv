@@ -3,7 +3,7 @@ import { StatusCode, createApp } from '../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 test('when making a request with querystring (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const req = createRequestor(app)
 
   const res = await req.get('/', Fmt.Text, {
@@ -19,7 +19,7 @@ test('when making a request with querystring (REST)', async () => {
 })
 
 test('when making a request with querystring (ws)', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const ws = await createSocketClient(app)
 
   const msg = await ws.get('/', {

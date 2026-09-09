@@ -9,7 +9,7 @@ type Accum = {
 }
 
 test('when all levels of middleware are defined (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname, {
+  const app = createApp(0, {
     middleware: [
       (_req: Request, res: unknown, next: NextFn) => next({
         ...res as Accum,
@@ -28,7 +28,7 @@ test('when all levels of middleware are defined (REST)', async () => {
 })
 
 test('when all levels of middleware are defined (ws)', async () => {
-  const app = await createApp(0, import.meta.dirname, {
+  const app = createApp(0, {
     middleware: [
       (_req: Request, res: unknown, next: NextFn) => next({
         ...res as Accum,

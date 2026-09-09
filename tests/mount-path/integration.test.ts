@@ -1,13 +1,13 @@
-import { describe, test, expect } from 'bun:test'
-import { StatusCode, createApp } from 'sleepy-serv'
-import { Fmt, createRequestor } from '../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
+import { describe, test, expect } from 'bun:test'
+import { Fmt, createRequestor } from '../helpers'
 
 const MOUNT_PATH = '/test-mount-path'
 
 describe('REST', () => {
   test('when "mouthPath" is set', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       mountPath: MOUNT_PATH,
     })
 
@@ -26,7 +26,7 @@ describe('REST', () => {
 
 describe('WebSocket', () => {
   test('when "mouthPath" is set', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       mountPath: MOUNT_PATH,
     })
 

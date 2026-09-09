@@ -1,6 +1,6 @@
-import { spyOn, test, expect } from 'bun:test'
-import { createApp } from 'sleepy-serv'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { createApp } from 'sleepy-serv'
+import { spyOn, test, expect } from 'bun:test'
 
 import type { Message } from 'sleepy-socket'
 
@@ -25,7 +25,7 @@ function nextMessage (client: SleepySocketClient): Promise<unknown> {
 }
 
 test('when a heartbeat is sent', async () => {
-  const app = await createApp(0, import.meta.dirname, {
+  const app = createApp(0, {
     ws: {
       heartbeatInterval: 100,
     },

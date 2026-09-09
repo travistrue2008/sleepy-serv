@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../../../../src'
 
-test('when leaf directory has no method file', async () => {
-  const fn = () => createApp(0, import.meta.dirname)
+test('when leaf directory has no method file', () => {
+  const fn = () => createApp(0)
 
   /* eslint-disable max-len */
   expect(fn).toThrow(new Error(`

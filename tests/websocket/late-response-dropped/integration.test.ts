@@ -1,6 +1,6 @@
-import { test, expect } from 'bun:test'
-import { StatusCode, createApp } from 'sleepy-serv'
 import SleepySocketClient from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
+import { test, expect } from 'bun:test'
 
 test('when a reply arrives for an already-timed-out request', async () => {
   /*
@@ -8,7 +8,7 @@ test('when a reply arrives for an already-timed-out request', async () => {
     250ms reply, so the reply lands with no matching pending request
     */
 
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
 

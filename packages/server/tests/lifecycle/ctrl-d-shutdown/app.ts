@@ -1,5 +1,5 @@
 import { createApp } from '../../../src'
 
-const app = await createApp(0, import.meta.dirname)
+const app = createApp(0)
 
 console.log(`PORT:${app.server.port}`)

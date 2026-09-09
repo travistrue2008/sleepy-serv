@@ -1,10 +1,10 @@
 import SleepySocketClient from 'sleepy-socket'
-import { mock, test, expect } from 'bun:test'
 import { CloseCode, createApp } from 'sleepy-serv'
+import { mock, test, expect } from 'bun:test'
 import { waitFor } from '../../helpers'
 
 test('when the server drops a single client', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
   const handler = mock()
@@ -28,7 +28,7 @@ test('when the server drops a single client', async () => {
 })
 
 test('when only one of two clients matches', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
   const handlerA = mock()

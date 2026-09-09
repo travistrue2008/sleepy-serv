@@ -1,4 +1,4 @@
-import { UnprocessableContentError } from '../../../../../src/errors'
+import { UnprocessableContentError } from '../../../../../src'
 
 import type { Request } from '../../../../../src'
 

@@ -1,7 +1,7 @@
+import SleepySocketClient from 'sleepy-socket'
 import { StatusCode, createApp } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { waitFor } from '../../helpers'
-import SleepySocketClient from 'sleepy-socket'
 
 /*
   Drives the resilience path over real loopback sockets: an involuntary drop
@@ -12,7 +12,7 @@ import SleepySocketClient from 'sleepy-socket'
  */
 
 test('when the socket drops AND the client reconnects', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
 

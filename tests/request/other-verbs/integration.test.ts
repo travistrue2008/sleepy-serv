@@ -1,7 +1,7 @@
-import { describe, test, expect } from 'bun:test'
-import { StatusCode, createApp } from 'sleepy-serv'
-import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
+import { describe, test, expect } from 'bun:test'
+import { Fmt, createRequestor } from '../../helpers'
 
 describe('REST', () => {
   test.each([
@@ -9,7 +9,7 @@ describe('REST', () => {
     'PATCH',
     'DELETE',
   ])('when making a %s request', async method => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const req = createRequestor(app)
     const verb = method.toLowerCase() as Lowercase<typeof method>
     const fn = req[verb]
@@ -34,7 +34,7 @@ describe('WebSocket', () => {
     'PATCH',
     'DELETE',
   ])('when making a %s request', async method => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const host = app.server.url.hostname
     const port = app.server.port!
     const client = await SleepySocketClient.open(host, port)

@@ -1,7 +1,7 @@
-import { describe, test, expect } from 'bun:test'
-import { StatusCode, createApp } from 'sleepy-serv'
-import { createRequestor, Fmt } from '../../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
+import { describe, test, expect } from 'bun:test'
+import { createRequestor, Fmt } from '../../../helpers'
 
 import type { NextFn, HandlerResult, Request } from 'sleepy-serv'
 import type { TicketBody } from '../../../helpers'
@@ -20,7 +20,7 @@ function root (
 
 describe('POST', () => {
   test('when middleware errors', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       middleware: [root],
     })
 
@@ -37,7 +37,7 @@ describe('POST', () => {
   })
 
   test('when middleware is successful', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       middleware: [root],
     })
 
@@ -58,7 +58,7 @@ describe('POST', () => {
 
 describe('PUT', () => {
   test('when middleware errors', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       middleware: [root],
     })
 
@@ -79,7 +79,7 @@ describe('PUT', () => {
   })
 
   test('when middleware is successful', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       middleware: [root],
     })
 
@@ -109,7 +109,7 @@ describe('PUT', () => {
 
 describe('GET', () => {
   test('when middleware errors', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       middleware: [root],
     })
 
@@ -126,7 +126,7 @@ describe('GET', () => {
   })
 
   test('when middleware is successful', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       middleware: [root],
     })
 

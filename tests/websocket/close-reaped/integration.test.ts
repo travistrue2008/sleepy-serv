@@ -1,13 +1,13 @@
 import SleepySocketClient from 'sleepy-socket'
-import { mock, test, expect } from 'bun:test'
 import { CloseCode, CloseReason, createApp } from 'sleepy-serv'
+import { mock, test, expect } from 'bun:test'
 import { wait, waitFor } from '../../helpers'
 
 test('when reaped AND reconnect enabled', async () => {
   const onClose = mock()
   const handler = mock()
 
-  const app = await createApp(0, import.meta.dirname, {
+  const app = createApp(0, {
     ws: {
       heartbeatInterval: 200_000,
       dropThreshold: 100,
@@ -56,7 +56,7 @@ test('when reaped AND reconnect disabled', async () => {
   const onClose = mock()
   const handler = mock()
 
-  const app = await createApp(0, import.meta.dirname, {
+  const app = createApp(0, {
     ws: {
       heartbeatInterval: 200_000,
       dropThreshold: 100,

@@ -1,7 +1,7 @@
-import { describe, test, expect } from 'bun:test'
-import { StatusCode, createApp } from 'sleepy-serv'
-import { Fmt, createRequestor } from '../../helpers'
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode, createApp } from 'sleepy-serv'
+import { describe, test, expect } from 'bun:test'
+import { Fmt, createRequestor } from '../../helpers'
 
 import type { NextFn, HandlerResult, Request } from 'sleepy-serv'
 
@@ -19,7 +19,7 @@ function root (
 
 describe('REST', () => {
   test('when root middleware errors', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       middleware: [root],
     })
 
@@ -36,7 +36,7 @@ describe('REST', () => {
   })
 
   test('when root middleware is invoked', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       middleware: [root],
     })
 
@@ -52,7 +52,7 @@ describe('REST', () => {
 
 describe('WebSocket', () => {
   test('when root middleware errors', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       middleware: [root],
     })
 
@@ -87,7 +87,7 @@ describe('WebSocket', () => {
   })
 
   test('when root middleware is invoked', async () => {
-    const app = await createApp(0, import.meta.dirname, {
+    const app = createApp(0, {
       middleware: [root],
     })
 

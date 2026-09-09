@@ -1,9 +1,9 @@
 import SleepySocketClient, { HandshakeError } from 'sleepy-socket'
-import { spyOn, test, expect } from 'bun:test'
 import { createApp } from 'sleepy-serv'
+import { spyOn, test, expect } from 'bun:test'
 
 test('when app middleware rejects the handshake', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
   const promise = SleepySocketClient.open(host, port)
@@ -22,7 +22,7 @@ test('when app middleware rejects the handshake', async () => {
 
 test('when the rejected handshake does not retry', async () => {
   const fetchSpy = spyOn(global, 'fetch')
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
 

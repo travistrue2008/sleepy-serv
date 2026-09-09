@@ -1,13 +1,13 @@
+import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { createApp } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { waitFor } from '../../helpers'
-import { createApp } from 'sleepy-serv'
-import SleepySocketClient, { MessageType } from 'sleepy-socket'
 
 import type { NotificationMessage } from 'sleepy-socket'
 
 test('when the server broadcasts', async () => {
   const received: NotificationMessage[] = []
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
   const client = await SleepySocketClient.open(host, port)
@@ -35,7 +35,7 @@ test('when the server broadcasts', async () => {
 
 test('when the server sends to a clientId', async () => {
   const received: NotificationMessage[] = []
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
   const client = await SleepySocketClient.open(host, port)
@@ -63,7 +63,7 @@ test('when the server sends to a clientId', async () => {
 
 test('when the filter matches no clients', async () => {
   const received: NotificationMessage[] = []
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
   const client = await SleepySocketClient.open(host, port)

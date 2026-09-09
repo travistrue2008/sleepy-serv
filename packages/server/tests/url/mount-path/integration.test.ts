@@ -3,7 +3,7 @@ import { StatusCode, createApp } from '../../../src'
 import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
 test('when adding a mount path (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname, {
+  const app = createApp(0, {
     mountPath: '/test-mount-path',
   })
 
@@ -17,7 +17,7 @@ test('when adding a mount path (REST)', async () => {
 })
 
 test('when adding a mount path (ws)', async () => {
-  const app = await createApp(0, import.meta.dirname, {
+  const app = createApp(0, {
     mountPath: '/test-mount-path',
   })
 

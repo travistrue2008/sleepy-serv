@@ -1,8 +1,12 @@
 import crypto from 'node:crypto'
 import { describe, test, expect } from 'bun:test'
-import { createApp, StatusCode } from '../../../../src'
-import { MessageType, RECEIVED_MESSAGE_TYPES } from '../../../../src/messages'
+import { StatusCode, createApp } from '../../../../src'
 import { createSocketClient } from '../../../helpers'
+
+import {
+  MessageType,
+  RECEIVED_MESSAGE_TYPES,
+} from '../../../../src/core/messages'
 
 const ID = crypto.randomUUID()
 const CLIENT_ID = crypto.randomUUID()
@@ -19,7 +23,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   }
 
   test('when received message "id" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -48,7 +52,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "id" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -77,7 +81,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "clientId" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -105,7 +109,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "clientId" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -134,7 +138,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "type" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -163,7 +167,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "type" is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -192,7 +196,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "timestamp" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -221,7 +225,7 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "timestamp" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -264,7 +268,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   }
 
   test('when received message "id" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -293,7 +297,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "id" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -322,7 +326,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "clientId" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -350,7 +354,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "clientId" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -379,7 +383,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "type" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -408,7 +412,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "type" is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -437,7 +441,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "method" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -466,7 +470,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "method" is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -495,7 +499,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "route" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -524,7 +528,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "route" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -553,7 +557,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "timestamp" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -582,7 +586,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "timestamp" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -611,7 +615,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "headers" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -640,7 +644,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "headers" field is invalid (null)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -669,7 +673,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "headers" field is invalid (array)', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -698,7 +702,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "query" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({
@@ -727,7 +731,7 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "body" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
+    const app = createApp(0)
     const ws = await createSocketClient(app)
 
     const msg = await ws.sendRaw({

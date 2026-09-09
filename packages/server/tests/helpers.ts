@@ -1,5 +1,5 @@
 import crypto from 'node:crypto'
-import { MessageType } from '../src/messages'
+import { MessageType } from '../src/core/messages'
 
 import type { App, HttpMethod } from '../src'
 

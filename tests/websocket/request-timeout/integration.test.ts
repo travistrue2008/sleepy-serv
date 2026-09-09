@@ -1,9 +1,9 @@
-import { test, expect } from 'bun:test'
-import { createApp } from 'sleepy-serv'
 import SleepySocketClient from 'sleepy-socket'
+import { createApp } from 'sleepy-serv'
+import { test, expect } from 'bun:test'
 
 test('when the server never replies', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const host = app.server.url.hostname
   const port = app.server.port!
 

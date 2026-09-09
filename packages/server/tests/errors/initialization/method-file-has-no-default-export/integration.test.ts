@@ -1,8 +1,8 @@
 import { test, expect } from 'bun:test'
 import { createApp } from '../../../../src'
 
-test('when method file has no default export', async () => {
-  const fn = () => createApp(0, import.meta.dirname)
+test('when method file has no default export', () => {
+  const fn = () => createApp(0)
 
   /* eslint-disable max-len */
   expect(fn).toThrow(new Error(`

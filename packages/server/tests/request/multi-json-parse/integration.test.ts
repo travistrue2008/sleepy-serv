@@ -9,7 +9,7 @@ const JSON_HEADERS = new Headers({
 })
 
 test('when req.json() is called twice (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname)
+  const app = createApp(0)
   const req = createRequestor(app)
 
   const res = await req.post('/', Fmt.Json, {
