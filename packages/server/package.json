@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts",
       "bun": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "bun": "./src/core/index.ts",
+      "default": "./src/core/index.ts"
     }
   },
   "files": [
