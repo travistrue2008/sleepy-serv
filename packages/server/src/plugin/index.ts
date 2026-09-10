@@ -21,7 +21,10 @@ plugin({
       const scanResult = scanRoutes(apiRoot)
       const contents = generateBarrelModule(scanResult)
 
-      return { loader: 'ts', contents }
+      return {
+        loader: 'ts',
+        contents,
+      }
     })
   },
 })

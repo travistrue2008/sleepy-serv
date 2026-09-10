@@ -45,7 +45,10 @@ describe('scanRoutes()', () => {
   })
 
   afterEach(() => {
-    fs.rmSync(tempDir, { recursive: true, force: true })
+    fs.rmSync(tempDir, {
+      recursive: true,
+      force: true,
+    })
   })
 
   test('when the api root does not exist', () => {

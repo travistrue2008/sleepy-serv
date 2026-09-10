@@ -102,7 +102,7 @@ describe('generateBarrelModule()', () => {
           method: 'GET',
           path: '/users',
           modulePath: '/app/api/users/get.ts',
-        }
+        },
       ],
     }
 
