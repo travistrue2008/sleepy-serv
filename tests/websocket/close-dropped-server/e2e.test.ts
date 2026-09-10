@@ -1,4 +1,5 @@
 import SleepySocketClient from 'sleepy-socket'
+import { CloseCode } from 'sleepy-serv'
 import { describe, mock, test, expect } from 'bun:test'
 
 import {
@@ -50,7 +51,7 @@ describe('handler', () => {
     expect(clients[2].isConnected).toBe(true)
     expect(handlers[0]).not.toHaveBeenCalled()
     expect(handlers[1]).toHaveBeenCalledOnce()
-    expect(handlers[1]).toHaveBeenCalledWith({ code: 1000 })
+    expect(handlers[1]).toHaveBeenCalledWith({ code: CloseCode.Ok })
     expect(handlers[2]).not.toHaveBeenCalled()
 
     await clients[0].close()
@@ -97,7 +98,7 @@ describe('handler', () => {
     expect(clients[2].isConnected).toBe(true)
     expect(handlers[0]).not.toHaveBeenCalled()
     expect(handlers[1]).toHaveBeenCalledOnce()
-    expect(handlers[1]).toHaveBeenCalledWith({ code: 1000 })
+    expect(handlers[1]).toHaveBeenCalledWith({ code: CloseCode.Ok })
     expect(handlers[2]).not.toHaveBeenCalled()
 
     await clients[0].close()
@@ -241,7 +242,7 @@ describe('middleware', () => {
     expect(clients[2].isConnected).toBe(true)
     expect(handlers[0]).not.toHaveBeenCalled()
     expect(handlers[1]).toHaveBeenCalledOnce()
-    expect(handlers[1]).toHaveBeenCalledWith({ code: 1000 })
+    expect(handlers[1]).toHaveBeenCalledWith({ code: CloseCode.Ok })
     expect(handlers[2]).not.toHaveBeenCalled()
 
     await clients[0].close()
@@ -288,7 +289,7 @@ describe('middleware', () => {
     expect(clients[2].isConnected).toBe(true)
     expect(handlers[0]).not.toHaveBeenCalled()
     expect(handlers[1]).toHaveBeenCalledOnce()
-    expect(handlers[1]).toHaveBeenCalledWith({ code: 1000 })
+    expect(handlers[1]).toHaveBeenCalledWith({ code: CloseCode.Ok })
     expect(handlers[2]).not.toHaveBeenCalled()
 
     await clients[0].close()
@@ -433,7 +434,7 @@ describe('app', () => {
     expect(clients[2].isConnected).toBe(true)
     expect(handlers[0]).not.toHaveBeenCalled()
     expect(handlers[1]).toHaveBeenCalledOnce()
-    expect(handlers[1]).toHaveBeenCalledWith({ code: 1000 })
+    expect(handlers[1]).toHaveBeenCalledWith({ code: CloseCode.Ok })
     expect(handlers[2]).not.toHaveBeenCalled()
 
     await clients[0].close()
@@ -481,7 +482,7 @@ describe('app', () => {
     expect(clients[2].isConnected).toBe(true)
     expect(handlers[0]).not.toHaveBeenCalled()
     expect(handlers[1]).toHaveBeenCalledOnce()
-    expect(handlers[1]).toHaveBeenCalledWith({ code: 1000 })
+    expect(handlers[1]).toHaveBeenCalledWith({ code: CloseCode.Ok })
     expect(handlers[2]).not.toHaveBeenCalled()
 
     await clients[0].close()

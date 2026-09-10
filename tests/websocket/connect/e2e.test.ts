@@ -1,4 +1,5 @@
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { createServer } from '../../helpers'
 
@@ -27,7 +28,7 @@ test('when a request carries the cached clientId', async () => {
     id: result.id,
     clientId: client.id!,
     type: MessageType.Response,
-    status: 200,
+    status: StatusCode.Ok,
     timestamp: result.timestamp,
     headers: {
       'content-type': 'application/json;charset=utf-8',

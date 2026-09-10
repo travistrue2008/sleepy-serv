@@ -1,4 +1,5 @@
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { createServer, Fmt, createClient } from '../../helpers'
 
@@ -9,7 +10,7 @@ test('when meta middleware writes to res (REST)', async () => {
 
   await server.kill()
 
-  expect(result.status).toBe(200)
+  expect(result.status).toBe(StatusCode.Ok)
   expect(result.body).toStrictEqual({ stamp: 'via-meta' })
 })
 
@@ -21,13 +22,13 @@ test('when meta middleware writes to res (ws)', async () => {
   await client.close()
   await server.kill()
 
-  expect(result.status).toBe(200)
+  expect(result.status).toBe(StatusCode.Ok)
 
   expect(result).toStrictEqual({
     id: result.id,
     clientId: client.id!,
     type: MessageType.Response,
-    status: 200,
+    status: StatusCode.Ok,
     timestamp: result.timestamp,
     headers: {
       'content-type': 'application/json;charset=utf-8',

@@ -1,5 +1,7 @@
 import { test, expect } from 'bun:test'
 
+import { StatusCode } from '../../../src'
+
 import {
   Fmt,
   createServer,
@@ -17,7 +19,7 @@ test('when adding a mount path (REST)', async () => {
 
   await server.kill()
 
-  expect(result.status).toBe(200)
+  expect(result.status).toBe(StatusCode.Ok)
   expect(result.body).toBe('Hello world')
 })
 
@@ -32,6 +34,6 @@ test('when adding a mount path (ws)', async () => {
 
   await server.kill()
 
-  expect(msg.status).toBe(200)
+  expect(msg.status).toBe(StatusCode.Ok)
   expect(msg.body).toBe('Hello world')
 })

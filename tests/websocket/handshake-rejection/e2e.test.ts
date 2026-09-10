@@ -1,4 +1,5 @@
 import SleepySocketClient, { HandshakeError } from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { createServer, wait } from '../../helpers'
 
@@ -9,7 +10,7 @@ test('when app middleware rejects the handshake', async () => {
   await expect(promise).rejects.toThrow(HandshakeError)
 
   await expect(promise).rejects.toMatchObject({
-    status: 409,
+    status: StatusCode.Conflict,
     body: {
       message: 'Game is full',
     },

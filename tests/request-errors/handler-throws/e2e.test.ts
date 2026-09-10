@@ -1,4 +1,5 @@
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { describe, test, expect } from 'bun:test'
 import { createServer, createClient, Fmt } from '../../helpers'
 
@@ -10,7 +11,7 @@ describe('REST', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(500)
+    expect(result.status).toBe(StatusCode.InternalServerError)
 
     expect(result.body).toStrictEqual({
       message: 'An internal server error occurred',
@@ -24,7 +25,7 @@ describe('REST', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(409)
+    expect(result.status).toBe(StatusCode.Conflict)
     expect(result.body).toStrictEqual({ message: 'nope' })
   })
 })
@@ -42,7 +43,7 @@ describe('WebSocket', () => {
       id: result.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: 500,
+      status: StatusCode.InternalServerError,
       timestamp: result.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -65,7 +66,7 @@ describe('WebSocket', () => {
       id: result.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: 409,
+      status: StatusCode.Conflict,
       timestamp: result.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',

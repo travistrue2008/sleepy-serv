@@ -1,5 +1,7 @@
 import { test, expect } from 'bun:test'
 
+import { StatusCode } from '../../../src'
+
 import {
   Fmt,
   createServer,
@@ -23,7 +25,7 @@ test('when req.json() is called twice (REST)', async () => {
 
   await server.kill()
 
-  expect(result.status).toBe(200)
+  expect(result.status).toBe(StatusCode.Ok)
 
   expect(result.body).toStrictEqual({
     first: { message: 'hello' },

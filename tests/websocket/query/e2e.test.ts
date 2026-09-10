@@ -1,4 +1,5 @@
 import SleepySocketClient from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { createServer, Fmt, createClient } from '../../helpers'
 
@@ -14,7 +15,7 @@ test('when querying all active sessions', async () => {
   await clientB.close()
   await server.kill()
 
-  expect(result.status).toBe(200)
+  expect(result.status).toBe(StatusCode.Ok)
 
   expect(result.body).toStrictEqual([
     {

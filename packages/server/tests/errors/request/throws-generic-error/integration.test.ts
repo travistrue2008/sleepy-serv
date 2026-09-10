@@ -1,4 +1,5 @@
 import { test, expect } from 'bun:test'
+import { StatusCode } from '../../../../src'
 
 import {
   Fmt,
@@ -14,7 +15,7 @@ test('when a generic error is thrown (REST)', async () => {
 
   await server.kill()
 
-  expect(result.status).toBe(500)
+  expect(result.status).toBe(StatusCode.InternalServerError)
 
   expect(result.body).toStrictEqual({
     message: 'An internal server error occurred',
@@ -28,7 +29,7 @@ test('when a generic error is thrown (ws)', async () => {
 
   await server.kill()
 
-  expect(msg.status).toBe(500)
+  expect(msg.status).toBe(StatusCode.InternalServerError)
 
   expect(msg.body).toStrictEqual({
     message: 'An internal server error occurred',

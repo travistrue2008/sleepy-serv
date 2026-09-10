@@ -1,4 +1,5 @@
 import SleepySocketClient from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { createServer, Fmt, createClient } from '../../helpers'
 
@@ -17,6 +18,6 @@ test('when a willingly-closed clientId is reclaimed', async () => {
 
   await server.kill()
 
-  expect(result.status).toBe(404)
+  expect(result.status).toBe(StatusCode.NotFound)
   expect(result.body).toBe(null)
 })

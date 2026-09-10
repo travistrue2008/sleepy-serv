@@ -1,5 +1,7 @@
 import { test, expect } from 'bun:test'
 
+import { StatusCode } from '../../../src'
+
 import {
   Fmt,
   createServer,
@@ -14,7 +16,7 @@ test('when all levels of middleware are defined (REST)', async () => {
 
   await server.kill()
 
-  expect(result.status).toBe(200)
+  expect(result.status).toBe(StatusCode.Ok)
   expect(result.body).toBe('root|parent-meta|sibling-meta|module')
 })
 
@@ -25,6 +27,6 @@ test('when all levels of middleware are defined (ws)', async () => {
 
   await server.kill()
 
-  expect(msg.status).toBe(200)
+  expect(msg.status).toBe(StatusCode.Ok)
   expect(msg.body).toBe('root|parent-meta|sibling-meta|module')
 })

@@ -1,4 +1,5 @@
 import SleepySocketClient from 'sleepy-socket'
+import { CloseCode } from 'sleepy-serv'
 import { mock, test, expect } from 'bun:test'
 import { createServer, wait, waitFor, waitForCloseCount } from '../../helpers'
 
@@ -44,7 +45,7 @@ test('when reconnect enabled', async () => {
 
   expect(handler).toHaveBeenCalledTimes(2)
   expect(handler).toHaveBeenNthCalledWith(1, { code: 4000 })
-  expect(handler).toHaveBeenNthCalledWith(2, { code: 1000 })
+  expect(handler).toHaveBeenNthCalledWith(2, { code: CloseCode.Ok })
 
   expect(closeLines).toStrictEqual([
     `CLOSE:${client.id}:dropped`,

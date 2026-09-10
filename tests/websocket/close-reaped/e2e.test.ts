@@ -1,4 +1,5 @@
 import SleepySocketClient from 'sleepy-socket'
+import { CloseCode } from 'sleepy-serv'
 import { mock, test, expect } from 'bun:test'
 import { createServer, wait, waitFor } from '../../helpers'
 
@@ -29,8 +30,8 @@ test('when reaped AND reconnect enabled', async () => {
   const closeLines = server.output.filter(l => l.startsWith('CLOSE:'))
 
   expect(handler).toHaveBeenCalledTimes(2)
-  expect(handler).toHaveBeenNthCalledWith(1, { code: 4999 })
-  expect(handler).toHaveBeenNthCalledWith(2, { code: 1000 })
+  expect(handler).toHaveBeenNthCalledWith(1, { code: CloseCode.Reaped })
+  expect(handler).toHaveBeenNthCalledWith(2, { code: CloseCode.Ok })
   expect(closeLines).toHaveLength(2)
   expect(closeLines[0]).toBe(`CLOSE:${client.id}:reaped`)
   expect(closeLines[1]).toBe(`CLOSE:${client.id}:ok`)
@@ -54,7 +55,7 @@ test('when reaped AND reconnect disabled', async () => {
   const closeLines = server.output.filter(l => l.startsWith('CLOSE:'))
 
   expect(handler).toHaveBeenCalledOnce()
-  expect(handler).toHaveBeenCalledWith({ code: 4999 })
+  expect(handler).toHaveBeenCalledWith({ code: CloseCode.Reaped })
   expect(closeLines).toHaveLength(1)
   expect(closeLines[0]).toBe(`CLOSE:${client.id}:reaped`)
 })

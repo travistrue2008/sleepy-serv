@@ -1,4 +1,5 @@
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { describe, test, expect } from 'bun:test'
 import { createServer, Fmt, createClient } from '../../helpers'
 
@@ -24,7 +25,7 @@ describe('REST', () => {
 
       await server.kill()
 
-      expect(result.status).toBe(422)
+      expect(result.status).toBe(StatusCode.UnprocessableContent)
 
       expect(result.body).toStrictEqual([
         {
@@ -50,7 +51,7 @@ describe('REST', () => {
 
       await server.kill()
 
-      expect(result.status).toBe(422)
+      expect(result.status).toBe(StatusCode.UnprocessableContent)
 
       expect(result.body).toStrictEqual([
         {
@@ -73,7 +74,7 @@ describe('REST', () => {
 
       await server.kill()
 
-      expect(result.status).toBe(201)
+      expect(result.status).toBe(StatusCode.Created)
 
       expect(result.body).toBe(null)
     })
@@ -106,7 +107,7 @@ describe('WebSocket', () => {
         clientId: client.id!,
         type: MessageType.Response,
         timestamp: result.timestamp,
-        status: 422,
+        status: StatusCode.UnprocessableContent,
         headers: {
           'content-type': 'application/json;charset=utf-8',
         },
@@ -143,7 +144,7 @@ describe('WebSocket', () => {
         clientId: client.id!,
         type: MessageType.Response,
         timestamp: result.timestamp,
-        status: 422,
+        status: StatusCode.UnprocessableContent,
         headers: {
           'content-type': 'application/json;charset=utf-8',
         },
@@ -177,7 +178,7 @@ describe('WebSocket', () => {
         clientId: client.id!,
         type: MessageType.Response,
         timestamp: result.timestamp,
-        status: 201,
+        status: StatusCode.Created,
         headers: {},
         body: '',
       })

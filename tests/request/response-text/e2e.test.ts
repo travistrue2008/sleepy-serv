@@ -1,4 +1,5 @@
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { describe, test, expect } from 'bun:test'
 import { createServer, Fmt, createClient } from '../../helpers'
 
@@ -8,7 +9,7 @@ describe('REST', () => {
     const client = createClient(server)
     const result = await client.get('/', Fmt.Text)
 
-    expect(result.status).toBe(200)
+    expect(result.status).toBe(StatusCode.Ok)
     expect(result.body).toBe('Just text')
 
     await server.kill()
@@ -28,7 +29,7 @@ describe('WebSocket', () => {
       id: result.id,
       clientId: result.clientId,
       type: MessageType.Response,
-      status: 200,
+      status: StatusCode.Ok,
       timestamp: result.timestamp,
       headers: {},
       body: 'Just text',

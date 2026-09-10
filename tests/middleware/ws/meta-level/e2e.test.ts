@@ -1,4 +1,5 @@
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { describe, test, expect } from 'bun:test'
 import { createServer, createClient, Fmt } from '../../../helpers'
 
@@ -12,7 +13,7 @@ describe('POST', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(500)
+    expect(result.status).toBe(StatusCode.InternalServerError)
 
     expect(result.body).toStrictEqual({
       message: 'An internal server error occurred',
@@ -26,7 +27,7 @@ describe('POST', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(500)
+    expect(result.status).toBe(StatusCode.InternalServerError)
 
     expect(result.body).toStrictEqual({
       message: 'An internal server error occurred',
@@ -40,7 +41,7 @@ describe('POST', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(201)
+    expect(result.status).toBe(StatusCode.Created)
 
     expect(result.body).toStrictEqual({
       clientId: expect.any(String),
@@ -60,7 +61,7 @@ describe('PUT', () => {
     await wsClient.close()
     await server.kill()
 
-    expect(result.status).toBe(500)
+    expect(result.status).toBe(StatusCode.InternalServerError)
 
     expect(result.body).toStrictEqual({
       message: 'An internal server error occurred',
@@ -76,7 +77,7 @@ describe('PUT', () => {
     await wsClient.close()
     await server.kill()
 
-    expect(result.status).toBe(500)
+    expect(result.status).toBe(StatusCode.InternalServerError)
 
     expect(result.body).toStrictEqual({
       message: 'An internal server error occurred',
@@ -92,7 +93,7 @@ describe('PUT', () => {
     await wsClient.close()
     await server.kill()
 
-    expect(result.status).toBe(500)
+    expect(result.status).toBe(StatusCode.InternalServerError)
 
     expect(result.body).toStrictEqual({
       message: 'An internal server error occurred',
@@ -117,7 +118,7 @@ describe('PUT', () => {
     await wsClient.close()
     await server.kill()
 
-    expect(result.status).toBe(200)
+    expect(result.status).toBe(StatusCode.Ok)
 
     expect(result.body).toStrictEqual({
       clientId: expect.any(String),
@@ -135,7 +136,7 @@ describe('GET', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(500)
+    expect(result.status).toBe(StatusCode.InternalServerError)
 
     expect(result.body).toStrictEqual({
       message: 'An internal server error occurred',
@@ -149,7 +150,7 @@ describe('GET', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(500)
+    expect(result.status).toBe(StatusCode.InternalServerError)
 
     expect(result.body).toStrictEqual({
       message: 'An internal server error occurred',

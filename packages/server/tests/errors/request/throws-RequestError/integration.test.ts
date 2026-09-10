@@ -1,5 +1,7 @@
 import { test, expect } from 'bun:test'
 
+import { StatusCode } from '../../../../src'
+
 import {
   Fmt,
   createServer,
@@ -14,7 +16,7 @@ test('when a RequestError sub-type is thrown (REST)', async () => {
 
   await server.kill()
 
-  expect(result.status).toBe(422)
+  expect(result.status).toBe(StatusCode.UnprocessableContent)
 
   expect(result.body).toStrictEqual([
     {
@@ -31,7 +33,7 @@ test('when a RequestError sub-type is thrown (ws)', async () => {
 
   await server.kill()
 
-  expect(msg.status).toBe(422)
+  expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
   expect(msg.body).toStrictEqual([
     {

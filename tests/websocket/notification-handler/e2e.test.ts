@@ -1,4 +1,5 @@
 import SleepySocketClient from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { createServer, Fmt, createClient, waitFor } from '../../helpers'
 
@@ -24,7 +25,7 @@ test('when invoked from REST', async () => {
   await wsClient.close()
   await server.kill()
 
-  expect(result.status).toBe(200)
+  expect(result.status).toBe(StatusCode.Ok)
   expect(result.body).toStrictEqual({ ok: true })
   expect(received).toHaveLength(1)
 
@@ -62,7 +63,7 @@ test('when invoked from ws', async () => {
   await clientB.close()
   await server.kill()
 
-  expect(result.status).toBe(200)
+  expect(result.status).toBe(StatusCode.Ok)
   expect(result.body).toStrictEqual({ ok: true })
   expect(received).toHaveLength(1)
 

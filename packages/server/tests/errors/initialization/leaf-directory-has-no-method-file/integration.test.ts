@@ -4,5 +4,7 @@ import { createServer } from '../../../helpers'
 test('when leaf directory has no method file', async () => {
   const promise = createServer(import.meta.dirname)
 
-  await expect(promise).rejects.toThrow()
+  await expect(promise).rejects.toThrow(
+    new Error('Server process exited with code 1 before printing a port.'),
+  )
 })

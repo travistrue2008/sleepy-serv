@@ -1,5 +1,7 @@
 import { test, expect } from 'bun:test'
 
+import { StatusCode } from '../../../../src'
+
 import {
   Fmt,
   createServer,
@@ -14,7 +16,7 @@ test('when requested method on resource does not exist (REST)', async () => {
 
   await server.kill()
 
-  expect(result.status).toBe(405)
+  expect(result.status).toBe(StatusCode.MethodNotAllowed)
   expect(result.body).toBe(null)
 })
 
@@ -25,6 +27,6 @@ test('when requested method on resource does not exist (ws)', async () => {
 
   await server.kill()
 
-  expect(msg.status).toBe(405)
+  expect(msg.status).toBe(StatusCode.MethodNotAllowed)
   expect(msg.body).toBe(null)
 })

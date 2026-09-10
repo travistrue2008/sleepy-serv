@@ -1,6 +1,7 @@
 import SleepySocketClient, { MessageType } from 'sleepy-socket'
+import { StatusCode } from 'sleepy-serv'
 import { describe, test, expect } from 'bun:test'
-import { createServer, Fmt, createClient } from '../../helpers'
+import { Fmt, createServer, createClient } from '../../helpers'
 
 describe('REST', () => {
   test('when root middleware errors', async () => {
@@ -10,7 +11,7 @@ describe('REST', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(500)
+    expect(result.status).toBe(StatusCode.InternalServerError)
 
     expect(result.body).toStrictEqual({
       message: 'An internal server error occurred',
@@ -24,7 +25,7 @@ describe('REST', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(200)
+    expect(result.status).toBe(StatusCode.Ok)
     expect(result.body).toStrictEqual('GET - successful')
   })
 })
@@ -43,13 +44,13 @@ describe('WebSocket', () => {
     await client.close()
     await server.kill()
 
-    expect(result.status).toBe(500)
+    expect(result.status).toBe(StatusCode.InternalServerError)
 
     expect(result).toStrictEqual({
       id: result.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: 500,
+      status: StatusCode.InternalServerError,
       timestamp: result.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
@@ -69,13 +70,13 @@ describe('WebSocket', () => {
     await client.close()
     await server.kill()
 
-    expect(result.status).toBe(200)
+    expect(result.status).toBe(StatusCode.Ok)
 
     expect(result).toStrictEqual({
       id: result.id,
       clientId: client.id!,
       type: MessageType.Response,
-      status: 200,
+      status: StatusCode.Ok,
       timestamp: result.timestamp,
       headers: {},
       body: 'GET - successful',

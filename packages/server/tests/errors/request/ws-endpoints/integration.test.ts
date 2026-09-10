@@ -1,5 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 
+import { StatusCode } from '../../../../src'
+
 import {
   Fmt,
   createServer,
@@ -23,7 +25,7 @@ describe('POST', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(201)
+    expect(result.status).toBe(StatusCode.Created)
 
     expect(result.body).toStrictEqual({
       clientId: expect.any(String),
@@ -39,7 +41,7 @@ describe('POST', () => {
 
     await server.kill()
 
-    expect(msg.status).toBe(422)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -62,7 +64,7 @@ describe('PUT', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(422)
+    expect(result.status).toBe(StatusCode.UnprocessableContent)
 
     expect(result.body).toStrictEqual([
       {
@@ -82,7 +84,7 @@ describe('PUT', () => {
 
     await server.kill()
 
-    expect(msg.status).toBe(422)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -109,7 +111,7 @@ describe('PUT', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(404)
+    expect(result.status).toBe(StatusCode.NotFound)
     expect(result.body).toBe(null)
   })
 
@@ -125,7 +127,7 @@ describe('PUT', () => {
 
     await server.kill()
 
-    expect(msg.status).toBe(422)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -152,7 +154,7 @@ describe('PUT', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(401)
+    expect(result.status).toBe(StatusCode.Unauthorized)
 
     expect(result.body).toStrictEqual({
       message: 'Invalid token',
@@ -171,7 +173,7 @@ describe('PUT', () => {
 
     await server.kill()
 
-    expect(msg.status).toBe(422)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -198,7 +200,7 @@ describe('PUT', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(200)
+    expect(result.status).toBe(StatusCode.Ok)
 
     expect(result.body).toStrictEqual({
       clientId: expect.any(String),
@@ -219,7 +221,7 @@ describe('PUT', () => {
 
     await server.kill()
 
-    expect(msg.status).toBe(422)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -238,7 +240,7 @@ describe('GET', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(422)
+    expect(result.status).toBe(StatusCode.UnprocessableContent)
 
     expect(result.body).toStrictEqual([
       {
@@ -255,7 +257,7 @@ describe('GET', () => {
 
     await server.kill()
 
-    expect(msg.status).toBe(422)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -277,7 +279,7 @@ describe('GET', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(404)
+    expect(result.status).toBe(StatusCode.NotFound)
 
     expect(result.body).toBe(null)
   })
@@ -290,7 +292,7 @@ describe('GET', () => {
 
     await server.kill()
 
-    expect(msg.status).toBe(422)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
@@ -314,7 +316,7 @@ describe('GET', () => {
 
     await server.kill()
 
-    expect(result.status).toBe(404)
+    expect(result.status).toBe(StatusCode.NotFound)
 
     expect(result.body).toBe(null)
   })
@@ -334,7 +336,7 @@ describe('GET', () => {
 
     await server.kill()
 
-    expect(msg.status).toBe(422)
+    expect(msg.status).toBe(StatusCode.UnprocessableContent)
 
     expect(msg.body).toStrictEqual([
       {
