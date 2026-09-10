@@ -24,9 +24,9 @@ function resolveCompileOption (
     if (pkg.name) {
       return { outfile: pkg.name }
     }
-  } catch {
-    return { outfile: 'api' }
-  }
+  } catch {}
+
+  return { outfile: 'api' }
 }
 
 export async function build (): Promise<void> {
