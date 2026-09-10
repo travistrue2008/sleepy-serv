@@ -46,9 +46,7 @@ describe('REST', () => {
 describe('WebSocket', () => {
   test('when request body is NOT an object', async () => {
     const server = await createServer(import.meta.dirname)
-    const host = 'localhost'
-    const port = server.port
-    const client = await SleepySocketClient.open(host, port)
+    const client = await SleepySocketClient.open('localhost', server.port)
     const result = await client.post('/echo', { body: 42 })
 
     await client.close()
@@ -71,9 +69,7 @@ describe('WebSocket', () => {
 
   test('when request body IS an object', async () => {
     const server = await createServer(import.meta.dirname)
-    const host = 'localhost'
-    const port = server.port
-    const client = await SleepySocketClient.open(host, port)
+    const client = await SleepySocketClient.open('localhost', server.port)
 
     const result = await client.post('/echo', {
       body: {

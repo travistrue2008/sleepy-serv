@@ -1,11 +1,19 @@
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { loadConfig } from './config'
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
+
+import {
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+} from 'bun:test'
 
 import type { SleepyConfig } from './config'
 
-const TMP_ROOT = '/tmp/sleepy-serv'
+const TMP_ROOT = path.join(os.tmpdir(), 'sleepy-serv')
 
 function makeTempDir (): string {
   const dir = path.join(TMP_ROOT, `config-test-${crypto.randomUUID()}`)

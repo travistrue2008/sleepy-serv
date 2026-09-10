@@ -1,8 +1,15 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
 import { init } from './init'
+
+import {
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+} from 'bun:test'
 
 const BASE_DIR = path.join(os.tmpdir(), 'sleepy-serv')
 const CLI_ENTRY = path.resolve(import.meta.dirname, 'index.ts')

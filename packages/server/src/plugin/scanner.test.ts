@@ -1,4 +1,5 @@
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import crypto from 'crypto'
 import { scanRoutes } from './scanner'
@@ -13,7 +14,7 @@ import {
 
 const META = 'export const middleware = []'
 const HANDLER = 'export default () => new Response(`ok`)'
-const SCRATCHPAD = '/tmp/sleepy-serv/scanner-test'
+const SCRATCHPAD = path.join(os.tmpdir(), 'sleepy-serv/scanner-test')
 
 function makeTempDir (): string {
   const id = crypto.randomUUID()
