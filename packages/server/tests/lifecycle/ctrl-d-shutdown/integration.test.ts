@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { test, expect } from 'bun:test'
+import { createClient } from '../../helpers'
 
 test('when the user presses Ctrl+D', async () => {
   const entry = path.join(import.meta.dirname, 'src', 'index.ts')
@@ -32,6 +33,7 @@ test('when the user presses Ctrl+D', async () => {
   )
 
   const port = await portPromise
+  const reqClient = createClient({ port })
 
   terminal.write('\x04')
 
@@ -39,7 +41,7 @@ test('when the user presses Ctrl+D', async () => {
 
   terminal.close()
 
-  const promise = fetch(`http://localhost:${port}`)
+  const promise = reqClient.get('/', null)
 
   expect(code).toBe(0)
 

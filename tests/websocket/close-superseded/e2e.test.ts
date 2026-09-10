@@ -1,10 +1,11 @@
 import SleepySocketClient from 'sleepy-socket'
 import { mock, test, expect } from 'bun:test'
-import { createServer, waitFor } from '../../helpers'
+import { Fmt, waitFor, createServer, createClient } from '../../helpers'
 
 test('when superseded AND reconnect enabled', async () => {
   const handler = mock()
   const server = await createServer(import.meta.dirname)
+  const reqClient = createClient(server)
 
   const client = await SleepySocketClient.open('localhost', server.port, {
     reconnect: {
@@ -15,17 +16,13 @@ test('when superseded AND reconnect enabled', async () => {
 
   client.on('close', handler)
 
-  const reclaimResult = await fetch(
-    `http://localhost:${server.port}/ws/${client.id}`,
-    {
-      method: 'PUT',
-      headers: {
-        authorization: `Bearer ${client.token}`,
-      },
-    },
-  )
+  const reclaimResult = await reqClient.put(`/ws/${client.id}`, Fmt.Json, {
+    headers: new Headers({
+      authorization: `Bearer ${client.token}`,
+    }),
+  })
 
-  const { ticket } = await reclaimResult.json() as { ticket: string }
+  const { ticket } = reclaimResult.body as { ticket: string }
 
   const ws2 = new WebSocket(
     `ws://localhost:${server.port}/ws?ticket=${ticket}`,
@@ -50,6 +47,7 @@ test('when superseded AND reconnect enabled', async () => {
 test('when superseded AND reconnect disabled', async () => {
   const handler = mock()
   const server = await createServer(import.meta.dirname)
+  const reqClient = createClient(server)
 
   const client = await SleepySocketClient.open(
     'localhost',
@@ -59,17 +57,13 @@ test('when superseded AND reconnect disabled', async () => {
 
   client.on('close', handler)
 
-  const reclaimResult = await fetch(
-    `http://localhost:${server.port}/ws/${client.id}`,
-    {
-      method: 'PUT',
-      headers: {
-        authorization: `Bearer ${client.token}`,
-      },
-    },
-  )
+  const reclaimResult = await reqClient.put(`/ws/${client.id}`, Fmt.Json, {
+    headers: new Headers({
+      authorization: `Bearer ${client.token}`,
+    }),
+  })
 
-  const { ticket } = await reclaimResult.json() as { ticket: string }
+  const { ticket } = reclaimResult.body as { ticket: string }
 
   const ws2 = new WebSocket(
     `ws://localhost:${server.port}/ws?ticket=${ticket}`,

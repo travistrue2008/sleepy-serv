@@ -1,5 +1,7 @@
 import fs from 'fs'
 import path from 'path'
+import { StatusCode } from '../core/utils'
+import { Fmt, createClient } from '../../tests/helpers'
 
 import {
   describe,
@@ -129,15 +131,15 @@ describe('dev()', () => {
       }
     }
 
-    const result = await fetch(`http://localhost:${port}/`)
-    const body = await result.json()
+    const reqClient = createClient({ port })
+    const result = await reqClient.get('/', Fmt.Json)
 
     proc.kill()
     await proc.exited
 
     expect(port).toBeGreaterThan(0)
-    expect(result.status).toBe(200)
-    expect(body).toStrictEqual({ ok: true })
+    expect(result.status).toBe(StatusCode.Ok)
+    expect(result.body).toStrictEqual({ ok: true })
   })
 
   test('when a custom entrypoint is configured', async () => {
@@ -203,15 +205,15 @@ export default {
       }
     }
 
-    const result = await fetch(`http://localhost:${port}/`)
-    const body = await result.json()
+    const reqClient = createClient({ port })
+    const result = await reqClient.get('/', Fmt.Json)
 
     proc.kill()
     await proc.exited
 
     expect(port).toBeGreaterThan(0)
-    expect(result.status).toBe(200)
-    expect(body).toStrictEqual({ custom: true })
+    expect(result.status).toBe(StatusCode.Ok)
+    expect(result.body).toStrictEqual({ custom: true })
   })
 
   test('when a source file changes', async () => {
@@ -265,14 +267,14 @@ export default {
     )
 
     const newPort = await waitForPort()
-    const result = await fetch(`http://localhost:${newPort}/`)
-    const body = await result.json()
+    const reqClient = createClient({ port: newPort })
+    const result = await reqClient.get('/', Fmt.Json)
 
     proc.kill()
     await proc.exited
 
     expect(newPort).toBeGreaterThan(0)
-    expect(result.status).toBe(200)
-    expect(body).toStrictEqual({ reloaded: true })
+    expect(result.status).toBe(StatusCode.Ok)
+    expect(result.body).toStrictEqual({ reloaded: true })
   })
 })

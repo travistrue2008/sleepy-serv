@@ -12,5 +12,9 @@ test('when adding a hostname', async () => {
 
   await server.kill()
 
-  expect(true).toBe(true)
+  expect(
+    server.output.some(
+      line => line === 'HOSTNAME:test.sleepy-serv.com',
+    ),
+  ).toBe(true)
 })
