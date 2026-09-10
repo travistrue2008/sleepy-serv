@@ -1,8 +1,12 @@
 import crypto from 'node:crypto'
 import { describe, test, expect } from 'bun:test'
-import { createApp, StatusCode } from '../../../../src'
-import { MessageType, RECEIVED_MESSAGE_TYPES } from '../../../../src/messages'
-import { createSocketClient } from '../../../helpers'
+import { StatusCode } from '../../../../src'
+import { createServer, createSocketClient } from '../../../helpers'
+
+import {
+  MessageType,
+  RECEIVED_MESSAGE_TYPES,
+} from '../../../../src/core/messages'
 
 const ID = crypto.randomUUID()
 const CLIENT_ID = crypto.randomUUID()
@@ -19,22 +23,22 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   }
 
   test('when received message "id" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       id: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -48,22 +52,22 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "id" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       id: 'invalid',
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -77,21 +81,21 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "clientId" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       clientId: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -105,22 +109,22 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "clientId" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       clientId: 'invalid',
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: msg.clientId,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -134,22 +138,22 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "type" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       type: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -163,22 +167,22 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "type" is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       type: 'invalid',
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -192,22 +196,22 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "timestamp" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       timestamp: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -221,22 +225,22 @@ describe(`when "type" = "${MessageType.Heartbeat}"`, () => {
   })
 
   test('when received message "timestamp" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       timestamp: '2000-01-01',
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -264,22 +268,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   }
 
   test('when received message "id" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       id: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -293,22 +297,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "id" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       id: 'invalid',
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -322,21 +326,21 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "clientId" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       clientId: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -350,22 +354,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "clientId" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       clientId: 'invalid',
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: msg.clientId,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -379,22 +383,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "type" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       type: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -408,22 +412,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "type" is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       type: 'invalid',
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -437,22 +441,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "method" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       method: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -466,22 +470,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "method" is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       method: 'invalid',
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -495,22 +499,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "route" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       route: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -524,22 +528,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "route" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       route: 'hello world',
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -553,22 +557,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "timestamp" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       timestamp: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -582,22 +586,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "timestamp" field is invalid', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       timestamp: '2000-01-01',
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -611,22 +615,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "headers" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       headers: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -640,22 +644,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "headers" field is invalid (null)', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       headers: null,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -669,22 +673,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "headers" field is invalid (array)', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       headers: [],
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -698,22 +702,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "query" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       query: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },
@@ -727,22 +731,22 @@ describe(`when "type" = "${MessageType.Request}"`, () => {
   })
 
   test('when received message "body" field is missing', async () => {
-    const app = await createApp(0, import.meta.dirname)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.sendRaw({
       ...MESSAGE_VALID,
       body: undefined,
     })
 
-    await app.close(true)
+    await server.kill()
 
     expect(msg).toStrictEqual({
       id: msg.id,
       clientId: CLIENT_ID,
       type: MessageType.Response,
       status: StatusCode.UnprocessableContent,
-      timestamp: TIMESTAMP,
+      timestamp: msg.timestamp,
       headers: {
         'content-type': 'application/json;charset=utf-8',
       },

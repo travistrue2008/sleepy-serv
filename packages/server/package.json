@@ -5,11 +5,18 @@
   "license": "MIT",
   "version": "0.18.0",
   "type": "module",
+  "bin": {
+    "sleepy": "./src/cli/index.ts"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "bun": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./plugin": {
+      "bun": "./src/plugin/index.ts",
+      "default": "./src/plugin/index.ts"
     }
   },
   "files": [

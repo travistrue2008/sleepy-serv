@@ -1,7 +1,12 @@
+import path from 'path'
 import crypto from 'node:crypto'
-import { MessageType } from '../src/messages'
+import { MessageType } from '../src/core/messages'
 
-import type { App, HttpMethod } from '../src'
+import type { HttpMethod } from '../src'
+
+type HasPort = {
+  port: number
+}
 
 export const Fmt = {
   Text: 'text',
@@ -65,16 +70,76 @@ export type SocketTestClient = {
   readonly socket: WebSocket
   close: () => Promise<void>
   heartbeat: () => Promise<BaseMessage>
-  get: (route: string, opts?: MessagePayload) => Promise<ResponseMessage>
-  put: (route: string, opts?: MessagePayload) => Promise<ResponseMessage>
-  post: (route: string, opts?: MessagePayload) => Promise<ResponseMessage>
-  sendRaw: (payload: Record<string, unknown>) => Promise<AnyMessage>
+  get: (
+    route: string,
+    opts?: MessagePayload,
+  ) => Promise<ResponseMessage>
+  put: (
+    route: string,
+    opts?: MessagePayload,
+  ) => Promise<ResponseMessage>
+  post: (
+    route: string,
+    opts?: MessagePayload,
+  ) => Promise<ResponseMessage>
+  sendRaw: (
+    payload: Record<string, unknown>,
+  ) => Promise<AnyMessage>
+}
+
+export type ServerHandle = {
+  port: number
+  output: string[]
+  kill: () => Promise<void>
 }
 
 type WelcomeData = {
   clientId: string
   token: string
   heartbeatInterval: number
+}
+
+const STARTUP_TIMEOUT = 5000
+
+export type WaitForOptions = {
+  timeout?: number
+  interval?: number
+}
+
+export function wait (ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+export function waitFor (
+  predicate: () => boolean,
+  opts: WaitForOptions = {},
+): Promise<void> {
+  const timeout = opts.timeout ?? 1000
+  const interval = opts.interval ?? 10
+
+  return new Promise((resolve, reject) => {
+    const start = Date.now()
+
+    const check = (): void => {
+      if (predicate()) {
+        resolve()
+
+        return
+      }
+
+      if (Date.now() - start >= timeout) {
+        reject(new Error('waitFor timed out.'))
+
+        return
+      }
+
+      setTimeout(check, interval)
+    }
+
+    check()
+  })
 }
 
 async function deserializeBody (
@@ -91,16 +156,17 @@ async function deserializeBody (
 }
 
 async function makeRequestMethod (
-  app: App,
+  source: HasPort,
   method: HttpMethod,
   route: string,
   fmt: Fmt | null,
   opts: RequestOptions = {},
 ): Promise<HttpResult> {
+  const origin = `http://localhost:${source.port}`
   const query = new URLSearchParams(opts.query ?? {}).toString()
   const mountPath = opts.mountPath ?? ''
   const suffix = query ? `?${query}` : ''
-  const url = `${app.server.url.origin}${mountPath}${route}${suffix}`
+  const url = `${origin}${mountPath}${route}${suffix}`
 
   const res = await fetch(url, {
     method,
@@ -114,58 +180,80 @@ async function makeRequestMethod (
   }
 }
 
-export function createRequestor (app: App): Requestor {
+export function createClient (source: HasPort): Requestor {
   return {
-    get (route: string, fmt: Fmt | null = null, opts: RequestOptions = {}) {
-      return makeRequestMethod(app, 'GET', route, fmt, opts)
+    get (
+      route: string,
+      fmt: Fmt | null = null,
+      opts: RequestOptions = {},
+    ) {
+      return makeRequestMethod(source, 'GET', route, fmt, opts)
     },
-    put (route: string, fmt: Fmt | null = null, opts: RequestOptions = {}) {
-      return makeRequestMethod(app, 'PUT', route, fmt, opts)
+    put (
+      route: string,
+      fmt: Fmt | null = null,
+      opts: RequestOptions = {},
+    ) {
+      return makeRequestMethod(source, 'PUT', route, fmt, opts)
     },
-    post (route: string, fmt: Fmt | null = null, opts: RequestOptions = {}) {
-      return makeRequestMethod(app, 'POST', route, fmt, opts)
+    post (
+      route: string,
+      fmt: Fmt | null = null,
+      opts: RequestOptions = {},
+    ) {
+      return makeRequestMethod(source, 'POST', route, fmt, opts)
     },
   }
 }
 
 export async function createSocketClient (
-  app: App,
+  source: HasPort,
   opts: RequestOptions = {},
 ): Promise<SocketTestClient> {
   const mountPath = opts.mountPath ?? ''
-  const hostRoot = `${app.server.url.host}${mountPath}/ws`
-  const req = createRequestor(app)
-  const res = await req.post('/ws', Fmt.Json, { mountPath })
+  const hostRoot = `localhost:${source.port}${mountPath}/ws`
+  const client = createClient(source)
+
+  const res = await client.post(
+    '/ws',
+    Fmt.Json,
+    { mountPath },
+  )
+
   const { ticket } = res.body as { ticket: string }
   const url = `ws://${hostRoot}?ticket=${ticket}`
   const socket = new WebSocket(url)
 
-  const data = await new Promise<WelcomeData>((resolve, reject) => {
-    socket.addEventListener('error', event => {
-      console.error(event)
-      reject(event)
-    })
-
-    socket.addEventListener('message', event => {
-      const message = JSON.parse(event.data)
-
-      if (message.type !== MessageType.Welcome) {
-        const expected = MessageType.Welcome
-
-        return reject(
-          new TypeError(
-            `Expected ${expected} message, but got: "${message.type}"`,
-          ),
-        )
-      }
-
-      resolve({
-        clientId: message.clientId,
-        token: message.body.token,
-        heartbeatInterval: message.body.heartbeatInterval,
+  const data = await new Promise<WelcomeData>(
+    (resolve, reject) => {
+      socket.addEventListener('error', event => {
+        console.error(event)
+        reject(event)
       })
-    })
-  })
+
+      socket.addEventListener('message', event => {
+        const message = JSON.parse(event.data)
+
+        if (message.type !== MessageType.Welcome) {
+          const expected = MessageType.Welcome
+
+          return reject(
+            new TypeError(
+              'Expected '
+              + `${expected} message,`
+              + ` but got: "${message.type}"`,
+            ),
+          )
+        }
+
+        resolve({
+          clientId: message.clientId,
+          token: message.body.token,
+          heartbeatInterval: message.body.heartbeatInterval,
+        })
+      })
+    },
+  )
 
   async function sendRaw (
     payload: Record<string, unknown>,
@@ -201,7 +289,11 @@ export async function createSocketClient (
         clientId: data.clientId,
         type,
         timestamp: new Date().toISOString(),
-      }).then((value: unknown) => resolve(value as ResponseMessage))
+      }).then(
+        (value: unknown) => resolve(
+          value as ResponseMessage,
+        ),
+      )
     })
   }
 
@@ -210,13 +302,16 @@ export async function createSocketClient (
     route: string,
     payload: MessagePayload,
   ): Promise<ResponseMessage> {
-    const message = await sendMessage(MessageType.Request, {
-      method,
-      route,
-      headers: payload.headers ?? {},
-      query: payload.query ?? {},
-      body: payload.body ?? {},
-    })
+    const message = await sendMessage(
+      MessageType.Request,
+      {
+        method,
+        route,
+        headers: payload.headers ?? {},
+        query: payload.query ?? {},
+        body: payload.body ?? {},
+      },
+    )
 
     return message as ResponseMessage
   }
@@ -242,17 +337,134 @@ export async function createSocketClient (
     heartbeat (): Promise<BaseMessage> {
       return sendMessage(MessageType.Heartbeat, {})
     },
-    get (route: string, opts: MessagePayload = {}): Promise<ResponseMessage> {
+    get (
+      route: string,
+      opts: MessagePayload = {},
+    ): Promise<ResponseMessage> {
       return sendRequest('GET', route, opts)
     },
-    put (route: string, opts: MessagePayload = {}): Promise<ResponseMessage> {
+    put (
+      route: string,
+      opts: MessagePayload = {},
+    ): Promise<ResponseMessage> {
       return sendRequest('PUT', route, opts)
     },
-    post (route: string, opts: MessagePayload = {}): Promise<ResponseMessage> {
+    post (
+      route: string,
+      opts: MessagePayload = {},
+    ): Promise<ResponseMessage> {
       return sendRequest('POST', route, opts)
     },
-    sendRaw (payload: MessagePayload): Promise<AnyMessage> {
+    sendRaw (
+      payload: MessagePayload,
+    ): Promise<AnyMessage> {
       return sendRaw(payload)
+    },
+  }
+}
+
+export async function createServer (
+  testDir: string,
+): Promise<ServerHandle> {
+  const entry = path.join(testDir, 'src', 'index.ts')
+
+  const proc = Bun.spawn([
+    'bun', '--preload', 'sleepy-serv/plugin',
+    entry,
+  ], {
+    cwd: testDir,
+    stdout: 'pipe',
+    stderr: 'inherit',
+  })
+
+  const output: string[] = []
+  let portResolve: ((port: number) => void) | null = null
+  let portReject: ((err: Error) => void) | null = null
+  const reader = proc.stdout.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  const readLoop = async (): Promise<void> => {
+    while (true) {
+      const { done, value } = await reader.read()
+
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+
+      const lines = buffer.split('\n')
+
+      buffer = lines.pop()!
+
+      for (const line of lines) {
+        if (!line) continue
+
+        output.push(line)
+
+        if (
+          portResolve
+          && line.startsWith('Running on port:')
+        ) {
+          const port = Number.parseInt(
+            line.split(':')[1],
+            10,
+          )
+
+          portResolve(port)
+          portResolve = null
+          portReject = null
+        }
+      }
+    }
+
+    if (buffer) {
+      output.push(buffer)
+      buffer = ''
+    }
+  }
+
+  readLoop()
+
+  const portPromise = new Promise<number>(
+    (resolve, reject) => {
+      portResolve = resolve
+      portReject = reject
+
+      setTimeout(() => {
+        if (portReject) {
+          /* eslint-disable max-len */
+          portReject(
+            new Error(
+              `Server start timed out. No Running on port: line received within ${STARTUP_TIMEOUT}ms.`,
+            ),
+          )
+          /* eslint-enable max-len */
+        }
+      }, STARTUP_TIMEOUT)
+    },
+  )
+
+  proc.exited.then(code => {
+    if (portReject) {
+      portReject(
+        new Error(
+          `Server process exited with code ${code} before printing a port.`,
+        ),
+      )
+
+      portReject = null
+      portResolve = null
+    }
+  })
+
+  const port = await portPromise
+
+  return {
+    port,
+    output,
+    async kill () {
+      proc.kill()
+      await proc.exited
     },
   }
 }

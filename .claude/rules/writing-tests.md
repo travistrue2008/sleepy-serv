@@ -45,6 +45,11 @@ unit tests (colocated `*.test.js`) and integration tests
     1. Call the function, assign return value to a variable called `promise`
     2. Pass `promise` into `await expect()`
 
+## Named Constants
+
+- Use `StatusCode` and `CloseCode` instead of numeric literals for status codes and close codes.
+- Import both from `sleepy-serv` in E2E tests, and from the relative `../src` path in integration and unit tests.
+
 ## References
 
 - For detailed architecture regarding unit, integration, and E2E setups, see `@.claude/kbase/architecture/testing.md`.

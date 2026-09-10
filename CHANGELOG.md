@@ -8,6 +8,35 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- **Bun plugin for route discovery.** Routes are now resolved at load time
+  via a Bun plugin (`sleepy-serv/plugin`) that scans the filesystem and
+  generates static imports through code generation. This replaces the
+  previous dynamic `import()` and `fs.readdirSync()` approach, enabling
+  compatibility with `bun build --compile --bytecode`.
+
+- **`sleepy` CLI.** New executable with three commands: `sleepy init`
+  scaffolds a project, `sleepy dev` runs a watch-mode dev server with the
+  plugin preloaded, and `sleepy build` produces a production build (with
+  optional `--compile` and `--bytecode` flags).
+
+- **`sleepy.config.ts` configuration file.** Consumers can define
+  `app.root`, `app.entrypoint`, and `build` options (compile, bytecode,
+  outdir, plugins) in a project-level config file.
+
+### Changed
+
+- **Simplified `createApp` signature.** `createApp(port, opts?)` no longer
+  accepts route configuration directly. Routes are resolved automatically
+  by the plugin, preserving the filesystem-based routing convention
+  transparently.
+
+- **Reorganized source into `core/` and `plugin/` directories.** The server
+  engine moved to `src/core/`, and route scanning, code generation, and
+  config loading moved to `src/plugin/`. The public API surface
+  (`sleepy-serv` entry point) is unchanged.
+
 ## [0.18.0](https://www.npmjs.com/package/sleepy-serv/v/0.18.0) - 2026-09-08
 
 ### Removed

@@ -1,6 +1,12 @@
 import { test, expect } from 'bun:test'
-import { StatusCode, createApp } from '../../../src'
-import { Fmt, createRequestor } from '../../helpers'
+
+import { StatusCode } from '../../../src'
+
+import {
+  Fmt,
+  createServer,
+  createClient,
+} from '../../helpers'
 
 const BODY = JSON.stringify({ message: 'hello' })
 
@@ -9,19 +15,19 @@ const JSON_HEADERS = new Headers({
 })
 
 test('when req.json() is called twice (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname)
-  const req = createRequestor(app)
+  const server = await createServer(import.meta.dirname)
+  const client = createClient(server)
 
-  const res = await req.post('/', Fmt.Json, {
+  const result = await client.post('/', Fmt.Json, {
     headers: JSON_HEADERS,
     body: BODY,
   })
 
-  await app.close(true)
+  await server.kill()
 
-  expect(res.status).toBe(StatusCode.Ok)
+  expect(result.status).toBe(StatusCode.Ok)
 
-  expect(res.body).toStrictEqual({
+  expect(result.body).toStrictEqual({
     first: { message: 'hello' },
     second: { message: 'hello' },
   })

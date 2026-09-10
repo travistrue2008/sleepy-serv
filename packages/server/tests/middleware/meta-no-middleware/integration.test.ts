@@ -1,24 +1,31 @@
 import { test, expect } from 'bun:test'
-import { StatusCode, createApp } from '../../../src'
-import { Fmt, createRequestor, createSocketClient } from '../../helpers'
+
+import { StatusCode } from '../../../src'
+
+import {
+  Fmt,
+  createServer,
+  createClient,
+  createSocketClient,
+} from '../../helpers'
 
 test('when meta file does not export middleware (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname)
-  const req = createRequestor(app)
-  const res = await req.get('/users', Fmt.Text)
+  const server = await createServer(import.meta.dirname)
+  const client = createClient(server)
+  const result = await client.get('/users', Fmt.Text)
 
-  await app.close(true)
+  await server.kill()
 
-  expect(res.status).toBe(StatusCode.Ok)
-  expect(res.body).toBe('Hello world')
+  expect(result.status).toBe(StatusCode.Ok)
+  expect(result.body).toBe('Hello world')
 })
 
 test('when meta file does not export middleware (ws)', async () => {
-  const app = await createApp(0, import.meta.dirname)
-  const ws = await createSocketClient(app)
+  const server = await createServer(import.meta.dirname)
+  const ws = await createSocketClient(server)
   const msg = await ws.get('/users')
 
-  await app.close(true)
+  await server.kill()
 
   expect(msg.status).toBe(StatusCode.Ok)
   expect(msg.body).toBe('Hello world')

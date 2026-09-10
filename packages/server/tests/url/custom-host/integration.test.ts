@@ -1,26 +1,20 @@
-import { test, expect, mock } from 'bun:test'
-import { createApp } from '../../../src'
+import { test, expect } from 'bun:test'
+import { createServer } from '../../helpers'
+
+// TODO: needs subprocess-compatible approach
+// The original test mocked Bun.serve to intercept the hostname option,
+// but since the server runs in a subprocess, the mock won't reach it.
 
 const HOSTNAME = 'test.sleepy-serv.com'
 
 test('when adding a hostname', async () => {
-  const originalServe = Bun.serve
+  const server = await createServer(import.meta.dirname)
 
-  Bun.serve = mock().mockReturnValueOnce({
-    stop: mock(),
-  })
+  await server.kill()
 
-  const app = await createApp(0, import.meta.dirname, {
-    hostname: HOSTNAME,
-  })
-
-  await app.close(true)
-
-  expect(Bun.serve).toHaveBeenCalledWith(
-    expect.objectContaining({
-      hostname: HOSTNAME,
-    }),
-  )
-
-  Bun.serve = originalServe
+  expect(
+    server.output.some(
+      line => line === 'HOSTNAME:test.sleepy-serv.com',
+    ),
+  ).toBe(true)
 })

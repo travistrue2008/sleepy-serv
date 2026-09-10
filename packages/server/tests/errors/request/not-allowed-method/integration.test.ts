@@ -1,24 +1,31 @@
 import { test, expect } from 'bun:test'
-import { createApp, StatusCode } from '../../../../src'
-import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
+
+import { StatusCode } from '../../../../src'
+
+import {
+  Fmt,
+  createServer,
+  createClient,
+  createSocketClient,
+} from '../../../helpers'
 
 test('when requested method on resource does not exist (REST)', async () => {
-  const app = await createApp(0, import.meta.dirname)
-  const req = createRequestor(app)
-  const res = await req.get('/users', Fmt.Json)
+  const server = await createServer(import.meta.dirname)
+  const client = createClient(server)
+  const result = await client.get('/users', Fmt.Json)
 
-  await app.close(true)
+  await server.kill()
 
-  expect(res.status).toBe(StatusCode.MethodNotAllowed)
-  expect(res.body).toBe(null)
+  expect(result.status).toBe(StatusCode.MethodNotAllowed)
+  expect(result.body).toBe(null)
 })
 
 test('when requested method on resource does not exist (ws)', async () => {
-  const app = await createApp(0, import.meta.dirname)
-  const ws = await createSocketClient(app)
+  const server = await createServer(import.meta.dirname)
+  const ws = await createSocketClient(server)
   const msg = await ws.get('/users')
 
-  await app.close(true)
+  await server.kill()
 
   expect(msg.status).toBe(StatusCode.MethodNotAllowed)
   expect(msg.body).toBe(null)

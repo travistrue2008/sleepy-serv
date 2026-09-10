@@ -1,19 +1,16 @@
-import { mock, test, expect } from 'bun:test'
-import { createApp } from '../../../src'
-import { createSocketClient } from '../../helpers'
+import { test, expect } from 'bun:test'
+import { createServer, createSocketClient } from '../../helpers'
 
 test('when a connection is opened', async () => {
-  const onOpen = mock()
-
-  const app = await createApp(0, import.meta.dirname, {
-    ws: { onOpen },
-  })
-
-  const ws = await createSocketClient(app)
+  const server = await createServer(import.meta.dirname)
+  const ws = await createSocketClient(server)
 
   await ws.close()
-  await app.close(true)
+  await server.kill()
 
-  expect(onOpen).toHaveBeenCalledOnce()
-  expect(onOpen).toHaveBeenCalledWith(ws.clientId)
+  expect(
+    server.output.some(
+      line => line.includes(`OPENED:${ws.clientId}`),
+    ),
+  ).toBe(true)
 })
