@@ -15,7 +15,7 @@ test('when triggered from handler', async () => {
   const received = listenForNotifications(wsClients)
   const reqClient = createClient(server)
 
-  await reqClient.post('/handler-trigger-send', Fmt.Json, {
+  await reqClient.post('/handler-trigger-send', null, {
     body: JSON.stringify({
       userId: 'user-2',
     }),
@@ -66,7 +66,7 @@ test('when triggered from middleware', async () => {
   const received = listenForNotifications(wsClients)
   const reqClient = createClient(server)
 
-  await reqClient.post('/middleware-trigger-send', Fmt.Json, {
+  await reqClient.post('/middleware-trigger-send', null, {
     body: JSON.stringify({
       userId: 'user-2',
     }),

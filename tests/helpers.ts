@@ -50,7 +50,7 @@ export type RequestOptions = {
 
 export type RequestorMethodFn = (
   route: string,
-  fmt: Fmt,
+  fmt: Fmt | null,
   opts?: RequestOptions,
 ) => Promise<HttpResult>
 
@@ -112,7 +112,14 @@ export function waitFor (
   })
 }
 
-async function deserializeBody (fmt: Fmt, res: Response): Promise<unknown> {
+async function deserializeBody (
+  fmt: Fmt | null,
+  res: Response,
+): Promise<unknown> {
+  if (!fmt) {
+    return undefined
+  }
+
   const body = await res[fmt]()
 
   return body
@@ -122,7 +129,7 @@ async function makeRequestMethod (
   source: HasPort,
   method: HttpMethod | 'OPTIONS',
   route: string,
-  fmt: Fmt,
+  fmt: Fmt | null,
   opts: RequestOptions = {},
 ): Promise<HttpResult> {
   const origin = `http://localhost:${source.port}`
@@ -155,25 +162,25 @@ async function makeRequestMethod (
 
 export function createClient (source: HasPort): Requestor {
   return {
-    options (route: string, fmt: Fmt, opts: RequestOptions = {}) {
+    options (route: string, fmt: Fmt | null, opts: RequestOptions = {}) {
       return makeRequestMethod(source, 'OPTIONS', route, fmt, opts)
     },
-    head (route: string, fmt: Fmt, opts: RequestOptions = {}) {
+    head (route: string, fmt: Fmt | null, opts: RequestOptions = {}) {
       return makeRequestMethod(source, 'HEAD', route, fmt, opts)
     },
-    get (route: string, fmt: Fmt, opts: RequestOptions = {}) {
+    get (route: string, fmt: Fmt | null, opts: RequestOptions = {}) {
       return makeRequestMethod(source, 'GET', route, fmt, opts)
     },
-    put (route: string, fmt: Fmt, opts: RequestOptions = {}) {
+    put (route: string, fmt: Fmt | null, opts: RequestOptions = {}) {
       return makeRequestMethod(source, 'PUT', route, fmt, opts)
     },
-    post (route: string, fmt: Fmt, opts: RequestOptions = {}) {
+    post (route: string, fmt: Fmt | null, opts: RequestOptions = {}) {
       return makeRequestMethod(source, 'POST', route, fmt, opts)
     },
-    patch (route: string, fmt: Fmt, opts: RequestOptions = {}) {
+    patch (route: string, fmt: Fmt | null, opts: RequestOptions = {}) {
       return makeRequestMethod(source, 'PATCH', route, fmt, opts)
     },
-    delete (route: string, fmt: Fmt, opts: RequestOptions = {}) {
+    delete (route: string, fmt: Fmt | null, opts: RequestOptions = {}) {
       return makeRequestMethod(source, 'DELETE', route, fmt, opts)
     },
   }
