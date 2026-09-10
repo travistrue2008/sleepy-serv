@@ -616,13 +616,11 @@ Produces a production build using `Bun.build()` with the plugin:
 
 ```bash
 sleepy build
-sleepy build --compile
-sleepy build --compile --bytecode
 ```
 
-Output goes to `./dist` by default. The `--compile` flag produces a
-single executable. The `--bytecode` flag pre-compiles to bytecode for
-faster startup.
+Output goes to `./dist` by default. Build options like `compile`,
+`bytecode`, and `outdir` are configured in `sleepy.config.ts` (see
+[Configuration](#configuration)).
 
 ## Configuration
 
