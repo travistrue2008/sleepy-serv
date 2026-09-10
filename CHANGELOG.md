@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.19.0](https://www.npmjs.com/package/sleepy-serv/v/0.19.0) - 2026-09-10
+
 ### Added
 
 - **Bun plugin for route discovery.** Routes are now resolved at load time

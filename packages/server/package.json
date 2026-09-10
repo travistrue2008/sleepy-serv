@@ -3,7 +3,7 @@
   "description": "A more opinionated web server for building REST-ful applications",
   "author": "Travis J True",
   "license": "MIT",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "type": "module",
   "bin": {
     "sleepy": "./src/cli/index.ts"
