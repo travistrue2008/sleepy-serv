@@ -133,10 +133,10 @@ export type FilterFn = (
 ) => boolean
 
 export type SocketCommands = {
-  query: (fn: FilterFn) => SessionEntry[]
-  send: (fn: FilterFn, event: string, body: unknown) => void
   broadcast: (event: string, body: unknown) => void
+  send: (event: string, body: unknown, fn: FilterFn) => void
   drop: (fn: FilterFn, code?: number, reason?: string) => void
+  query: (fn: FilterFn) => SessionEntry[]
 }
 
 export type BaseRequest = {

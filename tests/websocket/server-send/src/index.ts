@@ -23,15 +23,11 @@ const admin = Bun.serve({
           message: `Hello from ${body.userId}`,
         }
 
-        app.ws.send(
-          (_clientId, data) => {
-            const connectionData = data as ConnectionData
+        app.ws.send('player_joined', message, (_clientId, data) => {
+          const connectionData = data as ConnectionData
 
-            return connectionData.app.userId !== body.userId
-          },
-          'player_joined',
-          message,
-        )
+          return connectionData.app.userId !== body.userId
+        })
 
         return new Response('', { status: 204 })
       },

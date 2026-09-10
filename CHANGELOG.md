@@ -8,6 +8,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+
+- **Reordered `send()` parameters.** `SocketCommands.send` (available as
+  `app.ws.send` and `req.ws.send`) changed from `send(fn, event, body)`
+  to `send(event, body, fn)`, putting the message content before the
+  filter function.
+
+- **Compiled output naming.** `sleepy build` with `compile: true` now
+  names the executable from the project's `package.json` `name` field,
+  falling back to `api` if no name is set. Previously, the name was
+  derived from the entrypoint path (producing `src` by default).
+
 ## [0.19.0](https://www.npmjs.com/package/sleepy-serv/v/0.19.0) - 2026-09-10
 
 ### Added

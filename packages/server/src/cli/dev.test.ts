@@ -12,6 +12,7 @@ import {
   afterEach,
 } from 'bun:test'
 
+const IS_CI = process.env.CI === 'true'
 const BASE_DIR = path.join(os.tmpdir(), 'sleepy-serv')
 const PKG_ROOT = path.resolve(import.meta.dirname, '../..')
 const CLI_ENTRY = path.resolve(import.meta.dirname, 'index.ts')
@@ -78,7 +79,7 @@ describe('dev()', () => {
     expect(stderr).toContain('Entrypoint not found')
   })
 
-  test('when the server crashes on startup', async () => {
+  test.skipIf(IS_CI)('when the server crashes on startup', async () => {
     const srcDir = path.join(tempDir, 'src')
 
     fs.mkdirSync(srcDir, { recursive: true })

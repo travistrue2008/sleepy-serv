@@ -18,15 +18,11 @@ export const middleware: Middleware[] = [
       message: `Hello from ${body.userId}`,
     }
 
-    req.ws.send(
-      (_clientId, data) => {
-        const connectionData = data as ConnectionData
+    req.ws.send('player_joined', message, (_clientId, data) => {
+      const connectionData = data as ConnectionData
 
-        return connectionData.app.userId !== body.userId
-      },
-      'player_joined',
-      message,
-    )
+      return connectionData.app.userId !== body.userId
+    })
 
     return next()
   },
