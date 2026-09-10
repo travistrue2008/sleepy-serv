@@ -1,14 +1,37 @@
-import path from 'path'
 import fs from 'fs'
+import path from 'path'
 import { loadConfig } from '../plugin/config'
 import { scanRoutes } from '../plugin/scanner'
 import { generateBarrelModule } from '../plugin/codegen'
 
 import type { BunPlugin } from 'bun'
 
+function resolveCompileOption (
+  compile: boolean | string | undefined,
+): { outfile: string } | undefined {
+  if (!compile) {
+    return undefined
+  }
+
+  if (typeof compile === 'string') {
+    return { outfile: compile }
+  }
+
+  try {
+    const raw = fs.readFileSync('package.json', 'utf-8')
+    const pkg = JSON.parse(raw)
+
+    if (pkg.name) {
+      return { outfile: pkg.name }
+    }
+  } catch {
+    return { outfile: 'api' }
+  }
+}
+
 export async function build (): Promise<void> {
   const config = await loadConfig()
-  const entrypoint = config.app?.entrypoint?? './src/index.ts'
+  const entrypoint = config.app?.entrypoint ?? './src/index.ts'
 
   if (!fs.existsSync(entrypoint)) {
     console.error(`Entrypoint not found: ${entrypoint}`)
@@ -45,7 +68,7 @@ export async function build (): Promise<void> {
       target: 'bun',
       minify: true,
       bytecode: config.build?.bytecode || undefined,
-      compile: (config.build?.compile || undefined) as boolean | undefined,
+      compile: resolveCompileOption(config.build?.compile),
       plugins: [...userPlugins, sleepyPlugin],
       entrypoints: [entrypoint],
     })

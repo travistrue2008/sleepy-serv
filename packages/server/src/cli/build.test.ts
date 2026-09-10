@@ -156,6 +156,11 @@ const app = createApp(3000)
     writeRoute()
 
     fs.writeFileSync(
+      path.join(tempDir, 'package.json'),
+      JSON.stringify({ name: 'my-api' }),
+    )
+
+    fs.writeFileSync(
       path.join(tempDir, 'sleepy.config.ts'),
       `
 export default {
@@ -175,7 +180,40 @@ export default {
     const outputs = fs.readdirSync(distDir)
 
     expect(fs.existsSync(distDir)).toBe(true)
-    expect(outputs.length).toBeGreaterThan(0)
+    expect(outputs).toContain('my-api')
+  })
+
+  test('when compile is true and package.json has no name', async () => {
+    linkSleepyServ()
+    writeEntrypoint()
+    writeRoute()
+
+    fs.writeFileSync(
+      path.join(tempDir, 'package.json'),
+      JSON.stringify({}),
+    )
+
+    fs.writeFileSync(
+      path.join(tempDir, 'sleepy.config.ts'),
+      `
+export default {
+  build: {
+    compile: true,
+  },
+}
+      `.trim().concat('\n'),
+    )
+
+    process.chdir(tempDir)
+    mock.restore()
+
+    await build()
+
+    const distDir = path.join(tempDir, 'dist')
+    const outputs = fs.readdirSync(distDir)
+
+    expect(fs.existsSync(distDir)).toBe(true)
+    expect(outputs).toContain('api')
   })
 
   test('when bytecode is true', async () => {
