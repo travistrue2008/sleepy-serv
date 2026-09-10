@@ -2000,6 +2000,50 @@ describe('buildSocketHandlers()', () => {
 })
 
 describe('buildSocketCommands()', () => {
+  describe('broadcast()', () => {
+    const CLIENT_ID_A = '00000000-0000-0000-0000-000000000010'
+    const CLIENT_ID_B = '00000000-0000-0000-0000-000000000011'
+
+    test('when multiple clients are connected', () => {
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const wsA = buildSocket(CLIENT_ID_A)
+      const wsB = buildSocket(CLIENT_ID_B)
+
+      server.open(wsA)
+      server.open(wsB)
+      commands.broadcast('player_joined', { name: 'x' })
+
+      const notifA = JSON.parse(wsA.send.mock.calls[1][0])
+      const notifB = JSON.parse(wsB.send.mock.calls[1][0])
+
+      expect(notifA).toStrictEqual({
+        id: notifA.id,
+        clientId: CLIENT_ID_A,
+        type: MessageType.Notification,
+        timestamp: TIMESTAMP,
+        event: 'player_joined',
+        headers: {},
+        body: {
+          name: 'x',
+        },
+      })
+
+      expect(notifB).toStrictEqual({
+        id: notifB.id,
+        clientId: CLIENT_ID_B,
+        type: MessageType.Notification,
+        timestamp: TIMESTAMP,
+        event: 'player_joined',
+        headers: {},
+        body: {
+          name: 'x',
+        },
+      })
+    })
+  })
+
   describe('send()', () => {
     test('when invoked', () => {
       const clientIds = [
@@ -2019,7 +2063,7 @@ describe('buildSocketCommands()', () => {
 
       const filterFn = mock((clientId, _data) => clientId !== clientIds[3])
 
-      commands.send(filterFn, EVENT, { score: 1 })
+      commands.send(EVENT, { score: 1 }, filterFn)
 
       const notifications = webSockets.map(ws => {
         return ws.send.mock.calls.map(call => {
@@ -2117,11 +2161,11 @@ describe('buildSocketCommands()', () => {
 
       server.open(ws)
 
-      const fn = () => commands.send((id) => {
+      const fn = () => commands.send(EVENT, { score: 1 }, (id) => {
         state.activeSessions.delete(id)
 
         return true
-      }, EVENT, { score: 1 })
+      })
 
       expect(fn).toThrow(
         new ReferenceError(
@@ -2131,47 +2175,72 @@ describe('buildSocketCommands()', () => {
     })
   })
 
-  describe('broadcast()', () => {
-    const CLIENT_ID_A = '00000000-0000-0000-0000-000000000010'
-    const CLIENT_ID_B = '00000000-0000-0000-0000-000000000011'
-
-    test('when multiple clients are connected', () => {
+  describe('drop()', () => {
+    test('when no sessions match the filter', () => {
       const state = buildSocketState()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
-      const wsA = buildSocket(CLIENT_ID_A)
-      const wsB = buildSocket(CLIENT_ID_B)
 
-      server.open(wsA)
-      server.open(wsB)
-      commands.broadcast('player_joined', { name: 'x' })
+      const ws = buildSocket(
+        '00000000-0000-0000-0000-000000000040',
+      )
 
-      const notifA = JSON.parse(wsA.send.mock.calls[1][0])
-      const notifB = JSON.parse(wsB.send.mock.calls[1][0])
+      server.open(ws)
+      commands.drop(() => false)
 
-      expect(notifA).toStrictEqual({
-        id: notifA.id,
-        clientId: CLIENT_ID_A,
-        type: MessageType.Notification,
-        timestamp: TIMESTAMP,
-        event: 'player_joined',
-        headers: {},
-        body: {
-          name: 'x',
-        },
-      })
+      expect(ws.close).not.toHaveBeenCalled()
+    })
 
-      expect(notifB).toStrictEqual({
-        id: notifB.id,
-        clientId: CLIENT_ID_B,
-        type: MessageType.Notification,
-        timestamp: TIMESTAMP,
-        event: 'player_joined',
-        headers: {},
-        body: {
-          name: 'x',
-        },
-      })
+    test('when sessions match the filter', () => {
+      const clientIds = [
+        '00000000-0000-0000-0000-000000000050',
+        '00000000-0000-0000-0000-000000000051',
+        '00000000-0000-0000-0000-000000000052',
+      ]
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const sockets = clientIds.map(buildSocket)
+
+      sockets.forEach(ws => server.open(ws))
+      commands.drop(id => id !== clientIds[1])
+
+      expect(sockets[0].close).toHaveBeenCalledOnce()
+
+      expect(sockets[0].close).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+      )
+
+      expect(sockets[1].close).not.toHaveBeenCalled()
+      expect(sockets[2].close).toHaveBeenCalledOnce()
+
+      expect(sockets[2].close).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+      )
+    })
+
+    test('when a custom code and reason are provided', () => {
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+
+      const ws = buildSocket(
+        '00000000-0000-0000-0000-000000000060',
+      )
+
+      server.open(ws)
+
+      commands.drop(
+        id => id === '00000000-0000-0000-0000-000000000060',
+        4000,
+        'kicked',
+      )
+
+      expect(ws.close).toHaveBeenCalledOnce()
+      expect(ws.close).toHaveBeenCalledWith(4000, 'kicked')
     })
   })
 
@@ -2253,75 +2322,6 @@ describe('buildSocketCommands()', () => {
           app: { role: 'player' },
         },
       ])
-    })
-  })
-
-  describe('drop()', () => {
-    test('when no sessions match the filter', () => {
-      const state = buildSocketState()
-      const server = buildTestServer([], state)
-      const commands = buildSocketCommands(state)
-
-      const ws = buildSocket(
-        '00000000-0000-0000-0000-000000000040',
-      )
-
-      server.open(ws)
-      commands.drop(() => false)
-
-      expect(ws.close).not.toHaveBeenCalled()
-    })
-
-    test('when sessions match the filter', () => {
-      const clientIds = [
-        '00000000-0000-0000-0000-000000000050',
-        '00000000-0000-0000-0000-000000000051',
-        '00000000-0000-0000-0000-000000000052',
-      ]
-
-      const state = buildSocketState()
-      const server = buildTestServer([], state)
-      const commands = buildSocketCommands(state)
-      const sockets = clientIds.map(buildSocket)
-
-      sockets.forEach(ws => server.open(ws))
-      commands.drop(id => id !== clientIds[1])
-
-      expect(sockets[0].close).toHaveBeenCalledOnce()
-
-      expect(sockets[0].close).toHaveBeenCalledWith(
-        undefined,
-        undefined,
-      )
-
-      expect(sockets[1].close).not.toHaveBeenCalled()
-      expect(sockets[2].close).toHaveBeenCalledOnce()
-
-      expect(sockets[2].close).toHaveBeenCalledWith(
-        undefined,
-        undefined,
-      )
-    })
-
-    test('when a custom code and reason are provided', () => {
-      const state = buildSocketState()
-      const server = buildTestServer([], state)
-      const commands = buildSocketCommands(state)
-
-      const ws = buildSocket(
-        '00000000-0000-0000-0000-000000000060',
-      )
-
-      server.open(ws)
-
-      commands.drop(
-        id => id === '00000000-0000-0000-0000-000000000060',
-        4000,
-        'kicked',
-      )
-
-      expect(ws.close).toHaveBeenCalledOnce()
-      expect(ws.close).toHaveBeenCalledWith(4000, 'kicked')
     })
   })
 })

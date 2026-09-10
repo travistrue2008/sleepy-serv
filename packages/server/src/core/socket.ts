@@ -746,6 +746,34 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
   }
 
   return {
+    broadcast (event, body) {
+      for (const clientId of state.activeSessions.keys()) {
+        sendToClient(clientId, event, body)
+      }
+    },
+    send (event, body, fn) {
+      let index = 0
+
+      /* TODO: look into concurrency at some point */
+      for (const [clientId, session] of state.activeSessions) {
+        if (fn(clientId, session.ws.data, index)) {
+          sendToClient(clientId, event, body)
+        }
+
+        index += 1
+      }
+    },
+    drop (fn, code, reason) {
+      let index = 0
+
+      for (const [clientId, session] of state.activeSessions) {
+        if (fn(clientId, session.ws.data, index)) {
+          session.ws.close(code, reason)
+        }
+
+        index += 1
+      }
+    },
     query (fn) {
       const results: SessionEntry[] = []
       let index = 0
@@ -762,34 +790,6 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
       }
 
       return results
-    },
-    send (fn, event, body) {
-      let index = 0
-
-      /* TODO: look into concurrency at some point */
-      for (const [clientId, session] of state.activeSessions) {
-        if (fn(clientId, session.ws.data, index)) {
-          sendToClient(clientId, event, body)
-        }
-
-        index += 1
-      }
-    },
-    broadcast (event, body) {
-      for (const clientId of state.activeSessions.keys()) {
-        sendToClient(clientId, event, body)
-      }
-    },
-    drop (fn, code, reason) {
-      let index = 0
-
-      for (const [clientId, session] of state.activeSessions) {
-        if (fn(clientId, session.ws.data, index)) {
-          session.ws.close(code, reason)
-        }
-
-        index += 1
-      }
     },
   }
 }
