@@ -135,11 +135,7 @@ For WebSocket tests:
 ```typescript
 test('when connecting via WebSocket', async () => {
   const server = await createServer(import.meta.dirname)
-  const client = await SleepySocketClient.open(
-    'localhost',
-    server.port,
-  )
-
+  const client = await SleepySocketClient.open('localhost', server.port)
   const result = await client.get('/users')
 
   expect(result.status).toBe(200)

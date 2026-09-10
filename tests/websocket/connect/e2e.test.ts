@@ -17,12 +17,7 @@ test('when the client connects', async () => {
 
 test('when a request carries the cached clientId', async () => {
   const server = await createServer(import.meta.dirname)
-
-  const client = await SleepySocketClient.open(
-    'localhost',
-    server.port,
-  )
-
+  const client = await SleepySocketClient.open('localhost', server.port)
   const result = await client.get('/ok')
 
   await client.close()
