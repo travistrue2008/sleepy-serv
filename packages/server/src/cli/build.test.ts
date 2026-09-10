@@ -1,4 +1,5 @@
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { build } from './build'
 
@@ -12,7 +13,7 @@ import {
   afterEach,
 } from 'bun:test'
 
-const BASE_DIR = '/private/tmp/sleepy-serv'
+const BASE_DIR = path.join(os.tmpdir(), 'sleepy-serv')
 const PKG_ROOT = path.resolve(import.meta.dirname, '../..')
 
 describe('build()', () => {

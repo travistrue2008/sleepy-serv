@@ -1,9 +1,10 @@
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
 import { init } from './init'
 
-const BASE_DIR = '/private/tmp/sleepy-serv'
+const BASE_DIR = path.join(os.tmpdir(), 'sleepy-serv')
 const CLI_ENTRY = path.resolve(import.meta.dirname, 'index.ts')
 
 // -- CLI dispatch

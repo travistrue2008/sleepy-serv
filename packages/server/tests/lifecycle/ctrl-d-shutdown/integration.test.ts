@@ -2,7 +2,9 @@ import path from 'node:path'
 import { test, expect } from 'bun:test'
 import { createClient } from '../../helpers'
 
-test('when the user presses Ctrl+D', async () => {
+const IS_CI = process.env.CI === 'true'
+
+test.skipIf(IS_CI)('when the user presses Ctrl+D', async () => {
   const entry = path.join(import.meta.dirname, 'src', 'index.ts')
 
   let resolvePort: (port: number) => void

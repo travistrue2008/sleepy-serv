@@ -1,4 +1,5 @@
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { StatusCode } from '../core/utils'
 import { Fmt, createClient } from '../../tests/helpers'
@@ -11,7 +12,7 @@ import {
   afterEach,
 } from 'bun:test'
 
-const BASE_DIR = '/private/tmp/sleepy-serv'
+const BASE_DIR = path.join(os.tmpdir(), 'sleepy-serv')
 const PKG_ROOT = path.resolve(import.meta.dirname, '../..')
 const CLI_ENTRY = path.resolve(import.meta.dirname, 'index.ts')
 
