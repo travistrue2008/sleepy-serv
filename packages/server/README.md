@@ -9,32 +9,69 @@ A directory-driven web server designed for REST-ful applications
 
 ## Getting Started
 
-Here's a minimalist example on how to create a sleepy-serv app:
+The fastest way to scaffold a new project is the CLI:
 
-```js
-import { createApp } from 'sleepy-serv'
-
-const PORT = 3000
-
-const app = await createApp(PORT, import.meta.dirname)
+```bash
+bunx sleepy-serv init
+bun install
+sleepy dev
 ```
 
-The parameter for `import.meta.dirname` can be any directory you prefer, but it's common to point to the same directory as your root `index.js` file. The next step is to create an `/api` directory in the directory that you point to, and begin adding routes.
+Or manually:
+
+```js
+// src/index.ts
+import { createApp } from 'sleepy-serv'
+
+createApp(3000)
+```
+
+Routes live in `src/api/` and are discovered automatically by the Bun
+plugin at startup. There is no need to pass a directory path or import
+routes yourself.
+
+To start the dev server with the plugin preloaded:
+
+```bash
+sleepy dev
+```
+
+### The Plugin
+
+`sleepy-serv` uses a Bun plugin (`sleepy-serv/plugin`) to scan the
+filesystem and generate static imports for every route at load time. This
+replaces the previous dynamic `import()` and `fs.readdirSync()` approach
+and enables compatibility with `bun build --compile --bytecode`.
+
+The plugin is loaded automatically by the CLI commands (`sleepy dev` and
+`sleepy build`). If you prefer to run your entrypoint directly, preload
+the plugin yourself:
+
+```bash
+bun --preload sleepy-serv/plugin src/index.ts
+```
 
 ### Return Value
 
-`sleepy-serv` was originally built for NodeJS, but it was ported to `bun` recently (before the initial release). The `createApp()` function merely calls `Bun.serve()` under-the-hood, and returns the `app` object that contains these properties:
-- `routes`: Contains a list of all of the routes defined by the file structure. This is useful for debugging.
-- `server`: this is the object that's returned from `Bun.serve()`. The `server` object has an `async` `.stop()` method on it, but prefer `app.close()` (see [Shutting Down](#shutting-down)), which stops the server and releases everything else the app holds.
-- `ws`: WebSocket commands for interacting with connected clients: `query(fn)`, `send(fn, event, body)`, `broadcast(event, body)`, and `drop(fn, code?, reason?)`.
-- `close`: an `async` function that shuts the app down. See [Shutting Down](#shutting-down).
+`createApp()` calls `Bun.serve()` under the hood and returns an `app`
+object with these properties:
+- `routes`: a list of all routes defined by the file structure, useful for
+  debugging.
+- `server`: the object returned from `Bun.serve()`. Prefer `app.close()`
+  (see [Shutting Down](#shutting-down)) over calling `server.stop()`
+  directly.
+- `ws`: WebSocket commands for interacting with connected clients:
+  `query(fn)`, `send(fn, event, body)`, `broadcast(event, body)`, and
+  `drop(fn, code?, reason?)`.
+- `close`: an `async` function that shuts the app down. See
+  [Shutting Down](#shutting-down).
 
 ### Shutting Down
 
 `app.close()` shuts the app down and releases everything it holds:
 
 ```js
-const app = await createApp(PORT, import.meta.dirname)
+const app = createApp(3000)
 
 await app.close()
 ```
@@ -423,7 +460,7 @@ You can define app-level middleware that will be applied to all routes:
 ```js
 import { parseJsonBody } from 'sleepy-serv'
 
-const app = await createApp(PORT, import.meta.dirname, {
+const app = createApp(3000, {
   middleware: [
     parseJsonBody(),
     (req, res, next) => {
@@ -443,7 +480,7 @@ Note that the reserved `/ws` handshake routes are folded into these same chains,
 The hostname can be customized like so:
 
 ```js
-createApp(import.meta.dirname, {
+createApp(3000, {
   hostname: 'test.sleepy-serv.com',
 })
 ```
@@ -453,7 +490,7 @@ createApp(import.meta.dirname, {
 This adds a prefix to all routes. For example:
 
 ```js
-createApp(import.meta.dirname, {
+createApp(3000, {
   mountPath: 'api/public',
 })
 ```
@@ -481,7 +518,7 @@ Yields these routes:
 When the app is started, the app can be shutdown gracefully by pressing Ctrl+D in the terminal. That handler is only wired up when `stdin` is a TTY, so it's skipped in CI, in test runners, and anywhere `stdin` is piped. The `onClose` hook will be called during that shutdown if it's defined, and it's also called by [`app.close()`](#shutting-down). `onClose` can also be `async` as well.
 
 ```js
-const app = await createApp(PORT, import.meta.dirname, {
+const app = createApp(3000, {
   onClose: () => console.info('closing down...'),
 })
 ```
@@ -491,7 +528,7 @@ const app = await createApp(PORT, import.meta.dirname, {
 WebSocket tuning and lifecycle hooks:
 
 ```js
-const app = await createApp(PORT, import.meta.dirname, {
+const app = createApp(3000, {
   ws: {
     heartbeatInterval: 30_000,
     dropThreshold: 120_000,
@@ -546,3 +583,64 @@ This works from both HTTP and WebSocket transports.
 - `SocketCommands`: the type for `app.ws` and `req.ws`
 - Error classes for every 4xx and 5xx status (e.g. `NotFoundError`, `UnauthorizedError`, `InternalServerError`)
 - Middleware helpers: `parseJsonBody`, `validateSchemas`, `setValidationFormats`
+
+## CLI
+
+The `sleepy` CLI is installed with the package and provides three commands:
+
+### `sleepy init`
+
+Scaffolds a new project in the current directory with `package.json`,
+`sleepy.config.ts`, `tsconfig.json`, `src/index.ts`, and
+`src/api/get.ts`. If `package.json` already exists, it merges the
+`dev` and `build` scripts without overwriting other fields. If `src/`
+already exists, existing files are not overwritten.
+
+### `sleepy dev`
+
+Starts the dev server in watch mode with the plugin preloaded:
+
+```bash
+sleepy dev
+```
+
+Equivalent to:
+
+```bash
+bun --watch --preload sleepy-serv/plugin src/index.ts
+```
+
+### `sleepy build`
+
+Produces a production build using `Bun.build()` with the plugin:
+
+```bash
+sleepy build
+sleepy build --compile
+sleepy build --compile --bytecode
+```
+
+Output goes to `./dist` by default. The `--compile` flag produces a
+single executable. The `--bytecode` flag pre-compiles to bytecode for
+faster startup.
+
+## Configuration
+
+Create a `sleepy.config.ts` (or `.js`) in the project root:
+
+```ts
+export default {
+  app: {
+    root: './src/api',
+    entrypoint: './src/index.ts',
+  },
+  build: {
+    outdir: './dist',
+    compile: false,
+    bytecode: false,
+    plugins: [],
+  },
+}
+```
+
+All fields are optional and fall back to the defaults shown above.
