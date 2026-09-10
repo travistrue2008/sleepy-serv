@@ -5,6 +5,9 @@
   "license": "MIT",
   "version": "0.18.0",
   "type": "module",
+  "bin": {
+    "sleepy": "./src/cli/index.ts"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

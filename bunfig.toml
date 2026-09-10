@@ -10,6 +10,8 @@ coveragePathIgnorePatterns = [
   ".github/**",
   "packages/client/tests/**",
   "packages/server/tests/**",
+  'packages/server/src/cli/build.ts',
+  'packages/server/src/core/index.ts',
   "tests/**",
   'test-setup.ts',
 ]
