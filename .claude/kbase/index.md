@@ -32,6 +32,7 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 
 - [sleepy-socket Protocol](./ideas/sleepy-socket.md): outstanding protocol slices (notification/ack, client routing, player identity, gRPC forward path).
 - [Replace Dynamic Imports](./ideas/replace-dynamic-imports-plan.md): full plan for plugin + CLI + subprocess E2E architecture.
+- [Subprocess E2E Plan](./ideas/subprocess-e2e-plan.md): plan for codegen-only plugin + subprocess test migration.
 
 ## Roadmap
 

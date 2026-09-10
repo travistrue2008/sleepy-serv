@@ -2,26 +2,79 @@
 
 ## Test styles
 
-- **Unit tests** colocated in `packages/server/src/core/` and `packages/client/src/` (`*.test.ts`).
-- **Server integration tests** in `packages/server/tests/<category>/<case>/integration.test.ts`, each with a real `api/` fixture. Every test boots its own app with `createApp(0)` from `sleepy-serv` and tears down with `app.close(true)`. The [plugin](./plugin.md) auto-scans the `api/` directory relative to the caller. Requests go through the functional helpers in `packages/server/tests/helpers.ts` (see [Server integration helpers](#server-integration-helpers)), not raw `fetch`.
-- **Root-level E2E tests** in `tests/<category>/<case>/integration.test.ts`: a real `sleepy-serv` server and a real `sleepy-socket` client over an actual loopback WebSocket (port `0` for an OS-assigned ephemeral port). `tests/helpers.ts` exposes `waitFor`, `Fmt`, and `createRequestor`. Note it has **no** socket-client factory, because these tests exercise the published client directly via `SleepySocketClient.open(host, port)`. That is the defining difference from the server integration suite, which never imports the client and hand-rolls a raw `WebSocket` instead: only this suite covers the two packages meeting, so it is what proves the client's public API (`client.id`, `client.connectionData`) is really wired to the wire protocol. `waitFor(predicate)` polls real-timer events like a reconnect swapping in a new socket.
+- **Unit tests** colocated in `packages/server/src/core/` and `packages/client/src/` (`*.test.ts`). Plugin unit tests in `packages/server/src/plugin/` (`scanner.test.ts`, `codegen.test.ts`, `config.test.ts`).
+- **Server integration tests** in `packages/server/tests/<category>/<case>/integration.test.ts`. Each test directory mimics a consumer project with `src/index.ts` (entrypoint) and `src/api/` (route fixtures). Tests spawn the app as a subprocess via `createServer(import.meta.dirname)`, make HTTP/WebSocket requests from the outside, and assert on responses and stdout output.
+- **Root-level E2E tests** in `tests/<category>/<case>/e2e.test.ts`. Same subprocess model as integration tests, but exercises the full stack with `sleepy-socket` client. This suite proves the two packages meet over the wire.
 
-## Server integration helpers
+## Subprocess model
 
-`packages/server/tests/helpers.js` exposes function factories instead of the old `Context` class (the class was removed 2026-07-16 once every suite migrated):
+All integration and E2E tests run the server in a subprocess. Each `test()` call spawns its own server for isolation.
 
-- `createRequestor(app)` for REST: `req.get/put/post(route, fmt, opts)` returns `{ status, body }`. `fmt` is `Fmt.Text` / `Fmt.Json`, and the body is deserialized with `res[fmt]()`. That indexing is why `Fmt`'s **values** stay lowercase while its members are PascalCase: the values are `Response` method names, so `tsc` rejects any other spelling. Per-call `opts` carries `query` and `mountPath`.
-- `createSocketClient(app, opts)` for WebSocket: runs the POST-ticket, connect, and welcome handshake, then exposes `ws.get/put/post(route, opts)`, `heartbeat()`, `sendRaw(payload)`, plus `clientId` / `token` / `socket` getters. ws responses are asserted on `msg.status` / `msg.body`. Its getter is `clientId`, **not** `id`: this helper is a test double over a raw socket, not a `SleepySocketClient` (whose getter is `client.id`), so the two suites read the session id under different names on purpose (see [Identifier naming](./websocket.md#identifier-naming-id-vs-clientid)).
+**Test directory layout** (mimics a consumer project):
+```
+tests/request/route-static/
+  src/
+    index.ts        # import { createApp } from 'sleepy-serv'; createApp(0)
+    api/
+      users/get.ts  # route handler
+  e2e.test.ts       # spawns src/index.ts via createServer()
+```
 
-Naming convention across suites: `app` + `req` + `res` for REST, `app` + `ws` + `msg` for ws. Most endpoints are tested twice, once per transport, with a `(REST)` / `(ws)` suffix on the test name.
+The subprocess runs with `bun --preload sleepy-serv/plugin src/index.ts`. The plugin's `onLoad` hook intercepts the `sleepy-serv` import and injects codegen'd routes via static imports. The server logs `Running on port: <N>` to stdout; `createServer()` parses this to discover the assigned port.
 
-Two non-obvious rules:
+**Why subprocesses**: The plugin uses `Bun.plugin()` with `onLoad` to intercept and replace the `sleepy-serv` barrel at load time. `onLoad` results are cached per file path per process, so a single process can only serve one set of routes. Each test directory has different route fixtures, so each needs its own process with a fresh module cache.
 
-- **`sendRaw(payload)` is the only way to test message-schema validation.** The ergonomic `get/put/post` and `heartbeat` always inject a valid `id`, `clientId`, `type`, and `timestamp`, so a malformed frame (a missing or invalid field) cannot be expressed through them. The `errors/request/ws-message` suite drives every validation case through `sendRaw`.
-- **`mountPath` is a per-call `opts` field, not a positional arg.** `createRequestor().post(route, fmt, opts)` takes three arguments; a fourth is silently dropped. So `createSocketClient` forwards the mount path as `req.post('/ws', Fmt.Json, { mountPath })` for the ticket POST to reach the mounted `/ws`, and the ws message `route` must still include the mount prefix.
+## Helpers
 
-See also [Testing Patterns](../guides/testing-patterns.md) for timer and mocking conventions.
+Both `packages/server/tests/helpers.ts` and `tests/helpers.ts` provide the same core functions:
+
+- `createServer(testDir)` spawns the subprocess, waits for the port, captures stdout, returns `{ port, output, kill() }`. Rejects if the subprocess exits before printing a port (e.g., scanner validation errors).
+- `createClient(source)` for REST: `client.get/put/post(route, fmt, opts)` returns `{ status, body }`. Takes any object with `port`.
+- `createSocketClient(source, opts)` (server helpers only) for raw WebSocket: runs POST-ticket + connect + welcome, returns `ws.get/put/post`, `heartbeat()`, `sendRaw()`.
+- `waitFor(predicate)` polls on real timers until truthy or timeout.
+- `wait(ms)` simple delay.
+
+The E2E helpers also provide `createWsClients(server, opts)` for multi-client scenarios, `listenForNotifications(clients)`, `listenForClose(clients)`, `closeWsClients(clients)`, and `getAdminPort(server)`.
+
+**Variable naming**: `server` for the subprocess handle, `client` for the HTTP requestor, `wsClient` for WebSocket client, `result` for HTTP responses.
+
+## Server-side command testing
+
+`app.ws.send()`, `app.ws.broadcast()`, `app.ws.drop()`, and `app.ws.query()` can't be called from outside the subprocess. Two patterns solve this:
+
+- **Trigger routes**: Add HTTP endpoints in `src/api/` that invoke `req.ws.*` from a handler or middleware. The test hits the trigger route via `fetch()`, then asserts on the WebSocket client's received messages.
+- **Admin server**: For `app.ws.*` commands (which need the `app` reference), `src/index.ts` spins up a secondary `Bun.serve()` on port 0 with routes that call `app.ws.broadcast()` etc. The test discovers the admin port from `ADMIN_PORT:<N>` in stdout via `getAdminPort(server)`.
+
+## Callback testing
+
+Server-side callbacks (`onClose`, `onOpen`) are defined in `src/index.ts` and log to stdout. Tests assert on `server.output`:
+
+```typescript
+// src/index.ts
+const app = createApp(0, {
+  ws: {
+    onClose: (clientId, reason) => {
+      console.log(`CLOSE:${clientId}:${reason}`)
+    },
+  },
+})
+
+// test
+await waitFor(() =>
+  server.output.filter(l => l.startsWith('CLOSE:')).length >= 1,
+)
+```
+
+Wait for the output to appear before `server.kill()`, since the subprocess may not have flushed stdout yet.
+
+## Coverage
+
+Bun does not support code coverage for subprocesses ([oven-sh/bun#17867](https://github.com/oven-sh/bun/issues/17867)). `NODE_V8_COVERAGE` is recognized but does not write files, and `v8.takeCoverage()` is not implemented (Bun 1.4.0). Coverage for plugin code comes from the in-process unit tests (`scanner.test.ts`, `codegen.test.ts`, `config.test.ts`). Integration/E2E tests provide behavioral verification without line-level coverage reporting.
 
 ## Timers
 
 Fake timers are **not** global. `test-setup.ts` (root preload) gates `jest.useFakeTimers()` + `setSystemTime(EPOCH)` on `Bun.main` starting with `/packages`, so package unit/integration tests get the frozen clock while root `tests/**` E2E run on **real** timers. E2E tests therefore use small server/client thresholds (~100ms) instead of advancing a fake clock.
+
+Note: subprocess servers always run on real timers regardless of the test runner's timer mode, since they are separate processes.
+
+See also [Testing Patterns](../guides/testing-patterns.md) for timer and mocking conventions.
