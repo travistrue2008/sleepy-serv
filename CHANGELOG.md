@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.20.0](https://www.npmjs.com/package/sleepy-serv/v/0.20.0) - 2026-09-10
+
 ### Changed
 
 - **Reordered `send()` parameters.** `SocketCommands.send` (available as
