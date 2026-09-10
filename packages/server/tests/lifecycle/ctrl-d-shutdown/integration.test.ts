@@ -23,13 +23,13 @@ test('when the user presses Ctrl+D', async () => {
     },
   })
 
-  const proc = Bun.spawn([
-    'bun', '--preload', 'sleepy-serv/plugin',
-    entry,
-  ], {
-    terminal,
-    cwd: import.meta.dirname,
-  })
+  const proc = Bun.spawn(
+    ['bun', '--preload', 'sleepy-serv/plugin', entry],
+    {
+      terminal,
+      cwd: import.meta.dirname,
+    },
+  )
 
   const port = await portPromise
 
@@ -43,5 +43,9 @@ test('when the user presses Ctrl+D', async () => {
 
   expect(code).toBe(0)
 
-  await expect(promise).rejects.toThrow()
+  await expect(promise).rejects.toThrow(
+    new TypeError(
+      'Unable to connect. Is the computer able to access the url?',
+    ),
+  )
 })

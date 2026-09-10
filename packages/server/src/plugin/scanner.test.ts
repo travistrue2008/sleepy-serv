@@ -53,7 +53,9 @@ describe('scanRoutes()', () => {
     const fake = path.join(SCRATCHPAD, filename)
     const fn = () => scanRoutes(fake)
 
-    expect(fn).toThrow()
+    expect(fn).toThrow(
+      new Error(`ENOENT: no such file or directory, scandir '${fake}'`),
+    )
   })
 
   test('when a leaf directory has no method file', () => {

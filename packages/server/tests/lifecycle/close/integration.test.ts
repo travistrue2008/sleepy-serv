@@ -9,7 +9,11 @@ test('when the app is closed', async () => {
 
   const promise = fetch(`http://localhost:${port}`)
 
-  await expect(promise).rejects.toThrow()
+  await expect(promise).rejects.toThrow(
+    new TypeError(
+      'Unable to connect. Is the computer able to access the url?',
+    ),
+  )
 
   const closed = server.output.some(line => line.includes('CLOSED'))
 
