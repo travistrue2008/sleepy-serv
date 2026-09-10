@@ -1,17 +1,22 @@
 import { test, expect } from 'bun:test'
-import { StatusCode, createApp } from '../../../../src'
-import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
+
+import {
+  Fmt,
+  createServer,
+  createClient,
+  createSocketClient,
+} from '../../../helpers'
 
 test('when a RequestError sub-type is thrown (REST)', async () => {
-  const app = createApp(0)
-  const req = createRequestor(app)
-  const res = await req.get('/', Fmt.Json)
+  const server = await createServer(import.meta.dirname)
+  const client = createClient(server)
+  const result = await client.get('/', Fmt.Json)
 
-  await app.close(true)
+  await server.kill()
 
-  expect(res.status).toBe(StatusCode.UnprocessableContent)
+  expect(result.status).toBe(422)
 
-  expect(res.body).toStrictEqual([
+  expect(result.body).toStrictEqual([
     {
       path: 'body',
       message: `must have required property 'firstName'`,
@@ -20,13 +25,13 @@ test('when a RequestError sub-type is thrown (REST)', async () => {
 })
 
 test('when a RequestError sub-type is thrown (ws)', async () => {
-  const app = createApp(0)
-  const ws = await createSocketClient(app)
+  const server = await createServer(import.meta.dirname)
+  const ws = await createSocketClient(server)
   const msg = await ws.get('/')
 
-  await app.close(true)
+  await server.kill()
 
-  expect(msg.status).toBe(StatusCode.UnprocessableContent)
+  expect(msg.status).toBe(422)
 
   expect(msg.body).toStrictEqual([
     {

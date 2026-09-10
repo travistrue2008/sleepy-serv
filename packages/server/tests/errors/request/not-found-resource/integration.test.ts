@@ -1,25 +1,30 @@
 import { test, expect } from 'bun:test'
-import { StatusCode, createApp } from '../../../../src'
-import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
+
+import {
+  Fmt,
+  createServer,
+  createClient,
+  createSocketClient,
+} from '../../../helpers'
 
 test('when requested resource is not found (REST)', async () => {
-  const app = createApp(0)
-  const req = createRequestor(app)
-  const res = await req.get('/users/123/photos', Fmt.Json)
+  const server = await createServer(import.meta.dirname)
+  const client = createClient(server)
+  const result = await client.get('/users/123/photos', Fmt.Json)
 
-  await app.close(true)
+  await server.kill()
 
-  expect(res.status).toBe(StatusCode.NotFound)
-  expect(res.body).toBe(null)
+  expect(result.status).toBe(404)
+  expect(result.body).toBe(null)
 })
 
 test('when requested resource is not found (ws)', async () => {
-  const app = createApp(0)
-  const ws = await createSocketClient(app)
+  const server = await createServer(import.meta.dirname)
+  const ws = await createSocketClient(server)
   const msg = await ws.get('/users/123/photos')
 
-  await app.close(true)
+  await server.kill()
 
-  expect(msg.status).toBe(StatusCode.NotFound)
+  expect(msg.status).toBe(404)
   expect(msg.body).toBe(null)
 })

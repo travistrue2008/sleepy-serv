@@ -349,14 +349,10 @@ function buildServer (
   })
 }
 
-function processIO (
-  port: number,
-  server: Server,
-  opts: AppOptions,
-): CloseFn {
+function processIO (server: Server, opts: AppOptions): CloseFn {
   const onClose = opts.onClose || (() => {})
 
-  console.info(`Running on port: ${port}`)
+  console.info(`Running on port: ${server.port}`)
   console.info('')
   console.info('Press Ctrl+D to gracefully shutdown')
   console.info('')
@@ -399,7 +395,7 @@ export function createApp (
   const ws = buildSocketCommands(state)
   const routes = buildRoutes(config, state, ws, opts)
   const server = buildServer(port, routes, state, ws, opts)
-  const close = processIO(port, server, opts)
+  const close = processIO(server, opts)
 
   return {
     routes: routes.output,

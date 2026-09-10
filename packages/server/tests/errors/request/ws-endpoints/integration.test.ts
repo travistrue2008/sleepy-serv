@@ -1,6 +1,11 @@
 import { describe, test, expect } from 'bun:test'
-import { StatusCode, createApp } from '../../../../src'
-import { Fmt, createRequestor, createSocketClient } from '../../../helpers'
+
+import {
+  Fmt,
+  createServer,
+  createClient,
+  createSocketClient,
+} from '../../../helpers'
 
 type TicketBody = {
   ticket: string
@@ -12,15 +17,15 @@ const TOKEN_INVALID = 'token-invalid'
 
 describe('POST', () => {
   test('when requested (REST)', async () => {
-    const app = createApp(0)
-    const req = createRequestor(app)
-    const res = await req.post('/ws', Fmt.Json)
+    const server = await createServer(import.meta.dirname)
+    const client = createClient(server)
+    const result = await client.post('/ws', Fmt.Json)
 
-    await app.close(true)
+    await server.kill()
 
-    expect(res.status).toBe(StatusCode.Created)
+    expect(result.status).toBe(201)
 
-    expect(res.body).toStrictEqual({
+    expect(result.body).toStrictEqual({
       clientId: expect.any(String),
       ticket: expect.any(String),
       data: null,
@@ -28,13 +33,13 @@ describe('POST', () => {
   })
 
   test('when requested (ws)', async () => {
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
     const msg = await ws.post('/ws')
 
-    await app.close(true)
+    await server.kill()
 
-    expect(msg.status).toBe(StatusCode.UnprocessableContent)
+    expect(msg.status).toBe(422)
 
     expect(msg.body).toStrictEqual([
       {
@@ -47,19 +52,19 @@ describe('POST', () => {
 
 describe('PUT', () => {
   test('when the "authorization" header is missing (REST)', async () => {
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
-    const req = createRequestor(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
+    const client = createClient(server)
 
-    const res = await req.put(`/ws/${ws.clientId}`, Fmt.Json, {
+    const result = await client.put(`/ws/${ws.clientId}`, Fmt.Json, {
       headers: new Headers({}),
     })
 
-    await app.close(true)
+    await server.kill()
 
-    expect(res.status).toBe(StatusCode.UnprocessableContent)
+    expect(result.status).toBe(422)
 
-    expect(res.body).toStrictEqual([
+    expect(result.body).toStrictEqual([
       {
         path: 'headers',
         message: `must have required property 'authorization'`,
@@ -68,16 +73,16 @@ describe('PUT', () => {
   })
 
   test('when the "authorization" header is missing (ws)', async () => {
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.put(`/ws/${ws.clientId}`, {
       headers: new Headers({}),
     })
 
-    await app.close(true)
+    await server.kill()
 
-    expect(msg.status).toBe(StatusCode.UnprocessableContent)
+    expect(msg.status).toBe(422)
 
     expect(msg.body).toStrictEqual([
       {
@@ -88,25 +93,29 @@ describe('PUT', () => {
   })
 
   test('when the "clientId" param is invalid (REST)', async () => {
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
-    const req = createRequestor(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
+    const client = createClient(server)
 
-    const res = await req.put(`/ws/${CLIENT_ID_INVALID}`, Fmt.Json, {
-      headers: new Headers({
-        authorization: `Bearer ${ws.token}`,
-      }),
-    })
+    const result = await client.put(
+      `/ws/${CLIENT_ID_INVALID}`,
+      Fmt.Json,
+      {
+        headers: new Headers({
+          authorization: `Bearer ${ws.token}`,
+        }),
+      },
+    )
 
-    await app.close(true)
+    await server.kill()
 
-    expect(res.status).toBe(StatusCode.NotFound)
-    expect(res.body).toBe(null)
+    expect(result.status).toBe(404)
+    expect(result.body).toBe(null)
   })
 
   test('when the "clientId" param is invalid (ws)', async () => {
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.put(`/ws/${CLIENT_ID_INVALID}`, {
       headers: new Headers({
@@ -114,9 +123,9 @@ describe('PUT', () => {
       }),
     })
 
-    await app.close(true)
+    await server.kill()
 
-    expect(msg.status).toBe(StatusCode.UnprocessableContent)
+    expect(msg.status).toBe(422)
 
     expect(msg.body).toStrictEqual([
       {
@@ -127,28 +136,32 @@ describe('PUT', () => {
   })
 
   test('when the "token" header is incorrect (REST)', async () => {
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
-    const req = createRequestor(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
+    const client = createClient(server)
 
-    const res = await req.put(`/ws/${ws.clientId}`, Fmt.Json, {
-      headers: new Headers({
-        authorization: `Bearer ${TOKEN_INVALID}`,
-      }),
-    })
+    const result = await client.put(
+      `/ws/${ws.clientId}`,
+      Fmt.Json,
+      {
+        headers: new Headers({
+          authorization: `Bearer ${TOKEN_INVALID}`,
+        }),
+      },
+    )
 
-    await app.close(true)
+    await server.kill()
 
-    expect(res.status).toBe(StatusCode.Unauthorized)
+    expect(result.status).toBe(401)
 
-    expect(res.body).toStrictEqual({
+    expect(result.body).toStrictEqual({
       message: 'Invalid token',
     })
   })
 
   test('when the "token" header is incorrect (ws)', async () => {
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.put(`/ws/${ws.clientId}`, {
       headers: new Headers({
@@ -156,9 +169,9 @@ describe('PUT', () => {
       }),
     })
 
-    await app.close(true)
+    await server.kill()
 
-    expect(msg.status).toBe(StatusCode.UnprocessableContent)
+    expect(msg.status).toBe(422)
 
     expect(msg.body).toStrictEqual([
       {
@@ -169,21 +182,25 @@ describe('PUT', () => {
   })
 
   test('when requested (REST)', async () => {
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
-    const req = createRequestor(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
+    const client = createClient(server)
 
-    const res = await req.put(`/ws/${ws.clientId}`, Fmt.Json, {
-      headers: new Headers({
-        authorization: `Bearer ${ws.token}`,
-      }),
-    })
+    const result = await client.put(
+      `/ws/${ws.clientId}`,
+      Fmt.Json,
+      {
+        headers: new Headers({
+          authorization: `Bearer ${ws.token}`,
+        }),
+      },
+    )
 
-    await app.close(true)
+    await server.kill()
 
-    expect(res.status).toBe(StatusCode.Ok)
+    expect(result.status).toBe(200)
 
-    expect(res.body).toStrictEqual({
+    expect(result.body).toStrictEqual({
       clientId: expect.any(String),
       ticket: expect.any(String),
       data: null,
@@ -191,8 +208,8 @@ describe('PUT', () => {
   })
 
   test('when requested (ws)', async () => {
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
 
     const msg = await ws.put(`/ws/${ws.clientId}`, {
       headers: new Headers({
@@ -200,9 +217,9 @@ describe('PUT', () => {
       }),
     })
 
-    await app.close(true)
+    await server.kill()
 
-    expect(msg.status).toBe(StatusCode.UnprocessableContent)
+    expect(msg.status).toBe(422)
 
     expect(msg.body).toStrictEqual([
       {
@@ -215,15 +232,15 @@ describe('PUT', () => {
 
 describe('GET', () => {
   test('when NO "ticket" querystring (REST)', async () => {
-    const app = createApp(0)
-    const req = createRequestor(app)
-    const res = await req.get('/ws', Fmt.Json)
+    const server = await createServer(import.meta.dirname)
+    const client = createClient(server)
+    const result = await client.get('/ws', Fmt.Json)
 
-    await app.close(true)
+    await server.kill()
 
-    expect(res.status).toBe(StatusCode.UnprocessableContent)
+    expect(result.status).toBe(422)
 
-    expect(res.body).toStrictEqual([
+    expect(result.body).toStrictEqual([
       {
         path: 'query',
         message: `must have required property 'ticket'`,
@@ -232,13 +249,13 @@ describe('GET', () => {
   })
 
   test('when NO "ticket" querystring (ws)', async () => {
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
     const msg = await ws.get('/ws')
 
-    await app.close(true)
+    await server.kill()
 
-    expect(msg.status).toBe(StatusCode.UnprocessableContent)
+    expect(msg.status).toBe(422)
 
     expect(msg.body).toStrictEqual([
       {
@@ -249,31 +266,31 @@ describe('GET', () => {
   })
 
   test('when invalid "ticket" querystring (REST)', async () => {
-    const app = createApp(0)
-    const req = createRequestor(app)
+    const server = await createServer(import.meta.dirname)
+    const client = createClient(server)
 
-    const res = await req.get('/ws', Fmt.Json, {
+    const result = await client.get('/ws', Fmt.Json, {
       query: {
         ticket: TICKET_INVALID,
       },
     })
 
-    await app.close(true)
+    await server.kill()
 
-    expect(res.status).toBe(StatusCode.NotFound)
+    expect(result.status).toBe(404)
 
-    expect(res.body).toBe(null)
+    expect(result.body).toBe(null)
   })
 
   test('when invalid "ticket" querystring (ws)', async () => {
     const url = `/ws?ticket=${TICKET_INVALID}`
-    const app = createApp(0)
-    const ws = await createSocketClient(app)
+    const server = await createServer(import.meta.dirname)
+    const ws = await createSocketClient(server)
     const msg = await ws.get(url)
 
-    await app.close(true)
+    await server.kill()
 
-    expect(msg.status).toBe(StatusCode.UnprocessableContent)
+    expect(msg.status).toBe(422)
 
     expect(msg.body).toStrictEqual([
       {
@@ -284,30 +301,30 @@ describe('GET', () => {
   })
 
   test('when providing a "ticket" querystring (REST)', async () => {
-    const app = createApp(0)
-    const req = createRequestor(app)
-    const ticketRes = await req.post('/ws', Fmt.Json)
-    const { ticket } = ticketRes.body as TicketBody
+    const server = await createServer(import.meta.dirname)
+    const client = createClient(server)
+    const ticketResult = await client.post('/ws', Fmt.Json)
+    const { ticket } = ticketResult.body as TicketBody
 
-    const res = await req.get('/ws', Fmt.Json, {
+    const result = await client.get('/ws', Fmt.Json, {
       query: {
         ticket,
       },
     })
 
-    await app.close(true)
+    await server.kill()
 
-    expect(res.status).toBe(StatusCode.NotFound)
+    expect(result.status).toBe(404)
 
-    expect(res.body).toBe(null)
+    expect(result.body).toBe(null)
   })
 
   test('when providing a "ticket" querystring (ws)', async () => {
-    const app = createApp(0)
-    const req = createRequestor(app)
-    const ws = await createSocketClient(app)
-    const ticketRes = await req.post('/ws', Fmt.Json)
-    const { ticket } = ticketRes.body as TicketBody
+    const server = await createServer(import.meta.dirname)
+    const client = createClient(server)
+    const ws = await createSocketClient(server)
+    const ticketResult = await client.post('/ws', Fmt.Json)
+    const { ticket } = ticketResult.body as TicketBody
 
     const msg = await ws.get('/ws', {
       query: {
@@ -315,9 +332,9 @@ describe('GET', () => {
       },
     })
 
-    await app.close(true)
+    await server.kill()
 
-    expect(msg.status).toBe(StatusCode.UnprocessableContent)
+    expect(msg.status).toBe(422)
 
     expect(msg.body).toStrictEqual([
       {

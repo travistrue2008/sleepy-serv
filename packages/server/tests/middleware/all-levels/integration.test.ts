@@ -1,47 +1,30 @@
 import { test, expect } from 'bun:test'
-import { StatusCode, createApp } from '../../../src'
-import { Fmt, createRequestor, createSocketClient } from '../../helpers'
 
-import type { NextFn, Request } from '../../../src'
-
-type Accum = {
-  list: string[]
-}
+import {
+  Fmt,
+  createServer,
+  createClient,
+  createSocketClient,
+} from '../../helpers'
 
 test('when all levels of middleware are defined (REST)', async () => {
-  const app = createApp(0, {
-    middleware: [
-      (_req: Request, res: unknown, next: NextFn) => next({
-        ...res as Accum,
-        list: ['root'],
-      }),
-    ],
-  })
+  const server = await createServer(import.meta.dirname)
+  const client = createClient(server)
+  const result = await client.get('/users', Fmt.Text)
 
-  const req = createRequestor(app)
-  const res = await req.get('/users', Fmt.Text)
+  await server.kill()
 
-  await app.close(true)
-
-  expect(res.status).toBe(StatusCode.Ok)
-  expect(res.body).toBe('root|parent-meta|sibling-meta|module')
+  expect(result.status).toBe(200)
+  expect(result.body).toBe('root|parent-meta|sibling-meta|module')
 })
 
 test('when all levels of middleware are defined (ws)', async () => {
-  const app = createApp(0, {
-    middleware: [
-      (_req: Request, res: unknown, next: NextFn) => next({
-        ...res as Accum,
-        list: ['root'],
-      }),
-    ],
-  })
-
-  const ws = await createSocketClient(app)
+  const server = await createServer(import.meta.dirname)
+  const ws = await createSocketClient(server)
   const msg = await ws.get('/users')
 
-  await app.close(true)
+  await server.kill()
 
-  expect(msg.status).toBe(StatusCode.Ok)
+  expect(msg.status).toBe(200)
   expect(msg.body).toBe('root|parent-meta|sibling-meta|module')
 })

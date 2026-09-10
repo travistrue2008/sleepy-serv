@@ -1,25 +1,30 @@
 import { test, expect } from 'bun:test'
-import { StatusCode, createApp } from '../../../src'
-import { Fmt, createRequestor, createSocketClient } from '../../helpers'
+
+import {
+  Fmt,
+  createServer,
+  createClient,
+  createSocketClient,
+} from '../../helpers'
 
 test('when making a resource-level request (REST)', async () => {
-  const app = createApp(0)
-  const req = createRequestor(app)
-  const res = await req.get('/users', Fmt.Text)
+  const server = await createServer(import.meta.dirname)
+  const client = createClient(server)
+  const result = await client.get('/users', Fmt.Text)
 
-  await app.close(true)
+  await server.kill()
 
-  expect(res.status).toBe(StatusCode.Ok)
-  expect(res.body).toBe('Hello world')
+  expect(result.status).toBe(200)
+  expect(result.body).toBe('Hello world')
 })
 
 test('when making a resource-level request (ws)', async () => {
-  const app = createApp(0)
-  const ws = await createSocketClient(app)
+  const server = await createServer(import.meta.dirname)
+  const ws = await createSocketClient(server)
   const msg = await ws.get('/users')
 
-  await app.close(true)
+  await server.kill()
 
-  expect(msg.status).toBe(StatusCode.Ok)
+  expect(msg.status).toBe(200)
   expect(msg.body).toBe('Hello world')
 })

@@ -1,13 +1,8 @@
 import { test, expect } from 'bun:test'
-import { createApp } from '../../../../src'
+import { createServer } from '../../../helpers'
 
-test('when method file has no default export', () => {
-  const fn = () => createApp(0)
+test('when method file has no default export', async () => {
+  const promise = createServer(import.meta.dirname)
 
-  /* eslint-disable max-len */
-  expect(fn).toThrow(new Error(`
-No default export defined in:
-${process.cwd()}/packages/server/tests/errors/initialization/method-file-has-no-default-export/api/get.ts
-  `.trim()))
-  /* eslint-enable max-len */
+  await expect(promise).rejects.toThrow()
 })

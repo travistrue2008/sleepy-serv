@@ -1,58 +1,17 @@
-import { stdin } from 'node:process'
-import { describe, test, expect, jest } from 'bun:test'
-import { createApp } from '../../../src'
+import { test, expect } from 'bun:test'
+import { createServer } from '../../helpers'
 
-type MockStdin = {
-  isTTY?: boolean
-}
+test('when the app is closed', async () => {
+  const server = await createServer(import.meta.dirname)
+  const port = server.port
 
-function mockStdin (isTTY: boolean): () => void {
-  const mock = stdin as unknown as MockStdin
-  const prevIsTTY = mock.isTTY
+  await server.kill()
 
-  mock.isTTY = isTTY
+  const promise = fetch(`http://localhost:${port}`)
 
-  return () => {
-    mock.isTTY = prevIsTTY
-  }
-}
+  await expect(promise).rejects.toThrow()
 
-describe('close()', () => {
-  test('when the app is closed without a TTY', async () => {
-    const onClose = jest.fn()
-    const restore = mockStdin(false)
+  const closed = server.output.some(line => line.includes('CLOSED'))
 
-    try {
-      const app = createApp(0, { onClose })
-      const origin = app.server.url.origin
-
-      await app.close(true)
-
-      const promise = fetch(origin)
-
-      await expect(promise).rejects.toThrow()
-      expect(onClose).toHaveBeenCalledOnce()
-    } finally {
-      restore()
-    }
-  })
-
-  test('when the app is closed with a TTY', async () => {
-    const onClose = jest.fn()
-    const restore = mockStdin(true)
-
-    try {
-      const app = createApp(0, { onClose })
-      const origin = app.server.url.origin
-
-      await app.close(true)
-
-      const promise = fetch(origin)
-
-      await expect(promise).rejects.toThrow()
-      expect(onClose).toHaveBeenCalledOnce()
-    } finally {
-      restore()
-    }
-  })
+  expect(closed).toBe(true)
 })

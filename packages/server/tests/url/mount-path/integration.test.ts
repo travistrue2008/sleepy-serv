@@ -1,34 +1,37 @@
 import { test, expect } from 'bun:test'
-import { StatusCode, createApp } from '../../../src'
-import { Fmt, createRequestor, createSocketClient } from '../../helpers'
+
+import {
+  Fmt,
+  createServer,
+  createClient,
+  createSocketClient,
+} from '../../helpers'
 
 test('when adding a mount path (REST)', async () => {
-  const app = createApp(0, {
+  const server = await createServer(import.meta.dirname)
+  const client = createClient(server)
+
+  const result = await client.get('/users', Fmt.Text, {
     mountPath: '/test-mount-path',
   })
 
-  const req = createRequestor(app)
-  const res = await req.get('/test-mount-path/users', Fmt.Text)
+  await server.kill()
 
-  await app.close(true)
-
-  expect(res.status).toBe(StatusCode.Ok)
-  expect(res.body).toBe('Hello world')
+  expect(result.status).toBe(200)
+  expect(result.body).toBe('Hello world')
 })
 
 test('when adding a mount path (ws)', async () => {
-  const app = createApp(0, {
-    mountPath: '/test-mount-path',
-  })
+  const server = await createServer(import.meta.dirname)
 
-  const ws = await createSocketClient(app, {
+  const ws = await createSocketClient(server, {
     mountPath: '/test-mount-path',
   })
 
   const msg = await ws.get('/test-mount-path/users')
 
-  await app.close(true)
+  await server.kill()
 
-  expect(msg.status).toBe(StatusCode.Ok)
+  expect(msg.status).toBe(200)
   expect(msg.body).toBe('Hello world')
 })

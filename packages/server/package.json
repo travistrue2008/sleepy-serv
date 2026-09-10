@@ -14,10 +14,6 @@
     "./plugin": {
       "bun": "./src/plugin/index.ts",
       "default": "./src/plugin/index.ts"
-    },
-    "./plugin/builder": {
-      "bun": "./src/plugin/builder.ts",
-      "default": "./src/plugin/builder.ts"
     }
   },
   "files": [
