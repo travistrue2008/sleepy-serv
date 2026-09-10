@@ -8,6 +8,7 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 - [Layout](./architecture/layout.md): Bun workspace and repo structure.
 - [Routing](./architecture/routing.md): directory-to-route convention, 404 vs 405.
 - [Plugin](./architecture/plugin.md): route discovery via Bun plugin; scanner, codegen, config; runtime plugin limitations.
+- [CLI](./architecture/cli.md): the `sleepy` executable (`init`, `dev`, `build`); config file; build options.
 - [Request Flow](./architecture/request-flow.md): route build pipeline; the `res` accumulator model.
 - [Middleware](./architecture/middleware.md): resolution order, built-ins, catch-all validators vs the `/ws` handshake.
 - [Errors](./architecture/errors.md): how errors map to HTTP status.

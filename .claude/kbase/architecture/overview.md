@@ -9,5 +9,6 @@ These behaviors differ from Express and aren't obvious from a single file, so se
 - [Request Flow](./request-flow.md): how routes are built and served.
 - [Middleware](./middleware.md): resolution order and built-ins.
 - [Plugin](./plugin.md): how routes are discovered and loaded.
+- [CLI](./cli.md): the `sleepy` executable (`init`, `dev`, `build`).
 - [Errors](./errors.md): how errors become HTTP statuses.
 - [Real-time / WebSocket Layer](./websocket.md): the `/ws` protocol.
