@@ -552,7 +552,7 @@ const app = createApp(3000, {
 The `app.ws` object exposes four methods for interacting with connected clients:
 
 - `query(fn)`: return a filtered list of active sessions. The filter function receives `(clientId, data, index)` and returns a boolean. Each entry in the returned array is a `SessionEntry` with `clientId` and `app` (the application context). To list all sessions: `app.ws.query(() => true)`.
-- `send(fn, event, body)`: push a notification to clients matching a filter. The filter function receives `(clientId, data, index)` and returns a boolean. To target one client: `app.ws.send(id => id === targetId, event, body)`.
+- `send(event, body, fn)`: push a notification to clients matching a filter. The filter function receives `(clientId, data, index)` and returns a boolean. To target one client: `app.ws.send('ping', body, id => id === targetId)`.
 - `broadcast(event, body)`: push a notification to all connected clients.
 - `drop(fn, code?, reason?)`: close connections matching a filter. The filter function receives `(clientId, data, index)` and returns a boolean. The default code is `CloseCode.Ok` (1000), which tells the client not to reconnect. Passing a custom code (e.g. 4000) allows the client to reconnect. To drop one client: `app.ws.drop(id => id === targetId)`.
 
@@ -562,7 +562,7 @@ The same commands are available inside endpoint handlers via `req.ws`:
 export default function (req) {
   const targetId = req.query.targetId
 
-  req.ws.send(id => id === targetId, 'ping', { from: 'handler' })
+  req.ws.send('ping', { from: 'handler' }, id => id === targetId)
 
   return Response.json({ ok: true })
 }
