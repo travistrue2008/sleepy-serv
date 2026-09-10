@@ -2107,6 +2107,28 @@ describe('buildSocketCommands()', () => {
         2,
       )
     })
+
+    test('when the session is removed during iteration', () => {
+      const clientId = crypto.randomUUID()
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const ws = buildSocket(clientId)
+
+      server.open(ws)
+
+      const fn = () => commands.send((id) => {
+        state.activeSessions.delete(id)
+
+        return true
+      }, EVENT, { score: 1 })
+
+      expect(fn).toThrow(
+        new ReferenceError(
+          `No active socket for client: ${clientId}`,
+        ),
+      )
+    })
   })
 
   describe('broadcast()', () => {

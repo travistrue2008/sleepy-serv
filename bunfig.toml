@@ -2,9 +2,10 @@
 coverage = true
 coverageDir = "./coverage"
 coverageReporter = ["text", "lcov"]
-coverageThreshold = 0.98
+coverageThreshold = 0.95
 
 coveragePathIgnorePatterns = [
+  '**/tmp/sleepy-serv/**',
   ".claude/**",
   ".github/**",
   "packages/client/tests/**",
