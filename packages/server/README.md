@@ -43,12 +43,15 @@ filesystem and generate static imports for every route at load time. This
 replaces the previous dynamic `import()` and `fs.readdirSync()` approach
 and enables compatibility with `bun build --compile --bytecode`.
 
-The plugin is loaded automatically by the CLI commands (`sleepy dev` and
-`sleepy build`). If you prefer to run your entrypoint directly, preload
+The plugin is loaded automatically by the CLI commands (`sleepy dev`,
+`sleepy prod`, and `sleepy build`). If you prefer to run your entrypoint directly, preload
 the plugin yourself:
 
 ```bash
-bun --preload sleepy-serv/plugin src/index.ts
+sleepy init  # creates a new project
+sleepy dev   # runs the app (watch mode)
+sleepy prod  # runs the app (NO watch mode)
+sleepy build # for building a single-file bundle via `bun build` (recommended)
 ```
 
 ### Return Value
@@ -609,6 +612,24 @@ Equivalent to:
 ```bash
 bun --watch --preload sleepy-serv/plugin src/index.ts
 ```
+
+### `sleepy prod`
+
+Starts the production server with the plugin preloaded (no watch mode):
+
+```bash
+sleepy prod
+```
+
+Equivalent to:
+
+```bash
+bun --preload sleepy-serv/plugin src/index.ts
+```
+
+Use this when `bun build --compile` is not an option (e.g. dynamic
+imports, native dependencies like `pg`, or when a single-file
+executable is not desired).
 
 ### `sleepy build`
 

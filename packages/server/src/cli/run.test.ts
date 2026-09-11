@@ -12,7 +12,6 @@ import {
   afterEach,
 } from 'bun:test'
 
-const IS_CI = process.env.CI === 'true'
 const BASE_DIR = path.join(os.tmpdir(), 'sleepy-serv')
 const PKG_ROOT = path.resolve(import.meta.dirname, '../..')
 const CLI_ENTRY = path.resolve(import.meta.dirname, 'index.ts')
@@ -79,7 +78,7 @@ describe('dev()', () => {
     expect(stderr).toContain('Entrypoint not found')
   })
 
-  test.skipIf(IS_CI)('when the server crashes on startup', async () => {
+  test('when the server crashes on startup', async () => {
     const srcDir = path.join(tempDir, 'src')
 
     fs.mkdirSync(srcDir, { recursive: true })
@@ -95,9 +94,29 @@ describe('dev()', () => {
       stderr: 'pipe',
     })
 
-    const code = await proc.exited
+    const reader = proc.stderr.getReader()
+    const decoder = new TextDecoder()
 
-    expect(code).not.toBe(0)
+    let stderr = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+
+      if (done) {
+        break
+      }
+
+      stderr += decoder.decode(value, { stream: true })
+
+      if (stderr.includes('boom')) {
+        break
+      }
+    }
+
+    proc.kill()
+    await proc.exited
+
+    expect(stderr).toContain('boom')
   })
 
   test('when the server starts successfully', async () => {
@@ -278,5 +297,83 @@ export default {
     expect(newPort).toBeGreaterThan(0)
     expect(result.status).toBe(StatusCode.Ok)
     expect(result.body).toStrictEqual({ reloaded: true })
+  })
+})
+
+describe('prod()', () => {
+  let tempDir: string
+
+  beforeEach(() => {
+    tempDir = path.join(
+      BASE_DIR,
+      `prod-test-${crypto.randomUUID()}`,
+    )
+
+    fs.mkdirSync(tempDir, { recursive: true })
+  })
+
+  afterEach(() => {
+    fs.rmSync(tempDir, {
+      recursive: true,
+      force: true,
+    })
+  })
+
+  test('when the entrypoint does not exist', async () => {
+    const proc = Bun.spawn(['bun', CLI_ENTRY, 'prod'], {
+      cwd: tempDir,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+
+    const code = await proc.exited
+    const stderr = await new Response(proc.stderr).text()
+
+    expect(code).not.toBe(0)
+    expect(stderr).toContain('Entrypoint not found')
+  })
+
+  test('when the server starts successfully', async () => {
+    linkSleepyServ(tempDir)
+    writeApp(tempDir)
+
+    const proc = Bun.spawn(['bun', CLI_ENTRY, 'prod'], {
+      cwd: tempDir,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+
+    const reader = proc.stdout.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let port = 0
+
+    while (true) {
+      const { done, value } = await reader.read()
+
+      if (done) {
+        break
+      }
+
+      buffer += decoder.decode(value, { stream: true })
+
+      const match = buffer.match(/Running on port: (\d+)/)
+
+      if (match) {
+        port = Number.parseInt(match[1], 10)
+
+        break
+      }
+    }
+
+    const reqClient = createClient({ port })
+    const result = await reqClient.get('/', Fmt.Json)
+
+    proc.kill()
+    await proc.exited
+
+    expect(port).toBeGreaterThan(0)
+    expect(result.status).toBe(StatusCode.Ok)
+    expect(result.body).toStrictEqual({ ok: true })
   })
 })
