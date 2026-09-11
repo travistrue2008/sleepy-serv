@@ -8,6 +8,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- **`sleepy prod` command.** Runs the production server with the plugin
+  preloaded but without watch mode. Use this when `bun build --compile`
+  is not an option (e.g. dynamic imports, native dependencies, or when
+  a single-file executable is not desired).
+
 ## [0.20.0](https://www.npmjs.com/package/sleepy-serv/v/0.20.0) - 2026-09-10
 
 ### Changed
