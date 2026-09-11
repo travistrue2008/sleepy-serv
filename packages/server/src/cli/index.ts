@@ -2,8 +2,8 @@
 
 import { parseArgs } from 'node:util'
 import { init } from './init'
-import { dev } from './dev'
 import { build } from './build'
+import { dev, prod } from './run'
 
 const USAGE = `
 Usage: sleepy <command>
@@ -11,7 +11,8 @@ Usage: sleepy <command>
 Commands:
   init    Create a new sleepy-serv project
   dev     Start the dev server (watch mode)
-  build   Build for production
+  prod    Start the production server
+  build   Build for production (single-file executable)
 
 Options:
   --help  Show this help message
@@ -41,6 +42,10 @@ switch (command) {
 
   case 'dev':
     await dev()
+    break
+
+  case 'prod':
+    await prod()
     break
 
   case 'build':

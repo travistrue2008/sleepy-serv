@@ -1,7 +1,7 @@
 import fs from 'fs'
 import { loadConfig } from '../plugin/config'
 
-export async function dev (): Promise<void> {
+async function run (watch: boolean): Promise<void> {
   const config = await loadConfig()
   const entrypoint = config.app?.entrypoint ?? './src/index.ts'
 
@@ -12,10 +12,10 @@ export async function dev (): Promise<void> {
   }
 
   const proc = Bun.spawn([
-    'bun', '--watch',
+    'bun', watch ? '--watch' : '',
     '--preload', 'sleepy-serv/plugin',
     entrypoint,
-  ], {
+  ].filter(Boolean), {
     stdout: 'inherit',
     stderr: 'inherit',
     stdin: 'inherit',
@@ -24,4 +24,12 @@ export async function dev (): Promise<void> {
   const code = await proc.exited
 
   process.exit(code)
+}
+
+export async function dev (): Promise<void> {
+  await run(true)
+}
+
+export async function prod (): Promise<void> {
+  await run(false)
 }
