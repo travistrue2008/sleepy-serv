@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.22.0](https://www.npmjs.com/package/sleepy-serv/v/0.22.0) - 2026-09-12
+
 ### Changed
 
 - **WebSocket support is now opt-in.** `createApp()` no longer registers
