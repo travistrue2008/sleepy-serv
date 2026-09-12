@@ -11,6 +11,7 @@ function root (req: Request, _res: unknown, next: NextFn): HandlerResult {
 }
 
 createApp(0, {
+  ws: true,
   middleware: [root],
 })
 

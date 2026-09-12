@@ -19,7 +19,6 @@ import {
 
 import {
   RequestError,
-  BadRequestError,
   NotFoundError,
   UnauthorizedError,
   MethodNotAllowedError,
@@ -44,7 +43,7 @@ import type {
   ActiveSession,
   InactiveSession,
   Session,
-  AppOptions,
+  SocketOptions,
 } from './utils'
 
 import type {
@@ -240,30 +239,6 @@ function parseMessage (raw: string | Buffer): RawMessage | undefined {
   }
 }
 
-async function parseJsonBody (req: Request): Promise<unknown> {
-  try {
-    const body = await req.json()
-
-    return body
-  } catch {
-    throw new BadRequestError('Invalid JSON')
-  }
-}
-
-async function parseJsonBodyAppData (req: Request): Promise<unknown> {
-  const contentType = req.headers.get('content-type')
-  const usingJsonBody = contentType?.startsWith('application/json')
-
-  if (!usingJsonBody) {
-    return null
-  }
-
-  const rawBody = await parseJsonBody(req)
-  const appData = (rawBody as Record<string, unknown> | null)?.data ?? null
-
-  return appData
-}
-
 function sweepInactiveSessions (state: SocketState): void {
   for (const [key, session] of state.inactiveSessions) {
     if (!isSessionActive(session)) {
@@ -420,18 +395,18 @@ function getCloseReason (ws: SocketConnection, code: number): CloseReason {
   return CloseReason.Dropped
 }
 
-export function buildSocketState (opts: AppOptions = {}): SocketState {
+export function buildSocketState (opts: SocketOptions = {}): SocketState {
   return {
-    dropThreshold: opts.ws?.dropThreshold ?? 120_000,
-    heartbeatInterval: opts.ws?.heartbeatInterval ?? 30_000,
-    maxTickets: opts.ws?.maxTickets ?? 100_000,
-    reclaimTtl: opts.ws?.reclaimTtl ?? 300_000,
-    ticketTtl: opts.ws?.ticketTtl ?? 10_000,
+    dropThreshold: opts.dropThreshold ?? 120_000,
+    heartbeatInterval: opts.heartbeatInterval ?? 30_000,
+    maxTickets: opts.maxTickets ?? 100_000,
+    reclaimTtl: opts.reclaimTtl ?? 300_000,
+    ticketTtl: opts.ticketTtl ?? 10_000,
     tickets: new Map(),
     activeSessions: new Map(),
     inactiveSessions: new Map(),
-    onOpen: opts.ws?.onOpen ?? null,
-    onClose: opts.ws?.onClose ?? null,
+    onOpen: opts.onOpen ?? null,
+    onClose: opts.onClose ?? null,
   }
 }
 
@@ -677,8 +652,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
         validateSchema(req, createTicketValidator)
 
         const clientId = crypto.randomUUID()
-        const appData = await parseJsonBodyAppData(req)
-        const ticket = issueTicket(clientId, appData)
+        const ticket = issueTicket(clientId, res)
 
         return Response.json({
           clientId,
@@ -726,6 +700,17 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
       },
     },
   ]
+}
+
+export function buildDisabledSocketCommands (): SocketCommands {
+  const msg = 'WebSocket support is not enabled'
+
+  return {
+    broadcast () { throw new Error(msg) },
+    send () { throw new Error(msg) },
+    drop () { throw new Error(msg) },
+    query () { throw new Error(msg) },
+  }
 }
 
 export function buildSocketCommands (state: SocketState): SocketCommands {
