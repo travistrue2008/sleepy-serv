@@ -15,6 +15,7 @@ function root (
 }
 
 createApp(0, {
+  ws: true,
   middleware: [root],
 })
 

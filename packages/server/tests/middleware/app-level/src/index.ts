@@ -7,6 +7,7 @@ type Accum = {
 }
 
 createApp(0, {
+  ws: true,
   middleware: [
     (_req: Request, res: unknown, next: NextFn) => next({
       ...res as Accum,

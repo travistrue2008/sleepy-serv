@@ -10,7 +10,7 @@ type ConnectionData = {
   }
 }
 
-const app = createApp(0)
+const app = createApp(0, { ws: true })
 
 const admin = Bun.serve({
   port: 0,

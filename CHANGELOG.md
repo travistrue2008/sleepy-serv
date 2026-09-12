@@ -8,6 +8,38 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+
+- **WebSocket support is now opt-in.** `createApp()` no longer registers
+  `/ws` endpoints or WebSocket handlers by default. Pass `ws: true` for
+  defaults or `ws: { ... }` with custom `SocketOptions` to enable
+  WebSocket support. When disabled, `app.ws` and `req.ws` commands throw
+  a clear error instead of silently failing.
+
+- **`buildSocketState` accepts `SocketOptions` directly.** The function
+  signature was narrowed from `AppOptions` to `SocketOptions`, removing
+  the `opts.ws?.` indirection. `createApp` resolves the `ws` option
+  before calling it.
+
+### Fixed
+
+- **POST `/ws` now stores middleware `res` on the ticket.** Previously,
+  the handler read the raw request body via `parseJsonBodyAppData(req)`
+  and stored it on the ticket, ignoring whatever the middleware chain
+  produced. Now the handler stores `res` directly, so middleware that
+  transforms input data (e.g. generating a player ID) correctly
+  propagates to the session. Without middleware, `res` is `null` and no
+  unvalidated client data reaches the session.
+
+### Security
+
+- **Unvalidated client payloads no longer reach WebSocket sessions.**
+  Apps that accepted WebSocket connections without providing middleware
+  on `POST /ws` previously had raw client body data stored on the ticket
+  and carried into the session. The handler now stores only the
+  middleware chain's output, which is `null` when no middleware is
+  present.
+
 ## [0.21.0](https://www.npmjs.com/package/sleepy-serv/v/0.21.0) - 2026-09-11
 
 ### Added

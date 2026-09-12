@@ -224,7 +224,7 @@ export type AppOptions = {
   hostname?: string
   mountPath?: string
   middleware?: Middleware[]
-  ws?: SocketOptions
+  ws?: boolean | SocketOptions
   onClose?: () => Promise<void> | void
 }
 

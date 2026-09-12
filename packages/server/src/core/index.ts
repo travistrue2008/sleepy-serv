@@ -13,6 +13,7 @@ import {
   buildSocketServer,
   buildSocketHandlers,
   buildSocketCommands,
+  buildDisabledSocketCommands,
 } from './socket'
 
 import {
@@ -34,6 +35,7 @@ import type {
   RouteConfig,
   RouteDefinition,
   SocketCommands,
+  SocketOptions,
   AppOptions,
   Server,
 } from './utils'
@@ -131,6 +133,20 @@ function defaultMethodMap (): Record<string, EndpointHandler> {
   }
 }
 
+function resolveSocketOptions (
+  ws: boolean | SocketOptions | undefined,
+): SocketOptions | null {
+  if (!ws) {
+    return null
+  }
+
+  if (ws === true) {
+    return {}
+  }
+
+  return ws
+}
+
 function buildEndpointRequest (
   bunReq: BunRequest,
   server: Server,
@@ -162,9 +178,7 @@ function buildEndpointRequest (
   }
 }
 
-function normalizeChain (
-  route: RouteDefinition,
-): ChainRoute {
+function normalizeChain (route: RouteDefinition): ChainRoute {
   const chain = Array.isArray(route.chain)
     ? route.chain
     : [route.chain]
@@ -268,7 +282,7 @@ function buildOutputRoutes (moduleRoutes: ModuleRoute[]): OutputRoutes {
 
 function buildRoutes (
   config: RouteConfig,
-  state: SocketState,
+  state: SocketState | null,
   ws: SocketCommands,
   opts: AppOptions,
 ): AppRoutes {
@@ -294,13 +308,9 @@ function buildRoutes (
     }
   })
 
-  const mergedRoutes = buildMergedRoutes(
-    normalRoutes,
-    middleware,
-    meta,
-    state,
-    mountPath,
-  )
+  const mergedRoutes = state
+    ? buildMergedRoutes(normalRoutes, middleware, meta, state, mountPath)
+    : normalRoutes
 
   const socketRoutes = buildSocketRoutes(mergedRoutes)
   const moduleRoutes = buildModuleRoutes(socketRoutes, ws)
@@ -317,23 +327,21 @@ function buildRoutes (
 function buildServer (
   port: number,
   routes: AppRoutes,
-  state: SocketState,
+  state: SocketState | null,
   ws: SocketCommands,
   opts: AppOptions,
 ): Server {
   const hostname = opts.hostname || '0.0.0.0'
 
-  const websocketServer = buildSocketServer(
-    routes.socket,
-    state,
-    ws,
-  )
+  const websocket = state
+    ? buildSocketServer(routes.socket, state, ws)
+    : undefined
 
   return Bun.serve({
     port,
     hostname,
     routes: routes.server,
-    websocket: websocketServer,
+    ...(websocket ? { websocket } : {}),
     async fetch (_req, _server) {
       throw new NotFoundError()
     },
@@ -346,7 +354,7 @@ function buildServer (
 
       return Response.json(httpError.output, { status })
     },
-  })
+  }) as Server
 }
 
 function processIO (server: Server, opts: AppOptions): CloseFn {
@@ -391,8 +399,16 @@ export function createApp (
   config: RouteConfig,
   opts: AppOptions = {},
 ): App {
-  const state = buildSocketState(opts)
-  const ws = buildSocketCommands(state)
+  const socketOpts = resolveSocketOptions(opts.ws)
+
+  const state = socketOpts
+    ? buildSocketState(socketOpts)
+    : null
+
+  const ws = state
+    ? buildSocketCommands(state)
+    : buildDisabledSocketCommands()
+
   const routes = buildRoutes(config, state, ws, opts)
   const server = buildServer(port, routes, state, ws, opts)
   const close = processIO(server, opts)

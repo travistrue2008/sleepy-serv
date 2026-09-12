@@ -1,4 +1,4 @@
 import { createApp } from 'sleepy-serv'
 
-createApp(0)
+createApp(0, { ws: true })
 
