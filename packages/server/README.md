@@ -476,7 +476,13 @@ const app = createApp(3000, {
 
 App-level middleware is executed before any directory-level or route-level middleware.
 
-Note that the reserved `/ws` handshake routes are folded into these same chains, so app-level middleware runs against them too. A catch-all validator (for example a `validateSchemas` that requires a JSON body or a specific header on every request) will therefore also run against the body-less `/ws` handshake requests and reject them. Scope such validators below the reserved paths rather than applying them app-wide.
+When WebSocket support is enabled (`ws: true` or `ws: { ... }`), the
+reserved `/ws` handshake routes are folded into these same chains, so
+app-level middleware runs against them too. A catch-all validator (for
+example a `validateSchemas` that requires a JSON body or a specific
+header on every request) will therefore also run against the body-less
+`/ws` handshake requests and reject them. Scope such validators below
+the reserved paths rather than applying them app-wide.
 
 ### `hostname`
 
@@ -528,7 +534,14 @@ const app = createApp(3000, {
 
 ### `ws`
 
-WebSocket tuning and lifecycle hooks:
+WebSocket support is opt-in. Pass `ws: true` to enable with defaults,
+or pass an options object to customize behavior:
+
+```js
+createApp(3000, { ws: true })
+```
+
+With custom tuning and lifecycle hooks:
 
 ```js
 const app = createApp(3000, {
@@ -542,6 +555,10 @@ const app = createApp(3000, {
   },
 })
 ```
+
+When `ws` is omitted (or `false`), no `/ws` endpoints are registered
+and the server does not accept WebSocket upgrades. Calling `app.ws` or
+`req.ws` methods when WebSocket support is disabled throws an error.
 
 - `heartbeatInterval`: how often the client should send heartbeats, in milliseconds. Sent to the client in the welcome message. Defaults to `30_000`.
 - `dropThreshold`: how long the server waits without an inbound message before reaping the connection, in milliseconds. Defaults to `120_000`.
