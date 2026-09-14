@@ -127,11 +127,12 @@ The client emits a `close` event whenever the socket closes, regardless of the r
 
 ```js
 client.on('close', payload => {
-  console.log(payload.code) // the WebSocket close code (e.g. 1000)
+  console.log(payload.code)   // the WebSocket close code (e.g. 1000)
+  console.log(payload.reason) // the close reason string (e.g. 'ok')
 })
 ```
 
-This fires on client-initiated closes (`client.close()`), server-initiated closes (`ws.drop()`), and unexpected drops (network loss, reaping). It is intended for centralized cleanup, such as removing a player from a lobby or updating UI state. The reconnect decision happens after the event fires.
+This fires on client-initiated closes (`client.close()`), server-initiated closes, and unexpected drops (network loss, reaping). It is intended for centralized cleanup, such as removing a player from a lobby or updating UI state. The reconnect decision happens after the event fires.
 
 ### Connection Context
 
@@ -147,7 +148,7 @@ The server stores this in `ws.data.app` and preserves it through reconnects. On 
 
 ### Reconnection
 
-The client reconnects automatically when the socket closes with a non-1000 code. A close code of `CloseCode.Ok` (1000) is treated as intentional and terminal, so `client.close()` and a server-side `ws.drop(clientId)` (which defaults to code 1000) do not trigger reconnect. Non-1000 codes such as network drops (`CloseCode.Abnormal`, 1006), server reaping (`CloseCode.Reaped`, 4999), and app-level kicks with a custom code (e.g. 4000) do trigger reconnect.
+The client reconnects automatically when the socket closes with a code on the reconnect allowlist. Only two codes trigger reconnection: `1006` (Abnormal, covering network drops) and `4998` (Reaped, when the server reaps an idle session). All other close codes are terminal and do not reconnect. This includes `1000` (Ok, used by `client.close()`), `4999` (Superseded, when another connection claims the same session), and server-initiated drops in the `4000`-`4099` range.
 
 The client reclaims its previous session on reconnect, so `client.id` stays the same and you don't need to re-establish application state. If reclaim fails (expired session or invalid token), the client falls back to a fresh identity via `POST /ws`.
 
@@ -258,9 +259,9 @@ Registers a handler for an event. The client emits two events: `'notification'` 
 
 Removes a previously registered handler. It's safe to call with a handler that was never registered.
 
-### `close()`
+### `close(signal?)`
 
-Closes the connection and rejects any in-flight requests. The returned promise resolves only after the socket's `close` event fires, so the `close` event handler runs before `await client.close()` returns.
+Closes the connection and rejects any in-flight requests. The optional `signal` parameter is a `CloseSignal` (`{ code, reason }`) that controls the close code and reason sent to the server. It defaults to `InternalCloseSignal.Ok` (`{ code: 1000, reason: 'ok' }`). The returned promise resolves only after the socket's `close` event fires, so the `close` event handler runs before `await client.close()` returns.
 
 Note that closing is permanent. There's no reopen, and calling `close()` a second time throws. If you're calling it in a `finally` block, guard it with `isConnected`:
 
@@ -299,9 +300,16 @@ Contains the valid values for the `queue` option: `Queue.None`, `Queue.Fifo`, an
 
 Contains the message type names used on the wire: `MessageType.Welcome`, `MessageType.Heartbeat`, `MessageType.Request`, `MessageType.Response`, and `MessageType.Notification`. A response message's `type` is always `MessageType.Response`, and a notification's is always `MessageType.Notification`.
 
-### `CloseCode`
+### `CloseSignal`
 
-Contains the WebSocket close codes used by the protocol: `CloseCode.Ok` (1000), `CloseCode.Abnormal` (1006), and `CloseCode.Reaped` (4999). Protocol-level codes count down from 4999; app codes start at 4000.
+A type representing a close signal: `{ code: number, reason: string }`. Used as the optional parameter to `close()`.
+
+### `InternalCloseSignal`
+
+Contains the protocol's built-in close signals:
+- `InternalCloseSignal.Ok`: `{ code: 1000, reason: 'ok' }` -- a normal, intentional close
+- `InternalCloseSignal.Reaped`: `{ code: 4998, reason: 'reaped' }` -- the server reaped an idle session
+- `InternalCloseSignal.Superseded`: `{ code: 4999, reason: 'superseded' }` -- another connection claimed the same session
 
 ### `StatusCode`
 

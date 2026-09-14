@@ -1,5 +1,7 @@
 import { MessageType, createMessage } from './messages.js'
-import { CloseCode, joinRoute } from './utils.js'
+import { InternalCloseSignal, joinRoute } from './utils.js'
+
+import type { CloseSignal } from './utils.js'
 
 export * from './messages.js'
 export * from './utils.js'
@@ -89,6 +91,11 @@ type NormalizedRequestOpts = {
 
 const RECONNECT_JITTER = 0.5
 const JSON_CONTENT_TYPE = 'application/json;charset=utf-8'
+
+const CODES_RECONNECT: number[] = [
+  InternalCloseSignal.Abnormal.code,
+  InternalCloseSignal.Reaped.code,
+]
 
 export class HandshakeError extends Error {
   status: number
@@ -420,7 +427,10 @@ export default class SleepySocketClient {
     }
 
     this.#livenessTimer = setTimeout(() => {
-      this.#socket?.close(CloseCode.Reaped)
+      this.#socket?.close(
+        InternalCloseSignal.Reaped.code,
+        InternalCloseSignal.Reaped.reason,
+      )
     }, this.serverTimeout)
   }
 
@@ -549,12 +559,17 @@ export default class SleepySocketClient {
     this.#dispatchedMessages = []
     this.#socket = null
 
-    this.#emit('close', { code: event.code })
+    this.#emit('close', {
+      code: event.code,
+      reason: event.reason,
+    })
+
+    const code = event.code as number
 
     if (
       !this.#closing &&
       this.#reconnectConfig &&
-      event.code !== CloseCode.Ok
+      CODES_RECONNECT.includes(code)
     ) {
       this.#scheduleReconnect(0, this.#reconnectConfig)
     }
@@ -672,7 +687,7 @@ export default class SleepySocketClient {
     this.#listeners.get(event)?.delete(handler)
   }
 
-  close (): Promise<void> {
+  close (signal: CloseSignal = InternalCloseSignal.Ok): Promise<void> {
     if (this.#closing) {
       return Promise.reject(new Error('Socket is closed'))
     }
@@ -697,7 +712,7 @@ export default class SleepySocketClient {
     return this.#socket
       ? new Promise<void>(resolve => {
         this.#closeResolve = resolve
-        this.#socket!.close(CloseCode.Ok)
+        this.#socket!.close(signal.code, signal.reason)
       })
       : Promise.resolve()
   }

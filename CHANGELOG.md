@@ -8,6 +8,44 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+
+- **Replaced `CloseCode` and `CloseReason` with `CloseSignal` and
+  `InternalCloseSignal`.** Close signals are now explicit `{ code, reason }`
+  pairs. `InternalCloseSignal` holds the framework-owned signals: `Ok`
+  (1000), `Reaped` (4998, was 4999), and `Superseded` (4999, new).
+  The `CloseReason` enum and `getCloseReason()` function are removed.
+
+- **`drop()` requires a `CloseSignal` and takes `(signal, fn)` argument
+  order.** The old `(fn, code?, reason?)` signature is replaced by
+  `(signal: CloseSignal, fn: FilterFn)` with signal first, filter last
+  (matching `send`). Signal codes must be integers in [4000, 4099].
+
+- **`onClose` callback receives `CloseSignal` instead of `CloseReason`.**
+  The lifecycle hook now gets the raw `{ code, reason }` from the close
+  frame rather than a categorical enum string.
+
+- **Client close event includes `reason`.** The `close` event payload
+  changed from `{ code }` to `{ code, reason }`, surfacing the reason
+  string from the WebSocket close frame.
+
+- **Client `close()` accepts an optional `CloseSignal`.** Defaults to
+  `InternalCloseSignal.Ok` (`{ code: 1000, reason: 'ok' }`). Apps can
+  pass a custom signal to indicate why the client is disconnecting.
+
+- **Client reconnect uses an allowlist.** Only codes 1006 (Abnormal)
+  and 4998 (Reaped) trigger reconnection. All other codes, including
+  app signals (4000-4099) and Superseded (4999), are terminal.
+
+### Removed
+
+- **`CloseCode` constant and type.** Replaced by `InternalCloseSignal`
+  entries for framework codes and `CloseSignal` type for app codes.
+
+- **`CloseReason` constant and type.** The categorical enum
+  (`ok`/`dropped`/`reaped`/`superseded`) is removed in favor of the
+  raw `CloseSignal` from the close frame.
+
 ## [0.22.0](https://www.npmjs.com/package/sleepy-serv/v/0.22.0) - 2026-09-12
 
 ### Changed

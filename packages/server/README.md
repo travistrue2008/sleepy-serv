@@ -65,7 +65,7 @@ object with these properties:
   directly.
 - `ws`: WebSocket commands for interacting with connected clients:
   `query(fn)`, `send(fn, event, body)`, `broadcast(event, body)`, and
-  `drop(fn, code?, reason?)`.
+  `drop(signal, fn)`.
 - `close`: an `async` function that shuts the app down. See
   [Shutting Down](#shutting-down).
 
@@ -551,7 +551,7 @@ const app = createApp(3000, {
     reclaimTtl: 300_000,
     ticketTtl: 10_000,
     onOpen: clientId => console.log('connected:', clientId),
-    onClose: (clientId, reason) => console.log('closed:', clientId, reason),
+    onClose: (clientId, signal) => console.log('closed:', clientId, signal),
   },
 })
 ```
@@ -565,7 +565,7 @@ and the server does not accept WebSocket upgrades. Calling `app.ws` or
 - `reclaimTtl`: how long an inactive (reaped/dropped) session stays reclaimable, in milliseconds. Defaults to `300_000`.
 - `ticketTtl`: how long a minted upgrade ticket stays valid, in milliseconds. Defaults to `10_000`.
 - `onOpen(clientId)`: fires after a client's welcome message is sent. Wrapped in try/catch so a throwing hook does not break the connection.
-- `onClose(clientId, reason)`: fires when a connection closes. `reason` is a `CloseReason` value: `'ok'`, `'dropped'`, `'reaped'`, or `'superseded'`. Also wrapped in try/catch.
+- `onClose(clientId, signal)`: fires when a connection closes. `signal` is a `CloseSignal` value (`{ code, reason }`). Also wrapped in try/catch.
 
 ## WebSocket Commands
 
@@ -574,7 +574,7 @@ The `app.ws` object exposes four methods for interacting with connected clients:
 - `query(fn)`: return a filtered list of active sessions. The filter function receives `(clientId, data, index)` and returns a boolean. Each entry in the returned array is a `SessionEntry` with `clientId` and `app` (the application context). To list all sessions: `app.ws.query(() => true)`.
 - `send(event, body, fn)`: push a notification to clients matching a filter. The filter function receives `(clientId, data, index)` and returns a boolean. To target one client: `app.ws.send('ping', body, id => id === targetId)`.
 - `broadcast(event, body)`: push a notification to all connected clients.
-- `drop(fn, code?, reason?)`: close connections matching a filter. The filter function receives `(clientId, data, index)` and returns a boolean. The default code is `CloseCode.Ok` (1000), which tells the client not to reconnect. Passing a custom code (e.g. 4000) allows the client to reconnect. To drop one client: `app.ws.drop(id => id === targetId)`.
+- `drop(signal, fn)`: close connections matching a filter. `signal` is a `CloseSignal` (`{ code, reason }`) with `code` validated in the range [4000-4099]. The filter function receives `(clientId, data, index)` and returns a boolean. To drop one client: `app.ws.drop({ code: 4000, reason: 'kicked' }, id => id === targetId)`.
 
 The same commands are available inside endpoint handlers via `req.ws`:
 
@@ -594,8 +594,8 @@ This works from both HTTP and WebSocket transports.
 
 `sleepy-serv` exports several runtime constants and types:
 
-- `CloseCode`: WebSocket close codes: `Ok` (1000), `Abnormal` (1006), `Reaped` (4999)
-- `CloseReason`: close reason values: `Ok`, `Dropped`, `Reaped`, `Superseded`
+- `InternalCloseSignal`: internal close signals: `Ok` (`{ code: 1000, reason: 'ok' }`), `Reaped` (`{ code: 4998, reason: 'reaped' }`), `Superseded` (`{ code: 4999, reason: 'superseded' }`)
+- `CloseSignal`: the type for close signals: `{ code: number, reason: string }`
 - `StatusCode`: the full range of HTTP status codes (1xx through 5xx)
 - `HttpMethod`: HTTP verbs: `Head`, `Get`, `Post`, `Put`, `Patch`, `Delete`
 - `SessionEntry`: the shape returned by `query()`: `{ clientId: string, app: unknown }`

@@ -4,8 +4,8 @@ createApp(0, {
   ws: {
     heartbeatInterval: 200_000,
     dropThreshold: 100,
-    onClose: (clientId, reason) => {
-      console.log(`CLOSE:${clientId}:${reason}`)
+    onClose: (clientId, signal) => {
+      console.log(`CLOSE:${clientId}:${signal.reason}`)
     },
   },
 })

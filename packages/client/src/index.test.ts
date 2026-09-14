@@ -3,7 +3,14 @@ import SleepySocketClient, {
   MessageType,
   HandshakeError,
 } from './'
-import { StatusCode, CloseCode, id } from './utils'
+import { StatusCode, InternalCloseSignal, id } from './utils'
+
+import type { CloseSignal } from './utils'
+
+const AbnormalCloseSignal: CloseSignal = {
+  code: 1006,
+  reason: 'abnormal',
+}
 
 import {
   jest,
@@ -26,6 +33,7 @@ type MockEventType = 'open' | 'close' | 'error' | 'message'
 type MockEvent = {
   wasClean?: boolean
   code?: number
+  reason?: string
   data?: string
 }
 
@@ -111,12 +119,13 @@ class MockWebSocket {
     this.sent.push(data)
   }
 
-  close (code: number): void {
+  close (code: number, reason = ''): void {
     this.readyState = 3
 
     this.#emit('close', {
-      wasClean: code === CloseCode.Ok,
+      wasClean: code === InternalCloseSignal.Ok.code,
       code,
+      reason,
     })
   }
 
@@ -139,12 +148,13 @@ class MockWebSocket {
 
   /* simulate an abnormal closure (e.g. network drop, server crash) */
 
-  drop (code = CloseCode.Abnormal): void {
+  drop (signal: CloseSignal): void {
     this.readyState = 3
 
     this.#emit('close', {
       wasClean: false,
-      code,
+      code: signal.code,
+      reason: signal.reason,
     })
   }
 }
@@ -551,7 +561,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       await client.close()
 
@@ -570,7 +580,8 @@ describe('SleepySocketClient', () => {
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: CloseCode.Ok,
+        code: InternalCloseSignal.Ok.code,
+        reason: 'ok',
       })
     })
 
@@ -582,13 +593,14 @@ describe('SleepySocketClient', () => {
       })
 
       client.on('close', handler)
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       expect(client.isReconnecting).toBe(false)
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: CloseCode.Abnormal,
+        code: AbnormalCloseSignal.code,
+        reason: AbnormalCloseSignal.reason,
       })
     })
   })
@@ -693,7 +705,7 @@ describe('SleepySocketClient', () => {
 
       expect(client.isConnecting).toBe(false)
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       expect(client.isConnecting).toBe(false)
 
@@ -722,7 +734,7 @@ describe('SleepySocketClient', () => {
       })
 
       client.on('close', handler)
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       expect(client.isReconnecting).toBe(true)
 
@@ -733,7 +745,8 @@ describe('SleepySocketClient', () => {
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: CloseCode.Abnormal,
+        code: AbnormalCloseSignal.code,
+        reason: AbnormalCloseSignal.reason,
       })
     })
 
@@ -747,13 +760,18 @@ describe('SleepySocketClient', () => {
       })
 
       client.on('close', handler)
-      socket.close(CloseCode.Ok)
+
+      socket.close(
+        InternalCloseSignal.Ok.code,
+        InternalCloseSignal.Ok.reason,
+      )
 
       expect(client.isConnected).toBe(false)
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: CloseCode.Ok,
+        code: InternalCloseSignal.Ok.code,
+        reason: InternalCloseSignal.Ok.reason,
       })
     })
 
@@ -779,7 +797,8 @@ describe('SleepySocketClient', () => {
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: CloseCode.Ok,
+        code: InternalCloseSignal.Ok.code,
+        reason: InternalCloseSignal.Ok.reason,
       })
     })
 
@@ -792,7 +811,7 @@ describe('SleepySocketClient', () => {
 
       await client.close()
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
 
@@ -811,7 +830,7 @@ describe('SleepySocketClient', () => {
       })
 
       client.on('close', handler)
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       const postDropStatus = client.isConnected
 
@@ -850,7 +869,8 @@ describe('SleepySocketClient', () => {
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: CloseCode.Abnormal,
+        code: AbnormalCloseSignal.code,
+        reason: AbnormalCloseSignal.reason,
       })
     })
 
@@ -867,7 +887,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       await reconnect()
 
@@ -915,7 +935,7 @@ describe('SleepySocketClient', () => {
         }),
       })))
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       jest.advanceTimersByTime(500)
 
@@ -951,7 +971,7 @@ describe('SleepySocketClient', () => {
         json: async () => ERROR_BODY,
       })))
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       jest.advanceTimersByTime(500)
 
@@ -969,7 +989,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       await reconnect()
 
@@ -983,7 +1003,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       await reconnect(500, OTHER_CLIENT_ID)
 
@@ -998,7 +1018,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       jest.advanceTimersByTime(500)
 
@@ -1026,7 +1046,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       await client.close()
 
@@ -1034,6 +1054,63 @@ describe('SleepySocketClient', () => {
 
       await settle()
 
+      expect(MockWebSocket.last).toBe(socket)
+    })
+
+    test('when the close code is Superseded', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      socket.drop(InternalCloseSignal.Superseded)
+
+      jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
+
+      await settle()
+
+      expect(client.isReconnecting).toBe(false)
+      expect(MockWebSocket.last).toBe(socket)
+    })
+
+    test('when the close code is a signal', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      socket.drop({
+        code: 4050,
+        reason: 'custom',
+      })
+
+      jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
+
+      await settle()
+
+      expect(client.isReconnecting).toBe(false)
+      expect(MockWebSocket.last).toBe(socket)
+    })
+
+    test('when the close code is unrecognized', async () => {
+      const { client, socket } = await connectAndOpen({
+        reconnect: {
+          random: () => 0,
+        },
+      })
+
+      socket.drop({
+        code: 3000,
+        reason: 'custom',
+      })
+
+      jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
+
+      await settle()
+
+      expect(client.isReconnecting).toBe(false)
       expect(MockWebSocket.last).toBe(socket)
     })
   })
@@ -1049,7 +1126,7 @@ describe('SleepySocketClient', () => {
 
       const before = fetchMock().mock.calls.length
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       jest.advanceTimersByTime(499)
 
@@ -1077,7 +1154,7 @@ describe('SleepySocketClient', () => {
         throw new Error('Down')
       }))
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       jest.advanceTimersByTime(500)
 
@@ -1112,7 +1189,7 @@ describe('SleepySocketClient', () => {
         throw new Error('Down')
       }))
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       jest.advanceTimersByTime(500)
 
@@ -1141,7 +1218,7 @@ describe('SleepySocketClient', () => {
 
       const before = fetchMock().mock.calls.length
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       jest.advanceTimersByTime(749)
 
@@ -1370,7 +1447,7 @@ describe('SleepySocketClient', () => {
 
       const promise = client.get('/')
 
-      socket.drop()
+      socket.drop(AbnormalCloseSignal)
 
       await expect(promise).rejects.toThrow(new Error('Socket closed.'))
     })

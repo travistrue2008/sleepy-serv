@@ -10,8 +10,7 @@ import {
 
 import {
   StatusCode,
-  CloseCode,
-  CloseReason,
+  InternalCloseSignal,
   toSegments,
   formatError,
   executeMiddlewareChain,
@@ -32,8 +31,10 @@ import type { WebSocketHandler } from 'bun'
 
 import type {
   AsyncHandlerResult,
+  CloseSignal,
   HttpMethod,
   Request,
+  FilterFn,
   MiddlewareChain,
   SocketCommands,
   SessionEntry,
@@ -106,7 +107,7 @@ export type SocketState = {
   activeSessions: Map<string, ActiveSession>
   inactiveSessions: Map<string, InactiveSession>
   onOpen: ((clientId: string) => void) | null
-  onClose: ((clientId: string, reason: CloseReason) => void) | null
+  onClose: ((clientId: string, signal: CloseSignal) => void) | null
 }
 
 export type SocketRoute = {
@@ -385,16 +386,6 @@ function buildErrorMessage (
   })
 }
 
-function getCloseReason (ws: SocketConnection, code: number): CloseReason {
-  if (ws.data.reaped) {
-    return CloseReason.Reaped
-  } else if (code === CloseCode.Ok) {
-    return CloseReason.Ok
-  }
-
-  return CloseReason.Dropped
-}
-
 export function buildSocketState (opts: SocketOptions = {}): SocketState {
   return {
     dropThreshold: opts.dropThreshold ?? 120_000,
@@ -433,7 +424,10 @@ export function buildSocketServer (
     ws.data.reaperHandle = setTimeout(() => {
       ws.data.reaped = true
 
-      ws.close(CloseCode.Reaped)
+      ws.close(
+        InternalCloseSignal.Reaped.code,
+        InternalCloseSignal.Reaped.reason,
+      )
     }, dropThreshold)
   }
 
@@ -447,10 +441,10 @@ export function buildSocketServer (
     }
   }
 
-  function invokeClose (ws: SocketConnection, reason: CloseReason) {
+  function invokeClose (ws: SocketConnection, signal: CloseSignal) {
     if (onClose) {
       try {
-        onClose(ws.data.clientId, reason)
+        onClose(ws.data.clientId, signal)
       } catch (err) {
         console.error(err)
       }
@@ -467,7 +461,10 @@ export function buildSocketServer (
       if (existingSession) {
         existingSession.ws.data.superseded = true
 
-        existingSession.ws.close()
+        existingSession.ws.close(
+          InternalCloseSignal.Superseded.code,
+          InternalCloseSignal.Superseded.reason,
+        )
       }
 
       inactiveSessions.delete(ws.data.clientId)
@@ -494,18 +491,22 @@ export function buildSocketServer (
       ws.send(JSON.stringify(welcomeMessage))
       invokeOpen(ws)
     },
-    close (ws: SocketConnection, code: number): void {
+    close (ws: SocketConnection, code: number, reason: string): void {
+      const signal: CloseSignal = {
+        code,
+        reason,
+      }
+
       if (ws.data.reaperHandle) {
         clearTimeout(ws.data.reaperHandle)
       }
 
       if (ws.data.superseded) {
-        invokeClose(ws, CloseReason.Superseded)
+        invokeClose(ws, signal)
 
         return
       }
 
-      const reason = getCloseReason(ws, code)
       const exists = activeSessions.get(ws.data.clientId)
 
       if (!exists || exists.ws !== ws) {
@@ -514,7 +515,7 @@ export function buildSocketServer (
 
       activeSessions.delete(ws.data.clientId)
 
-      if (code !== CloseCode.Ok || ws.data.reaped) {
+      if (code !== InternalCloseSignal.Ok.code || ws.data.reaped) {
         inactiveSessions.set(ws.data.clientId, {
           token: exists.token,
           expiresAt: Date.now() + reclaimTtl,
@@ -522,7 +523,7 @@ export function buildSocketServer (
         })
       }
 
-      invokeClose(ws, reason)
+      invokeClose(ws, signal)
     },
     async message (ws: SocketConnection, raw: string | Buffer): Promise<void> {
       const incomingMsg = parseMessage(raw)
@@ -731,12 +732,12 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
   }
 
   return {
-    broadcast (event, body) {
+    broadcast (event: string, body: unknown) {
       for (const clientId of state.activeSessions.keys()) {
         sendToClient(clientId, event, body)
       }
     },
-    send (event, body, fn) {
+    send (event: string, body: unknown, fn: FilterFn) {
       let index = 0
 
       /* TODO: look into concurrency at some point */
@@ -748,8 +749,16 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
         index += 1
       }
     },
-    drop (fn, code, reason) {
+    drop (signal: CloseSignal, fn: FilterFn) {
+      const { code, reason } = signal
+
       let index = 0
+
+      if (!Number.isInteger(code) || code < 4000 || code > 4099) {
+        throw new RangeError(
+          `Signal code must be an integer in [4000, 4099], got ${code}`,
+        )
+      }
 
       for (const [clientId, session] of state.activeSessions) {
         if (fn(clientId, session.ws.data, index)) {
@@ -759,7 +768,7 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
         index += 1
       }
     },
-    query (fn) {
+    query (fn: FilterFn) {
       const results: SessionEntry[] = []
       let index = 0
 

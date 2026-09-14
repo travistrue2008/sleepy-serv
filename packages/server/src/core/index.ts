@@ -46,7 +46,12 @@ import type {
 } from './socket'
 
 export * from './errors'
-export { StatusCode, CloseCode, CloseReason, HttpMethod } from './utils'
+
+export {
+  StatusCode,
+  HttpMethod,
+  InternalCloseSignal,
+} from './utils'
 
 export {
   parseJsonBody,
@@ -60,6 +65,7 @@ export type {
   AppOptions,
   AsyncHandlerResult,
   BaseRequest,
+  CloseSignal,
   EndpointRequest,
   FormattedError,
   Handler,

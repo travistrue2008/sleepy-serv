@@ -2,8 +2,8 @@ import { createApp } from 'sleepy-serv'
 
 createApp(0, {
   ws: {
-    onClose: (clientId, reason) => {
-      console.log(`CLOSE:${clientId}:${reason}`)
+    onClose: (clientId, signal) => {
+      console.log(`CLOSE:${clientId}:${signal.reason}`)
     },
   },
 })
