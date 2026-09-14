@@ -1,8 +1,14 @@
 import crypto from 'node:crypto'
 import { MessageType } from './messages'
-import { StatusCode, InternalCloseSignal } from './utils'
 
-import type { CloseSignal } from './utils'
+import {
+  StatusCode,
+  SessionType,
+  SessionFilter,
+  InternalCloseSignal,
+} from './utils'
+
+import type { CloseSignal, SessionEntry } from './utils'
 
 import {
   jest,
@@ -2116,7 +2122,9 @@ describe('buildSocketCommands()', () => {
         InternalCloseSignal.Ok.reason,
       )
 
-      const filterFn = mock((clientId, _data) => clientId !== clientIds[3])
+      const filterFn = mock((session: SessionEntry) =>
+        session.clientId !== clientIds[3],
+      )
 
       commands.send(EVENT, { score: 1 }, filterFn)
 
@@ -2187,22 +2195,31 @@ describe('buildSocketCommands()', () => {
 
       expect(filterFn).toHaveBeenNthCalledWith(
         1,
-        clientIds[1],
-        webSockets[1].data,
+        {
+          clientId: clientIds[1],
+          type: SessionType.Active,
+          data: webSockets[1].data.app,
+        },
         0,
       )
 
       expect(filterFn).toHaveBeenNthCalledWith(
         2,
-        clientIds[2],
-        webSockets[2].data,
+        {
+          clientId: clientIds[2],
+          type: SessionType.Active,
+          data: webSockets[2].data.app,
+        },
         1,
       )
 
       expect(filterFn).toHaveBeenNthCalledWith(
         3,
-        clientIds[3],
-        webSockets[3].data,
+        {
+          clientId: clientIds[3],
+          type: SessionType.Active,
+          data: webSockets[3].data.app,
+        },
         2,
       )
     })
@@ -2216,8 +2233,8 @@ describe('buildSocketCommands()', () => {
 
       server.open(ws)
 
-      const fn = () => commands.send(EVENT, { score: 1 }, (id) => {
-        state.activeSessions.delete(id)
+      const fn = () => commands.send(EVENT, { score: 1 }, session => {
+        state.activeSessions.delete(session.clientId)
 
         return true
       })
@@ -2321,7 +2338,7 @@ describe('buildSocketCommands()', () => {
           code: 4000,
           reason: 'kicked',
         },
-        id => id !== clientIds[1],
+        session => session.clientId !== clientIds[1],
       )
 
       expect(sockets[0].close).toHaveBeenCalledOnce()
@@ -2347,7 +2364,8 @@ describe('buildSocketCommands()', () => {
           code: 4000,
           reason: 'kicked',
         },
-        id => id === '00000000-0000-0000-0000-000000000060',
+        session =>
+          session.clientId === '00000000-0000-0000-0000-000000000060',
       )
 
       expect(ws.close).toHaveBeenCalledOnce()
@@ -2386,17 +2404,19 @@ describe('buildSocketCommands()', () => {
       sockets.forEach(ws => server.open(ws))
 
       const result = commands.query(
-        id => id !== clientIds[1],
+        session => session.clientId !== clientIds[1],
       )
 
       expect(result).toStrictEqual([
         {
           clientId: clientIds[0],
-          app: { name: clientIds[0] },
+          type: SessionType.Active,
+          data: { name: clientIds[0] },
         },
         {
           clientId: clientIds[2],
-          app: { name: clientIds[2] },
+          type: SessionType.Active,
+          data: { name: clientIds[2] },
         },
       ])
     })
@@ -2426,11 +2446,182 @@ describe('buildSocketCommands()', () => {
       expect(result).toStrictEqual([
         {
           clientId: clientIds[0],
-          app: { role: 'player' },
+          type: SessionType.Active,
+          data: { role: 'player' },
         },
         {
           clientId: clientIds[1],
-          app: { role: 'player' },
+          type: SessionType.Active,
+          data: { role: 'player' },
+        },
+      ])
+    })
+
+    test('when no filter arg is provided', () => {
+      const ACTIVE_ID = '00000000-0000-0000-0000-000000000070'
+      const INACTIVE_ID = '00000000-0000-0000-0000-000000000071'
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const activeWs = buildSocket(ACTIVE_ID)
+      const inactiveWs = buildSocket(INACTIVE_ID)
+
+      activeWs.data.app = { role: 'presenter' }
+      inactiveWs.data.app = { role: 'player' }
+
+      server.open(activeWs)
+      server.open(inactiveWs)
+
+      server.close(
+        inactiveWs,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
+      const result = commands.query(() => true)
+
+      expect(result).toStrictEqual([
+        {
+          clientId: ACTIVE_ID,
+          type: SessionType.Active,
+          data: { role: 'presenter' },
+        },
+      ])
+    })
+
+    test('when SessionFilter.Active is provided', () => {
+      const ACTIVE_ID = '00000000-0000-0000-0000-000000000072'
+      const INACTIVE_ID = '00000000-0000-0000-0000-000000000073'
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const activeWs = buildSocket(ACTIVE_ID)
+      const inactiveWs = buildSocket(INACTIVE_ID)
+
+      activeWs.data.app = { role: 'presenter' }
+      inactiveWs.data.app = { role: 'player' }
+
+      server.open(activeWs)
+      server.open(inactiveWs)
+
+      server.close(
+        inactiveWs,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
+      const result = commands.query(() => true, SessionFilter.Active)
+
+      expect(result).toStrictEqual([
+        {
+          clientId: ACTIVE_ID,
+          type: SessionType.Active,
+          data: { role: 'presenter' },
+        },
+      ])
+    })
+
+    test('when SessionFilter.Inactive is provided', () => {
+      const ACTIVE_ID = '00000000-0000-0000-0000-000000000074'
+      const INACTIVE_ID = '00000000-0000-0000-0000-000000000075'
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const activeWs = buildSocket(ACTIVE_ID)
+      const inactiveWs = buildSocket(INACTIVE_ID)
+
+      activeWs.data.app = { role: 'presenter' }
+      inactiveWs.data.app = { gameId: 'g1' }
+
+      server.open(activeWs)
+      server.open(inactiveWs)
+
+      server.close(
+        inactiveWs,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
+      const result = commands.query(() => true, SessionFilter.Inactive)
+
+      expect(result).toStrictEqual([
+        {
+          clientId: INACTIVE_ID,
+          type: SessionType.Inactive,
+          data: { gameId: 'g1' },
+        },
+      ])
+    })
+
+    test('when SessionFilter.Inactive sweeps expired sessions', () => {
+      const ACTIVE_ID = '00000000-0000-0000-0000-000000000076'
+      const INACTIVE_ID = '00000000-0000-0000-0000-000000000077'
+
+      const state = buildSocketState({ reclaimTtl: 100 })
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const activeWs = buildSocket(ACTIVE_ID)
+      const inactiveWs = buildSocket(INACTIVE_ID)
+
+      activeWs.data.app = { role: 'presenter' }
+      inactiveWs.data.app = { gameId: 'g1' }
+
+      server.open(activeWs)
+      server.open(inactiveWs)
+
+      server.close(
+        inactiveWs,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
+      expect(state.inactiveSessions.size).toBe(1)
+
+      jest.advanceTimersByTime(101)
+
+      const result = commands.query(() => true, SessionFilter.Inactive)
+
+      expect(result).toStrictEqual([])
+      expect(state.inactiveSessions.size).toBe(0)
+    })
+
+    test('when SessionFilter.All is provided', () => {
+      const ACTIVE_ID = '00000000-0000-0000-0000-000000000078'
+      const INACTIVE_ID = '00000000-0000-0000-0000-000000000079'
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const activeWs = buildSocket(ACTIVE_ID)
+      const inactiveWs = buildSocket(INACTIVE_ID)
+
+      activeWs.data.app = { role: 'presenter' }
+      inactiveWs.data.app = { role: 'player' }
+
+      server.open(activeWs)
+      server.open(inactiveWs)
+
+      server.close(
+        inactiveWs,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
+      const result = commands.query(() => true, SessionFilter.All)
+
+      expect(result).toStrictEqual([
+        {
+          clientId: ACTIVE_ID,
+          type: SessionType.Active,
+          data: { role: 'presenter' },
+        },
+        {
+          clientId: INACTIVE_ID,
+          type: SessionType.Inactive,
+          data: { role: 'player' },
         },
       ])
     })

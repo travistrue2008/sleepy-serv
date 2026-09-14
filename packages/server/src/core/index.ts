@@ -51,6 +51,8 @@ export {
   StatusCode,
   HttpMethod,
   InternalCloseSignal,
+  SessionType,
+  SessionFilter,
 } from './utils'
 
 export {

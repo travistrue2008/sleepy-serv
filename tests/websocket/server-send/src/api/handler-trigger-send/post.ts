@@ -5,9 +5,7 @@ type Body = {
 }
 
 type ConnectionData = {
-  app: {
-    userId: string
-  }
+  userId: string
 }
 
 export default async function handler (req: Request): AsyncHandlerResult {
@@ -17,10 +15,10 @@ export default async function handler (req: Request): AsyncHandlerResult {
     message: `Hello from ${body.userId}`,
   }
 
-  req.ws.send('player_joined', message, (_clientId, data) => {
-    const connectionData = data as ConnectionData
+  req.ws.send('player_joined', message, (session) => {
+    const data = session.data as ConnectionData
 
-    return connectionData.app.userId !== body.userId
+    return data.userId !== body.userId
   })
 
   return new Response('', { status: 204 })

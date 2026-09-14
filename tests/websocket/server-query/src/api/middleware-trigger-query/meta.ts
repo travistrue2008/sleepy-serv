@@ -5,19 +5,17 @@ type Query = {
 }
 
 type ConnectionData = {
-  app: {
-    userId: string
-  }
+  userId: string
 }
 
 export const middleware: Middleware[] = [
   (req, _res, next) => {
     const { userId } = req.query as Query
 
-    const entries = req.ws.query((_clientId, data) => {
-      const connectionData = data as ConnectionData
+    const entries = req.ws.query((session) => {
+      const data = session.data as ConnectionData
 
-      return connectionData.app.userId !== userId
+      return data.userId !== userId
     })
 
     return next({ count: entries.length })

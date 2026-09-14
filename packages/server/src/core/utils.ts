@@ -107,6 +107,29 @@ export type Handler = (
 
 export type MiddlewareChain = (Middleware | Handler)[]
 
+export type CloseSignal = {
+  code: number
+  reason: string
+}
+
+export const InternalCloseSignal = {
+  Ok: {
+    code: 1000,
+    reason: 'ok',
+  },
+  Reaped: {
+    code: 4998,
+    reason: 'reaped',
+  },
+  Superseded: {
+    code: 4999,
+    reason: 'superseded',
+  },
+} as const
+
+export type InternalCloseSignal =
+  typeof InternalCloseSignal[keyof typeof InternalCloseSignal]
+
 export type ActiveSession = {
   token: string
   ws: SocketConnection
@@ -121,14 +144,29 @@ export type InactiveSession = {
 export type ActiveSessions = ReadonlyMap<string, ActiveSession>
 export type Session = ActiveSession | InactiveSession
 
+export const SessionType = {
+  Active: 'active',
+  Inactive: 'inactive',
+} as const
+
+export type SessionType = typeof SessionType[keyof typeof SessionType]
+
+export const SessionFilter = {
+  Active: 'active',
+  Inactive: 'inactive',
+  All: 'all',
+} as const
+
+export type SessionFilter = typeof SessionFilter[keyof typeof SessionFilter]
+
 export type SessionEntry = {
   clientId: string
-  app: unknown
+  type: SessionType
+  data: unknown
 }
 
 export type FilterFn = (
-  clientId: string,
-  data: unknown,
+  session: SessionEntry,
   index: number,
 ) => boolean
 
@@ -136,7 +174,7 @@ export type SocketCommands = {
   broadcast: (event: string, body: unknown) => void
   send: (event: string, body: unknown, fn: FilterFn) => void
   drop: (signal: CloseSignal, fn: FilterFn) => void
-  query: (fn: FilterFn) => SessionEntry[]
+  query: (fn: FilterFn, filter?: SessionFilter) => SessionEntry[]
 }
 
 export type BaseRequest = {
@@ -160,26 +198,6 @@ export type WebSocketRequest = BaseRequest & {
 }
 
 export type Request = EndpointRequest | WebSocketRequest
-
-export type CloseSignal = {
-  code: number
-  reason: string
-}
-
-export const InternalCloseSignal = {
-  Ok: {
-    code: 1000,
-    reason: 'ok',
-  },
-  Reaped: {
-    code: 4998,
-    reason: 'reaped',
-  },
-  Superseded: {
-    code: 4999,
-    reason: 'superseded',
-  },
-} as const
 
 export type SocketOptions = {
   dropThreshold?: number

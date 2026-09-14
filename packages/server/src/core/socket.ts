@@ -11,6 +11,8 @@ import {
 import {
   StatusCode,
   InternalCloseSignal,
+  SessionType,
+  SessionFilter,
   toSegments,
   formatError,
   executeMiddlewareChain,
@@ -742,7 +744,13 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
 
       /* TODO: look into concurrency at some point */
       for (const [clientId, session] of state.activeSessions) {
-        if (fn(clientId, session.ws.data, index)) {
+        const entry: SessionEntry = {
+          clientId,
+          type: SessionType.Active,
+          data: session.ws.data.app,
+        }
+
+        if (fn(entry, index)) {
           sendToClient(clientId, event, body)
         }
 
@@ -761,27 +769,67 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
       }
 
       for (const [clientId, session] of state.activeSessions) {
-        if (fn(clientId, session.ws.data, index)) {
+        const entry: SessionEntry = {
+          clientId,
+          type: SessionType.Active,
+          data: session.ws.data.app,
+        }
+
+        if (fn(entry, index)) {
           session.ws.close(code, reason)
         }
 
         index += 1
       }
     },
-    query (fn: FilterFn) {
+    query (
+      fn: FilterFn,
+      filter: SessionFilter = SessionFilter.Active,
+    ) {
       const results: SessionEntry[] = []
-      let index = 0
 
-      for (const [clientId, session] of state.activeSessions) {
-        if (fn(clientId, session.ws.data, index)) {
-          results.push({
-            clientId,
-            app: session.ws.data.app,
-          })
+      function processSessions (
+        type: SessionType,
+        filter: SessionFilter,
+        startIndex: number,
+      ): number {
+        let index = startIndex
+
+        const sessions = type === SessionType.Active
+          ? state.activeSessions
+          : state.inactiveSessions
+
+        if (type !== filter && filter !== SessionFilter.All) {
+          return index
         }
 
-        index += 1
+        for (const [clientId, session] of sessions) {
+          const data = type === SessionType.Active
+            ? (session as ActiveSession).ws.data.app
+            : (session as InactiveSession).app
+
+          const entry: SessionEntry = {
+            clientId,
+            type,
+            data,
+          }
+
+          if (fn(entry, index)) {
+            results.push(entry)
+          }
+
+          index += 1
+        }
+
+        return index
       }
+
+      let index = 0
+
+      sweepInactiveSessions(state)
+
+      index = processSessions(SessionType.Active, filter, index)
+      index = processSessions(SessionType.Inactive, filter, index)
 
       return results
     },
