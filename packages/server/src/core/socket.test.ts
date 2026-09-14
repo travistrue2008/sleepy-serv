@@ -1,12 +1,12 @@
 import crypto from 'node:crypto'
 import { MessageType } from './messages'
-import { InternalCloseSignal } from './socket'
-
 import {
   StatusCode,
   SessionType,
   SessionFilter,
 } from './utils'
+
+import { InternalCloseSignal } from './socket'
 
 import type { CloseSignal, SessionEntry } from './utils'
 

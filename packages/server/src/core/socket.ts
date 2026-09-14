@@ -38,12 +38,9 @@ import type {
   FilterFn,
   MiddlewareChain,
   SocketCommands,
+  SocketData,
   SessionEntry,
   WebSocketRequest,
-  SocketData,
-  SocketConnection,
-  ActiveSession,
-  InactiveSession,
 } from './utils'
 
 import type {
@@ -90,7 +87,26 @@ type UpdateTicketRequest = {
   }
 }
 
-export const InternalCloseSignal = {
+export type SocketConnection = {
+  data: SocketData
+  send: (data: string) => unknown
+  close: (code?: number, reason?: string) => void
+}
+
+export type ActiveSession = {
+  token: string
+  ws: SocketConnection
+}
+
+export type InactiveSession = {
+  token: string
+  expiresAt: number
+  app: unknown
+}
+
+export type ActiveSessions = ReadonlyMap<string, ActiveSession>
+
+export const InternalCloseSignal: Record<string, CloseSignal> = {
   Ok: {
     code: 1000,
     reason: 'ok',

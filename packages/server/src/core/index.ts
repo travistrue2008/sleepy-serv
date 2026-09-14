@@ -32,8 +32,11 @@ import type {
   MiddlewareChain,
   EndpointRequest,
   Handler,
-  SocketCommands,
   Server,
+} from './utils'
+
+import type {
+  SocketCommands,
 } from './utils'
 
 import type {
@@ -58,13 +61,21 @@ export {
   validateSchemas,
 } from './middleware'
 
-export type { SocketOptions } from './socket'
-export type { FilterFn, SessionEntry, SocketCommands } from './utils'
+export type {
+  SocketConnection,
+  SocketOptions,
+} from './socket'
+
+export type {
+  CloseSignal,
+  FilterFn,
+  SessionEntry,
+  SocketCommands,
+} from './utils'
 
 export type {
   AsyncHandlerResult,
   BaseRequest,
-  CloseSignal,
   EndpointRequest,
   FormattedError,
   Handler,
@@ -74,7 +85,6 @@ export type {
   HandlerResult,
   Request,
   Server,
-  SocketConnection,
   WebSocketRequest,
 } from './utils'
 

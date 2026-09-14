@@ -1,7 +1,7 @@
 import type { ErrorObject } from 'ajv'
 import type { BunRequest, Server as BunServer } from 'bun'
 
-type TimeoutHandle = ReturnType<typeof setTimeout>
+export type TimeoutHandle = ReturnType<typeof setTimeout>
 
 export const HttpMethod = {
   Head: 'HEAD',
@@ -114,18 +114,13 @@ export type CloseSignal = {
   reason: string
 }
 
-export type ActiveSession = {
-  token: string
-  ws: SocketConnection
-}
-
-export type InactiveSession = {
-  token: string
-  expiresAt: number
+export type SocketData = {
+  clientId: string
+  superseded: boolean
+  reaped: boolean
+  reaperHandle: TimeoutHandle | null
   app: unknown
 }
-
-export type ActiveSessions = ReadonlyMap<string, ActiveSession>
 
 export const SessionType = {
   Active: 'active',
@@ -181,20 +176,6 @@ export type WebSocketRequest = BaseRequest & {
 }
 
 export type Request = EndpointRequest | WebSocketRequest
-
-export type SocketData = {
-  clientId: string
-  superseded: boolean
-  reaped: boolean
-  reaperHandle: TimeoutHandle | null
-  app: unknown
-}
-
-export type SocketConnection = {
-  data: SocketData
-  send: (data: string) => unknown
-  close: (code?: number, reason?: string) => void
-}
 
 export type Server = BunServer<SocketData>
 
