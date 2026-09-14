@@ -1,6 +1,6 @@
 export * from './core'
 
-import type { App, AppOptions } from './core'
+import type { AppOptions, App } from './core'
 
 export declare function createApp (
   port: number,

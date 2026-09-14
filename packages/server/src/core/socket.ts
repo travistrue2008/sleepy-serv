@@ -10,7 +10,6 @@ import {
 
 import {
   StatusCode,
-  InternalCloseSignal,
   SessionType,
   SessionFilter,
   toSegments,
@@ -45,8 +44,6 @@ import type {
   SocketConnection,
   ActiveSession,
   InactiveSession,
-  Session,
-  SocketOptions,
 } from './utils'
 
 import type {
@@ -91,6 +88,36 @@ type UpdateTicketRequest = {
   params: {
     clientId: string
   }
+}
+
+export const InternalCloseSignal = {
+  Ok: {
+    code: 1000,
+    reason: 'ok',
+  },
+  Reaped: {
+    code: 4998,
+    reason: 'reaped',
+  },
+  Superseded: {
+    code: 4999,
+    reason: 'superseded',
+  },
+} as const
+
+export type InternalCloseSignal =
+  typeof InternalCloseSignal[keyof typeof InternalCloseSignal]
+
+export type Session = ActiveSession | InactiveSession
+
+export type SocketOptions = {
+  dropThreshold?: number
+  heartbeatInterval?: number
+  maxTickets?: number
+  reclaimTtl?: number
+  ticketTtl?: number
+  onOpen?: (clientId: string) => void
+  onClose?: (clientId: string, signal: CloseSignal) => void
 }
 
 export type Ticket = {
