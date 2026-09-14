@@ -1,9 +1,10 @@
 import { createApp } from 'sleepy-serv'
+import { KickedCloseSignal } from './utils'
 
 const app = createApp(0, {
   ws: {
-    onClose: (clientId, reason) => {
-      console.log(`CLOSE:${clientId}:${reason}`)
+    onClose: (clientId, signal) => {
+      console.log(`CLOSE:${clientId}:${signal.reason}`)
     },
   },
 })
@@ -11,20 +12,11 @@ const app = createApp(0, {
 const admin = Bun.serve({
   port: 0,
   routes: {
-    '/app-trigger-drop-default': {
+    '/app-trigger-drop': {
       POST: async (req) => {
         const body = await req.json() as { clientId: string }
 
-        app.ws.drop(id => id === body.clientId)
-
-        return new Response('', { status: 204 })
-      },
-    },
-    '/app-trigger-drop-custom': {
-      POST: async (req) => {
-        const body = await req.json() as { clientId: string }
-
-        app.ws.drop(id => id === body.clientId, 3999, 'player_kicked')
+        app.ws.drop(KickedCloseSignal, id => id === body.clientId)
 
         return new Response('', { status: 204 })
       },

@@ -1,5 +1,5 @@
 import SleepySocketClient from 'sleepy-socket'
-import { StatusCode } from 'sleepy-serv'
+import { StatusCode, InternalCloseSignal } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { createServer, waitFor } from '../../helpers'
 
@@ -7,8 +7,8 @@ import { createServer, waitFor } from '../../helpers'
   Drives the resilience path over real loopback sockets: an involuntary drop
   the app did not initiate should trigger auto-reconnect, reclaim the same
   clientId via PUT /ws/:clientId, and leave the client able to send again.
-  Closing the underlying socket with an application code (4000) rather than
-  1000 makes the server treat it as involuntary and open a reclaim window.
+  Closing the underlying socket with the Reaped code simulates a
+  server-side timeout, which the client treats as reconnectable.
  */
 
 test('when the socket drops AND the client reconnects', async () => {
@@ -28,12 +28,15 @@ test('when the socket drops AND the client reconnects', async () => {
   const id = client.id
   const oldSocket = client.socket
 
-  client.socket!.close(4000)
+  client.socket!.close(
+    InternalCloseSignal.Reaped.code,
+    InternalCloseSignal.Reaped.reason,
+  )
 
   /*
     isConnected flips true only once the reconnect welcome is processed, so
     this waits for a fully-established socket rather than a merely-constructed
-    one. The socket check guards the brief window right after close(4000)
+    one. The socket check guards the brief window right after the close
     where the old socket is still set before its close event fires.
    */
 

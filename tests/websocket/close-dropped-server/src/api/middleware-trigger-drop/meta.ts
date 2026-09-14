@@ -1,10 +1,12 @@
+import { KickedCloseSignal } from '../../utils'
+
 import type { Middleware } from 'sleepy-serv'
 
 export const middleware: Middleware[] = [
   async function (req, _res, next) {
     const body = await req.json() as { clientId: string }
 
-    req.ws.drop(id => id === body.clientId)
+    req.ws.drop(KickedCloseSignal, id => id === body.clientId)
 
     return next()
   },

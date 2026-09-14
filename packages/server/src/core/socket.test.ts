@@ -1,6 +1,8 @@
 import crypto from 'node:crypto'
 import { MessageType } from './messages'
-import { StatusCode, CloseCode, CloseReason } from './utils'
+import { StatusCode, InternalCloseSignal } from './utils'
+
+import type { CloseSignal } from './utils'
 
 import {
   jest,
@@ -94,6 +96,11 @@ const UUIDs: UUID[] = [
   '00000000-0000-0000-0000-000000000002',
   '00000000-0000-0000-0000-000000000003',
 ]
+
+const AbnormalCloseSignal: CloseSignal = {
+  code: 1006,
+  reason: 'abnormal',
+}
 
 function buildSocket (clientId: string): SocketMock {
   const send = mock()
@@ -653,6 +660,11 @@ describe('buildTestServer()', () => {
 
       expect(oldWs.data.superseded).toBe(true)
       expect(oldWs.close).toHaveBeenCalledOnce()
+
+      expect(oldWs.close).toHaveBeenCalledWith(
+        InternalCloseSignal.Superseded.code,
+        InternalCloseSignal.Superseded.reason,
+      )
     })
 
     test('when the drop heartbeat threshold elapses', () => {
@@ -664,7 +676,8 @@ describe('buildTestServer()', () => {
       expect(ws.close).toHaveBeenCalledOnce()
 
       expect(ws.close).toHaveBeenCalledWith(
-        CloseCode.Reaped,
+        InternalCloseSignal.Reaped.code,
+        InternalCloseSignal.Reaped.reason,
       )
 
       expect(ws.data.reaped).toBe(true)
@@ -744,9 +757,18 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, CloseCode.Ok, '')
 
-      const fn = () => server.close(ws, CloseCode.Abnormal, '')
+      server.close(
+        ws,
+        InternalCloseSignal.Ok.code,
+        InternalCloseSignal.Ok.reason,
+      )
+
+      const fn = () => server.close(
+        ws,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
 
       expect(fn).not.toThrow()
       expect(state.inactiveSessions.has(CLIENT_ID)).toBe(false)
@@ -757,7 +779,13 @@ describe('buildTestServer()', () => {
       const newSocket = buildSocket(CLIENT_ID)
 
       server.open(oldSocket)
-      server.close(oldSocket, CloseCode.Ok, '')
+
+      server.close(
+        oldSocket,
+        InternalCloseSignal.Ok.code,
+        InternalCloseSignal.Ok.reason,
+      )
+
       server.open(newSocket)
 
       const res = await updateTicket({
@@ -796,7 +824,11 @@ describe('buildTestServer()', () => {
 
       const result = await res.json()
 
-      server.close(ws, CloseCode.Abnormal, '')
+      server.close(
+        ws,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
 
       expect(result).toStrictEqual({
         clientId: CLIENT_ID,
@@ -810,7 +842,12 @@ describe('buildTestServer()', () => {
 
       server.open(ws)
       jest.advanceTimersByTime(state.dropThreshold + 100)
-      server.close(ws, CloseCode.Ok, '')
+
+      server.close(
+        ws,
+        InternalCloseSignal.Ok.code,
+        InternalCloseSignal.Ok.reason,
+      )
 
       const res = await updateTicket({
         method: 'PUT',
@@ -842,7 +879,12 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, CloseCode.Abnormal, '')
+
+      server.close(
+        ws,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
 
       jest.advanceTimersByTime(101)
 
@@ -874,9 +916,49 @@ describe('buildTestServer()', () => {
         },
       }, undefined)
 
-      server.close(ws, CloseCode.Ok, '')
+      server.close(
+        ws,
+        InternalCloseSignal.Ok.code,
+        InternalCloseSignal.Ok.reason,
+      )
 
       expect(fn).toThrow(new NotFoundError())
+    })
+
+    test('when the reaper fires', () => {
+      const state = buildSocketState({
+        dropThreshold: 100,
+      })
+
+      const server = buildTestServer([], state)
+      const ws = buildSocket(CLIENT_ID)
+
+      server.open(ws)
+      jest.advanceTimersByTime(101)
+
+      expect(ws.close).toHaveBeenCalledOnce()
+
+      expect(ws.close).toHaveBeenCalledWith(
+        InternalCloseSignal.Reaped.code,
+        InternalCloseSignal.Reaped.reason,
+      )
+    })
+
+    test('when a superseded socket closes', () => {
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const oldWs = buildSocket(CLIENT_ID)
+      const newWs = buildSocket(CLIENT_ID)
+
+      server.open(oldWs)
+      server.open(newWs)
+
+      expect(oldWs.close).toHaveBeenCalledOnce()
+
+      expect(oldWs.close).toHaveBeenCalledWith(
+        InternalCloseSignal.Superseded.code,
+        InternalCloseSignal.Superseded.reason,
+      )
     })
   })
 
@@ -924,11 +1006,20 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, CloseCode.Ok, '')
+
+      server.close(
+        ws,
+        InternalCloseSignal.Ok.code,
+        InternalCloseSignal.Ok.reason,
+      )
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, CloseReason.Ok)
+
+      expect(state.onClose).toHaveBeenCalledWith(
+        CLIENT_ID,
+        InternalCloseSignal.Ok,
+      )
     })
 
     test('when onClose fires with "dropped"', () => {
@@ -940,11 +1031,20 @@ describe('buildTestServer()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, CloseCode.Abnormal, '')
+
+      server.close(
+        ws,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, CloseReason.Dropped)
+
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, {
+        code: AbnormalCloseSignal.code,
+        reason: AbnormalCloseSignal.reason,
+      })
     })
 
     test('when onClose fires with "reaped"', () => {
@@ -958,11 +1058,20 @@ describe('buildTestServer()', () => {
 
       server.open(ws)
       jest.advanceTimersByTime(101)
-      server.close(ws, CloseCode.Ok, '')
+
+      server.close(
+        ws,
+        InternalCloseSignal.Reaped.code,
+        InternalCloseSignal.Reaped.reason,
+      )
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, CloseReason.Reaped)
+
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, {
+        code: InternalCloseSignal.Reaped.code,
+        reason: InternalCloseSignal.Reaped.reason,
+      })
     })
 
     test('when onClose fires with "superseded"', () => {
@@ -976,15 +1085,20 @@ describe('buildTestServer()', () => {
 
       server.open(oldWs)
       server.open(newWs)
-      server.close(oldWs, CloseCode.Ok, '')
+
+      server.close(
+        oldWs,
+        InternalCloseSignal.Superseded.code,
+        InternalCloseSignal.Superseded.reason,
+      )
 
       expect(state.activeSessions.size).toBe(1)
       expect(state.onClose).toHaveBeenCalledOnce()
 
-      expect(state.onClose).toHaveBeenCalledWith(
-        CLIENT_ID,
-        CloseReason.Superseded,
-      )
+      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, {
+        code: InternalCloseSignal.Superseded.code,
+        reason: InternalCloseSignal.Superseded.reason,
+      })
     })
 
     test('when onClose throws, the runtime is unaffected', () => {
@@ -999,13 +1113,21 @@ describe('buildTestServer()', () => {
 
       server.open(ws)
 
-      const fn = () => server.close(ws, CloseCode.Ok, '')
+      const fn = () => server.close(
+        ws,
+        InternalCloseSignal.Ok.code,
+        InternalCloseSignal.Ok.reason,
+      )
 
       expect(fn).not.toThrow()
       expect(state.activeSessions.size).toBe(0)
       expect(state.activeSessions.has(CLIENT_ID)).toBe(false)
       expect(state.onClose).toHaveBeenCalledOnce()
-      expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID,CloseReason.Ok)
+
+      expect(state.onClose).toHaveBeenCalledWith(
+        CLIENT_ID,
+        InternalCloseSignal.Ok,
+      )
     })
   })
 })
@@ -1735,7 +1857,13 @@ describe('buildSocketHandlers()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, CloseCode.Abnormal, '')
+
+      server.close(
+        ws,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
       jest.advanceTimersByTime(state.reclaimTtl + 1)
 
       const promise = updateTicket({
@@ -1757,7 +1885,12 @@ describe('buildSocketHandlers()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, CloseCode.Abnormal, '')
+
+      server.close(
+        ws,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
 
       const result = await updateTicket({
         params: {
@@ -1810,7 +1943,12 @@ describe('buildSocketHandlers()', () => {
       const ws = buildSocket(CLIENT_ID)
 
       server.open(ws)
-      server.close(ws, CloseCode.Abnormal, '')
+
+      server.close(
+        ws,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
 
       const result = await updateTicket({
         params: {
@@ -1839,7 +1977,12 @@ describe('buildSocketHandlers()', () => {
       ws.data.app = { playerId: 'p1' }
 
       server.open(ws)
-      server.close(ws, CloseCode.Abnormal, '')
+
+      server.close(
+        ws,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
 
       const result = await updateTicket({
         params: {
@@ -1887,8 +2030,13 @@ describe('buildDisabledSocketCommands()', () => {
   })
 
   test('when drop is called', () => {
+    const SIGNAL = {
+      code: 4000,
+      reason: 'kicked',
+    }
+
     const ws = buildDisabledSocketCommands()
-    const fn = () => ws.drop(() => true)
+    const fn = () => ws.drop(SIGNAL, () => true)
 
     expect(fn).toThrow(new Error(MSG))
   })
@@ -1961,7 +2109,12 @@ describe('buildSocketCommands()', () => {
       const webSockets = clientIds.map(buildSocket)
 
       webSockets.forEach(ws => server.open(ws))
-      server.close(webSockets[0], CloseCode.Ok, '')
+
+      server.close(
+        webSockets[0],
+        InternalCloseSignal.Ok.code,
+        InternalCloseSignal.Ok.reason,
+      )
 
       const filterFn = mock((clientId, _data) => clientId !== clientIds[3])
 
@@ -2078,6 +2231,58 @@ describe('buildSocketCommands()', () => {
   })
 
   describe('drop()', () => {
+    test('when the signal code is below the valid range', () => {
+      const SIGNAL = {
+        code: 3999,
+        reason: 'custom',
+      }
+
+      const state = buildSocketState()
+      const commands = buildSocketCommands(state)
+      const fn = () => commands.drop(SIGNAL, () => true)
+
+      expect(fn).toThrow(
+        new RangeError(
+          'Signal code must be an integer in [4000, 4099], got 3999',
+        ),
+      )
+    })
+
+    test('when the signal code is above the valid range', () => {
+      const SIGNAL = {
+        code: 4100,
+        reason: 'custom',
+      }
+
+      const state = buildSocketState()
+      const commands = buildSocketCommands(state)
+      const fn = () => commands.drop(SIGNAL, () => true)
+
+      expect(fn).toThrow(
+        new RangeError(
+          'Signal code must be an integer in [4000, 4099], got 4100',
+        ),
+      )
+    })
+
+    test('when the signal code is not an integer', () => {
+      const SIGNAL = {
+        code: 4000.5,
+        reason: 'custom',
+      }
+
+      const state = buildSocketState()
+      const commands = buildSocketCommands(state)
+
+      const fn = () => commands.drop(SIGNAL, () => true)
+
+      expect(fn).toThrow(
+        new RangeError(
+          'Signal code must be an integer in [4000, 4099], got 4000.5',
+        ),
+      )
+    })
+
     test('when no sessions match the filter', () => {
       const state = buildSocketState()
       const server = buildTestServer([], state)
@@ -2088,7 +2293,11 @@ describe('buildSocketCommands()', () => {
       )
 
       server.open(ws)
-      commands.drop(() => false)
+
+      commands.drop({
+        code: 4000,
+        reason: 'kicked',
+      }, () => false)
 
       expect(ws.close).not.toHaveBeenCalled()
     })
@@ -2106,22 +2315,20 @@ describe('buildSocketCommands()', () => {
       const sockets = clientIds.map(buildSocket)
 
       sockets.forEach(ws => server.open(ws))
-      commands.drop(id => id !== clientIds[1])
+
+      commands.drop(
+        {
+          code: 4000,
+          reason: 'kicked',
+        },
+        id => id !== clientIds[1],
+      )
 
       expect(sockets[0].close).toHaveBeenCalledOnce()
-
-      expect(sockets[0].close).toHaveBeenCalledWith(
-        undefined,
-        undefined,
-      )
-
+      expect(sockets[0].close).toHaveBeenCalledWith(4000, 'kicked')
       expect(sockets[1].close).not.toHaveBeenCalled()
       expect(sockets[2].close).toHaveBeenCalledOnce()
-
-      expect(sockets[2].close).toHaveBeenCalledWith(
-        undefined,
-        undefined,
-      )
+      expect(sockets[2].close).toHaveBeenCalledWith(4000, 'kicked')
     })
 
     test('when a custom code and reason are provided', () => {
@@ -2136,9 +2343,11 @@ describe('buildSocketCommands()', () => {
       server.open(ws)
 
       commands.drop(
+        {
+          code: 4000,
+          reason: 'kicked',
+        },
         id => id === '00000000-0000-0000-0000-000000000060',
-        4000,
-        'kicked',
       )
 
       expect(ws.close).toHaveBeenCalledOnce()

@@ -13,6 +13,7 @@ type HasPort = {
 type CloseEvent = {
   clientId: string
   code: number
+  reason: string
 }
 
 export const Fmt = {
@@ -218,11 +219,15 @@ export function listenForClose (clients: SleepySocketClient[]) {
 
   for (const client of clients) {
     client.on('close', rawEvent => {
-      const event = rawEvent as { code: number }
+      const event = rawEvent as {
+        code: number,
+        reason: string,
+      }
 
       events.push({
         clientId: client.id!,
         code: event.code,
+        reason: event.reason,
       })
     })
   }

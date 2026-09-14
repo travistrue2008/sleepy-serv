@@ -1,18 +1,6 @@
 import SleepySocketClient from 'sleepy-socket'
-import { CloseCode } from 'sleepy-serv'
 import { mock, test, expect } from 'bun:test'
 import { createServer, wait, waitFor, waitForCloseCount } from '../../helpers'
-
-/*
-  CHECK:
-    Claude suggests that this simulates a dropped client from the server
-    side, but that doesn't make sense because we can just simulate that by
-    dropping the client via the server (which we do in another test suite).
-    More importantly:
-      - Dropping from the server seems to give inconsistent reasons
-      - Dropping from the client seems to give inconsistent reasons as well
-      - There doesn't appear to be a way to correct this
- */
 
 const OPTS_RECONNECT = {
   reconnect: {
@@ -32,25 +20,23 @@ test('when reconnect enabled', async () => {
   )
 
   client.on('close', handler)
-  client.socket!.close(4000)
+  client.socket!.close(4000, 'custom')
 
   await waitFor(() => !client.isConnected)
-  await waitFor(() => client.isConnected)
-  await client.close()
-
-  await waitForCloseCount(server, 2)
+  await wait(100)
   await server.kill()
 
   const closeLines = server.output.filter(l => l.startsWith('CLOSE:'))
 
-  expect(handler).toHaveBeenCalledTimes(2)
-  expect(handler).toHaveBeenNthCalledWith(1, { code: 4000 })
-  expect(handler).toHaveBeenNthCalledWith(2, { code: CloseCode.Ok })
+  expect(client.isReconnecting).toBe(false)
+  expect(handler).toHaveBeenCalledOnce()
 
-  expect(closeLines).toStrictEqual([
-    `CLOSE:${client.id}:dropped`,
-    `CLOSE:${client.id}:ok`,
-  ])
+  expect(handler).toHaveBeenCalledWith({
+    code: 4000,
+    reason: 'custom',
+  })
+
+  expect(closeLines).toStrictEqual([`CLOSE:${client.id}:custom`])
 })
 
 test('when reconnect disabled', async () => {
@@ -64,15 +50,20 @@ test('when reconnect disabled', async () => {
   )
 
   client.on('close', handler)
-  client.socket!.close(4000)
+  client.socket!.close(4000, 'custom')
 
   await waitFor(() => !client.isConnected)
-  await wait(100) /* reconnect should NOT happen during this time */
+  await wait(100)
   await server.kill()
 
   const closeLines = server.output.filter(l => l.startsWith('CLOSE:'))
 
   expect(handler).toHaveBeenCalledOnce()
-  expect(handler).toHaveBeenCalledWith({ code: 4000 })
-  expect(closeLines).toStrictEqual([`CLOSE:${client.id}:dropped`])
+
+  expect(handler).toHaveBeenCalledWith({
+    code: 4000,
+    reason: 'custom',
+  })
+
+  expect(closeLines).toStrictEqual([`CLOSE:${client.id}:custom`])
 })

@@ -69,13 +69,29 @@ export const StatusCode = {
 
 export type StatusCode = typeof StatusCode[keyof typeof StatusCode]
 
-export const CloseCode = {
-  Ok: 1000,
-  Abnormal: 1006,
-  Reaped: 4999,
-} as const
+export type CloseSignal = {
+  code: number
+  reason: string
+}
 
-export type CloseCode = typeof CloseCode[keyof typeof CloseCode]
+export const InternalCloseSignal = {
+  Ok: {
+    code: 1000,
+    reason: 'ok',
+  },
+  Abnormal: {
+    code: 1006,
+    reason: 'abnormal',
+  },
+  Reaped: {
+    code: 4998,
+    reason: 'reaped',
+  },
+  Superseded: {
+    code: 4999,
+    reason: 'superseded',
+  },
+} as const
 
 export type IdGenerator = () => string
 

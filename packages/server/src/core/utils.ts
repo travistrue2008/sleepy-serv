@@ -135,7 +135,7 @@ export type FilterFn = (
 export type SocketCommands = {
   broadcast: (event: string, body: unknown) => void
   send: (event: string, body: unknown, fn: FilterFn) => void
-  drop: (fn: FilterFn, code?: number, reason?: string) => void
+  drop: (signal: CloseSignal, fn: FilterFn) => void
   query: (fn: FilterFn) => SessionEntry[]
 }
 
@@ -161,22 +161,25 @@ export type WebSocketRequest = BaseRequest & {
 
 export type Request = EndpointRequest | WebSocketRequest
 
-export const CloseCode = {
-  Ok: 1000,
-  Abnormal: 1006,
-  Reaped: 4999,
+export type CloseSignal = {
+  code: number
+  reason: string
+}
+
+export const InternalCloseSignal = {
+  Ok: {
+    code: 1000,
+    reason: 'ok',
+  },
+  Reaped: {
+    code: 4998,
+    reason: 'reaped',
+  },
+  Superseded: {
+    code: 4999,
+    reason: 'superseded',
+  },
 } as const
-
-export type CloseCode = typeof CloseCode[keyof typeof CloseCode]
-
-export const CloseReason = {
-  Ok: 'ok',
-  Dropped: 'dropped',
-  Reaped: 'reaped',
-  Superseded: 'superseded',
-} as const
-
-export type CloseReason = typeof CloseReason[keyof typeof CloseReason]
 
 export type SocketOptions = {
   dropThreshold?: number
@@ -185,7 +188,7 @@ export type SocketOptions = {
   reclaimTtl?: number
   ticketTtl?: number
   onOpen?: (clientId: string) => void
-  onClose?: (clientId: string, reason: CloseReason) => void
+  onClose?: (clientId: string, signal: CloseSignal) => void
 }
 
 export type SocketData = {
