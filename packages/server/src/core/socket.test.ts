@@ -1,12 +1,12 @@
 import crypto from 'node:crypto'
 import { MessageType } from './messages'
+import { ServerCloseSignals } from './socket'
+
 import {
   StatusCode,
   SessionType,
   SessionFilter,
 } from './utils'
-
-import { InternalCloseSignal } from './socket'
 
 import type { CloseSignal, SessionEntry } from './utils'
 
@@ -668,8 +668,8 @@ describe('buildTestServer()', () => {
       expect(oldWs.close).toHaveBeenCalledOnce()
 
       expect(oldWs.close).toHaveBeenCalledWith(
-        InternalCloseSignal.Superseded.code,
-        InternalCloseSignal.Superseded.reason,
+        ServerCloseSignals.Superseded.code,
+        ServerCloseSignals.Superseded.reason,
       )
     })
 
@@ -682,8 +682,8 @@ describe('buildTestServer()', () => {
       expect(ws.close).toHaveBeenCalledOnce()
 
       expect(ws.close).toHaveBeenCalledWith(
-        InternalCloseSignal.Reaped.code,
-        InternalCloseSignal.Reaped.reason,
+        ServerCloseSignals.Reaped.code,
+        ServerCloseSignals.Reaped.reason,
       )
 
       expect(ws.data.reaped).toBe(true)
@@ -766,8 +766,8 @@ describe('buildTestServer()', () => {
 
       server.close(
         ws,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       const fn = () => server.close(
@@ -788,8 +788,8 @@ describe('buildTestServer()', () => {
 
       server.close(
         oldSocket,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       server.open(newSocket)
@@ -851,8 +851,8 @@ describe('buildTestServer()', () => {
 
       server.close(
         ws,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       const res = await updateTicket({
@@ -924,8 +924,8 @@ describe('buildTestServer()', () => {
 
       server.close(
         ws,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       expect(fn).toThrow(new NotFoundError())
@@ -945,8 +945,8 @@ describe('buildTestServer()', () => {
       expect(ws.close).toHaveBeenCalledOnce()
 
       expect(ws.close).toHaveBeenCalledWith(
-        InternalCloseSignal.Reaped.code,
-        InternalCloseSignal.Reaped.reason,
+        ServerCloseSignals.Reaped.code,
+        ServerCloseSignals.Reaped.reason,
       )
     })
 
@@ -962,8 +962,8 @@ describe('buildTestServer()', () => {
       expect(oldWs.close).toHaveBeenCalledOnce()
 
       expect(oldWs.close).toHaveBeenCalledWith(
-        InternalCloseSignal.Superseded.code,
-        InternalCloseSignal.Superseded.reason,
+        ServerCloseSignals.Superseded.code,
+        ServerCloseSignals.Superseded.reason,
       )
     })
   })
@@ -1015,8 +1015,8 @@ describe('buildTestServer()', () => {
 
       server.close(
         ws,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       expect(state.activeSessions.size).toBe(0)
@@ -1024,7 +1024,7 @@ describe('buildTestServer()', () => {
 
       expect(state.onClose).toHaveBeenCalledWith(
         CLIENT_ID,
-        InternalCloseSignal.Ok,
+        ServerCloseSignals.Ok,
       )
     })
 
@@ -1067,16 +1067,16 @@ describe('buildTestServer()', () => {
 
       server.close(
         ws,
-        InternalCloseSignal.Reaped.code,
-        InternalCloseSignal.Reaped.reason,
+        ServerCloseSignals.Reaped.code,
+        ServerCloseSignals.Reaped.reason,
       )
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
 
       expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, {
-        code: InternalCloseSignal.Reaped.code,
-        reason: InternalCloseSignal.Reaped.reason,
+        code: ServerCloseSignals.Reaped.code,
+        reason: ServerCloseSignals.Reaped.reason,
       })
     })
 
@@ -1094,16 +1094,16 @@ describe('buildTestServer()', () => {
 
       server.close(
         oldWs,
-        InternalCloseSignal.Superseded.code,
-        InternalCloseSignal.Superseded.reason,
+        ServerCloseSignals.Superseded.code,
+        ServerCloseSignals.Superseded.reason,
       )
 
       expect(state.activeSessions.size).toBe(1)
       expect(state.onClose).toHaveBeenCalledOnce()
 
       expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, {
-        code: InternalCloseSignal.Superseded.code,
-        reason: InternalCloseSignal.Superseded.reason,
+        code: ServerCloseSignals.Superseded.code,
+        reason: ServerCloseSignals.Superseded.reason,
       })
     })
 
@@ -1121,8 +1121,8 @@ describe('buildTestServer()', () => {
 
       const fn = () => server.close(
         ws,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       expect(fn).not.toThrow()
@@ -1132,7 +1132,7 @@ describe('buildTestServer()', () => {
 
       expect(state.onClose).toHaveBeenCalledWith(
         CLIENT_ID,
-        InternalCloseSignal.Ok,
+        ServerCloseSignals.Ok,
       )
     })
   })
@@ -2118,8 +2118,8 @@ describe('buildSocketCommands()', () => {
 
       server.close(
         webSockets[0],
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       const filterFn = mock((session: SessionEntry) =>

@@ -106,7 +106,7 @@ export type InactiveSession = {
 
 export type ActiveSessions = ReadonlyMap<string, ActiveSession>
 
-export const InternalCloseSignal: Record<string, CloseSignal> = {
+export const ServerCloseSignals: Record<string, CloseSignal> = {
   Ok: {
     code: 1000,
     reason: 'ok',
@@ -121,8 +121,8 @@ export const InternalCloseSignal: Record<string, CloseSignal> = {
   },
 } as const
 
-export type InternalCloseSignal =
-  typeof InternalCloseSignal[keyof typeof InternalCloseSignal]
+export type ServerCloseSignals =
+  typeof ServerCloseSignals[keyof typeof ServerCloseSignals]
 
 export type Session = ActiveSession | InactiveSession
 
@@ -470,8 +470,8 @@ export function buildSocketServer (
       ws.data.reaped = true
 
       ws.close(
-        InternalCloseSignal.Reaped.code,
-        InternalCloseSignal.Reaped.reason,
+        ServerCloseSignals.Reaped.code,
+        ServerCloseSignals.Reaped.reason,
       )
     }, dropThreshold)
   }
@@ -507,8 +507,8 @@ export function buildSocketServer (
         existingSession.ws.data.superseded = true
 
         existingSession.ws.close(
-          InternalCloseSignal.Superseded.code,
-          InternalCloseSignal.Superseded.reason,
+          ServerCloseSignals.Superseded.code,
+          ServerCloseSignals.Superseded.reason,
         )
       }
 
@@ -560,7 +560,7 @@ export function buildSocketServer (
 
       activeSessions.delete(ws.data.clientId)
 
-      if (code !== InternalCloseSignal.Ok.code || ws.data.reaped) {
+      if (code !== ServerCloseSignals.Ok.code || ws.data.reaped) {
         inactiveSessions.set(ws.data.clientId, {
           token: exists.token,
           expiresAt: Date.now() + reclaimTtl,

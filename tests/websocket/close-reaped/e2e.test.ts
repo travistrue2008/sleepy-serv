@@ -1,5 +1,5 @@
 import SleepySocketClient from 'sleepy-socket'
-import { InternalCloseSignal } from 'sleepy-serv'
+import { ServerCloseSignals } from 'sleepy-serv'
 import { mock, test, expect } from 'bun:test'
 import { createServer, wait, waitFor } from '../../helpers'
 
@@ -32,13 +32,13 @@ test('when reaped AND reconnect enabled', async () => {
   expect(handler).toHaveBeenCalledTimes(2)
 
   expect(handler).toHaveBeenNthCalledWith(1, {
-    code: InternalCloseSignal.Reaped.code,
-    reason: InternalCloseSignal.Reaped.reason,
+    code: ServerCloseSignals.Reaped.code,
+    reason: ServerCloseSignals.Reaped.reason,
   })
 
   expect(handler).toHaveBeenNthCalledWith(2, {
-    code: InternalCloseSignal.Ok.code,
-    reason: InternalCloseSignal.Ok.reason,
+    code: ServerCloseSignals.Ok.code,
+    reason: ServerCloseSignals.Ok.reason,
   })
 
   expect(closeLines).toHaveLength(2)
@@ -66,8 +66,8 @@ test('when reaped AND reconnect disabled', async () => {
   expect(handler).toHaveBeenCalledOnce()
 
   expect(handler).toHaveBeenCalledWith({
-    code: InternalCloseSignal.Reaped.code,
-    reason: InternalCloseSignal.Reaped.reason,
+    code: ServerCloseSignals.Reaped.code,
+    reason: ServerCloseSignals.Reaped.reason,
   })
 
   expect(closeLines).toHaveLength(1)

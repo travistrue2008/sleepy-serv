@@ -46,7 +46,7 @@ import type {
 } from './socket'
 
 export * from './errors'
-export { InternalCloseSignal } from './socket'
+export { ServerCloseSignals } from './socket'
 
 export {
   StatusCode,
@@ -62,29 +62,30 @@ export {
 } from './middleware'
 
 export type {
+  ActiveSession,
+  ActiveSessions,
+  InactiveSession,
   SocketConnection,
   SocketOptions,
 } from './socket'
 
 export type {
-  CloseSignal,
-  FilterFn,
-  SessionEntry,
-  SocketCommands,
-} from './utils'
-
-export type {
   AsyncHandlerResult,
   BaseRequest,
+  CloseSignal,
   EndpointRequest,
+  FilterFn,
   FormattedError,
   Handler,
+  HandlerResult,
   Middleware,
   MiddlewareChain,
   NextFn,
-  HandlerResult,
   Request,
   Server,
+  SessionEntry,
+  SocketCommands,
+  SocketData,
   WebSocketRequest,
 } from './utils'
 

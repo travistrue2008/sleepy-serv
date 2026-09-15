@@ -68,14 +68,18 @@ When the server rejects a handshake with a non-ok HTTP response and a JSON body,
 
 ## Close codes and signals
 
-The framework uses two signal systems. `InternalCloseSignal` (exported from both packages) covers framework-internal close reasons. `CloseSignal` (type `{ code: number, reason: string }`) is the general shape for all close signals, including app-defined ones.
+The framework uses two signal systems. `CloseSignal` (type `{ code: number, reason: string }`) is the general shape for all close signals, including app-defined ones. Each package exports its own collection of predefined signals: `ServerCloseSignals` from `sleepy-serv` and `ClientCloseSignals` from `sleepy-socket`.
 
-`InternalCloseSignal` entries:
+`ServerCloseSignals` entries:
 - `Ok`: `{ code: 1000, reason: 'ok' }` -- client-initiated clean close
 - `Reaped`: `{ code: 4998, reason: 'reaped' }` -- server reaper fired (no heartbeat received within `dropThreshold`)
 - `Superseded`: `{ code: 4999, reason: 'superseded' }` -- new socket opened for the same `clientId`
 
-There is no `CloseCode` constant. All close codes are accessed through `InternalCloseSignal` entries (e.g. `InternalCloseSignal.Ok.code`). The only standalone code is `1006` (Abnormal), which is never sent on the wire -- it is synthesized by the browser when the connection drops without a close frame.
+`ClientCloseSignals` entries (superset of server):
+- `Ok`, `Reaped`, `Superseded` -- same as server
+- `Abnormal`: `{ code: 1006, reason: 'abnormal' }` -- synthesized by the browser when the connection drops without a close frame; never sent on the wire
+
+The naming convention establishes a layering model: apps that need a single collection can merge both into an `AppCloseSignals` object alongside any app-specific codes. There is no `CloseCode` constant. All close codes are accessed through the signal collections (e.g. `ServerCloseSignals.Ok.code`).
 
 The server's close handler constructs a `CloseSignal` directly from Bun's `(code, reason)` close callback args and passes it to the `onClose` lifecycle hook. There is no `getCloseReason` function or `CloseReason` enum; the raw signal from the close frame is the reason.
 
@@ -112,7 +116,7 @@ There is no `req.ws.active` (the active sessions map is not exposed on the reque
 
 ## Client `close()` behavior
 
-`close(signal?: CloseSignal)` returns a `Promise<void>` that resolves after the socket's `close` event fires. The signal defaults to `InternalCloseSignal.Ok` (`{ code: 1000, reason: 'ok' }`). Internally, it stores a resolve callback in `#closeResolve`; `#handleClose` emits the `close` event first, then calls `#closeResolve()`. This guarantees the `close` event fires before the `close()` method resolves. If the socket is null (mid-reconnect), `close()` resolves immediately. The `#closing` flag is only set by `close()`, not by server-initiated or involuntary closes.
+`close(signal?: CloseSignal)` returns a `Promise<void>` that resolves after the socket's `close` event fires. The signal defaults to `ClientCloseSignals.Ok` (`{ code: 1000, reason: 'ok' }`). Internally, it stores a resolve callback in `#closeResolve`; `#handleClose` emits the `close` event first, then calls `#closeResolve()`. This guarantees the `close` event fires before the `close()` method resolves. If the socket is null (mid-reconnect), `close()` resolves immediately. The `#closing` flag is only set by `close()`, not by server-initiated or involuntary closes.
 
 The client `close` event (`client.on('close', handler)`) fires on ALL socket closes -- client-initiated, server-initiated, and reconnect-eligible -- with a `{ code, reason }` payload. This is deliberate: app-level cleanup (removing a player from a lobby, updating UI) should run on every close, not just terminal ones. The reconnect decision happens after the emit.
 

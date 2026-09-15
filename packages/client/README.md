@@ -261,7 +261,7 @@ Removes a previously registered handler. It's safe to call with a handler that w
 
 ### `close(signal?)`
 
-Closes the connection and rejects any in-flight requests. The optional `signal` parameter is a `CloseSignal` (`{ code, reason }`) that controls the close code and reason sent to the server. It defaults to `InternalCloseSignal.Ok` (`{ code: 1000, reason: 'ok' }`). The returned promise resolves only after the socket's `close` event fires, so the `close` event handler runs before `await client.close()` returns.
+Closes the connection and rejects any in-flight requests. The optional `signal` parameter is a `CloseSignal` (`{ code, reason }`) that controls the close code and reason sent to the server. It defaults to `ClientCloseSignals.Ok` (`{ code: 1000, reason: 'ok' }`). The returned promise resolves only after the socket's `close` event fires, so the `close` event handler runs before `await client.close()` returns.
 
 Note that closing is permanent. There's no reopen, and calling `close()` a second time throws. If you're calling it in a `finally` block, guard it with `isConnected`:
 
@@ -304,12 +304,13 @@ Contains the message type names used on the wire: `MessageType.Welcome`, `Messag
 
 A type representing a close signal: `{ code: number, reason: string }`. Used as the optional parameter to `close()`.
 
-### `InternalCloseSignal`
+### `ClientCloseSignals`
 
 Contains the protocol's built-in close signals:
-- `InternalCloseSignal.Ok`: `{ code: 1000, reason: 'ok' }` -- a normal, intentional close
-- `InternalCloseSignal.Reaped`: `{ code: 4998, reason: 'reaped' }` -- the server reaped an idle session
-- `InternalCloseSignal.Superseded`: `{ code: 4999, reason: 'superseded' }` -- another connection claimed the same session
+- `ClientCloseSignals.Ok`: `{ code: 1000, reason: 'ok' }` -- a normal, intentional close
+- `ClientCloseSignals.Abnormal`: `{ code: 1006, reason: 'abnormal' }` -- the connection dropped without a close frame
+- `ClientCloseSignals.Reaped`: `{ code: 4998, reason: 'reaped' }` -- the server reaped an idle session
+- `ClientCloseSignals.Superseded`: `{ code: 4999, reason: 'superseded' }` -- another connection claimed the same session
 
 ### `StatusCode`
 

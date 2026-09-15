@@ -3,7 +3,8 @@ import SleepySocketClient, {
   MessageType,
   HandshakeError,
 } from './'
-import { StatusCode, InternalCloseSignal, id } from './utils'
+
+import { StatusCode, ClientCloseSignals, id } from './utils'
 
 import type { CloseSignal } from './utils'
 
@@ -123,7 +124,7 @@ class MockWebSocket {
     this.readyState = 3
 
     this.#emit('close', {
-      wasClean: code === InternalCloseSignal.Ok.code,
+      wasClean: code === ClientCloseSignals.Ok.code,
       code,
       reason,
     })
@@ -580,8 +581,8 @@ describe('SleepySocketClient', () => {
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: InternalCloseSignal.Ok.code,
-        reason: 'ok',
+        code: ClientCloseSignals.Ok.code,
+        reason: ClientCloseSignals.Ok.reason,
       })
     })
 
@@ -762,16 +763,16 @@ describe('SleepySocketClient', () => {
       client.on('close', handler)
 
       socket.close(
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ClientCloseSignals.Ok.code,
+        ClientCloseSignals.Ok.reason,
       )
 
       expect(client.isConnected).toBe(false)
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: InternalCloseSignal.Ok.code,
-        reason: InternalCloseSignal.Ok.reason,
+        code: ClientCloseSignals.Ok.code,
+        reason: ClientCloseSignals.Ok.reason,
       })
     })
 
@@ -797,8 +798,8 @@ describe('SleepySocketClient', () => {
       expect(handler).toHaveBeenCalledOnce()
 
       expect(handler).toHaveBeenCalledWith({
-        code: InternalCloseSignal.Ok.code,
-        reason: InternalCloseSignal.Ok.reason,
+        code: ClientCloseSignals.Ok.code,
+        reason: ClientCloseSignals.Ok.reason,
       })
     })
 
@@ -1064,7 +1065,7 @@ describe('SleepySocketClient', () => {
         },
       })
 
-      socket.drop(InternalCloseSignal.Superseded)
+      socket.drop(ClientCloseSignals.Superseded)
 
       jest.advanceTimersByTime(HEARTBEAT_INTERVAL)
 

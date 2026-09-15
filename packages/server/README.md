@@ -594,7 +594,7 @@ This works from both HTTP and WebSocket transports.
 
 `sleepy-serv` exports several runtime constants and types:
 
-- `InternalCloseSignal`: internal close signals: `Ok` (`{ code: 1000, reason: 'ok' }`), `Reaped` (`{ code: 4998, reason: 'reaped' }`), `Superseded` (`{ code: 4999, reason: 'superseded' }`)
+- `ServerCloseSignals`: server close signals: `Ok` (`{ code: 1000, reason: 'ok' }`), `Reaped` (`{ code: 4998, reason: 'reaped' }`), `Superseded` (`{ code: 4999, reason: 'superseded' }`)
 - `CloseSignal`: the type for close signals: `{ code: number, reason: string }`
 - `StatusCode`: the full range of HTTP status codes (1xx through 5xx)
 - `HttpMethod`: HTTP verbs: `Head`, `Get`, `Post`, `Put`, `Patch`, `Delete`

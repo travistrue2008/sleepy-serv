@@ -1,5 +1,5 @@
 import SleepySocketClient from 'sleepy-socket'
-import { StatusCode, InternalCloseSignal } from 'sleepy-serv'
+import { StatusCode, ServerCloseSignals } from 'sleepy-serv'
 import { test, expect } from 'bun:test'
 import { createServer, waitFor } from '../../helpers'
 
@@ -29,8 +29,8 @@ test('when the socket drops AND the client reconnects', async () => {
   const oldSocket = client.socket
 
   client.socket!.close(
-    InternalCloseSignal.Reaped.code,
-    InternalCloseSignal.Reaped.reason,
+    ServerCloseSignals.Reaped.code,
+    ServerCloseSignals.Reaped.reason,
   )
 
   /*

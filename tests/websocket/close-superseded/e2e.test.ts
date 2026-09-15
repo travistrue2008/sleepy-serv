@@ -1,5 +1,5 @@
 import SleepySocketClient from 'sleepy-socket'
-import { InternalCloseSignal } from 'sleepy-serv'
+import { ServerCloseSignals } from 'sleepy-serv'
 import { mock, test, expect } from 'bun:test'
 import { Fmt, waitFor, createServer, createClient } from '../../helpers'
 
@@ -44,8 +44,8 @@ test('when superseded AND reconnect enabled', async () => {
   expect(handler).toHaveBeenCalledOnce()
 
   expect(handler).toHaveBeenCalledWith({
-    code: InternalCloseSignal.Superseded.code,
-    reason: InternalCloseSignal.Superseded.reason,
+    code: ServerCloseSignals.Superseded.code,
+    reason: ServerCloseSignals.Superseded.reason,
   })
 
   expect(closeLines[0]).toBe(`CLOSE:${client.id}:superseded`)
@@ -91,8 +91,8 @@ test('when superseded AND reconnect disabled', async () => {
   expect(handler).toHaveBeenCalledOnce()
 
   expect(handler).toHaveBeenCalledWith({
-    code: InternalCloseSignal.Superseded.code,
-    reason: InternalCloseSignal.Superseded.reason,
+    code: ServerCloseSignals.Superseded.code,
+    reason: ServerCloseSignals.Superseded.reason,
   })
 
   expect(closeLines[0]).toBe(`CLOSE:${client.id}:superseded`)
