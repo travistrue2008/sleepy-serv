@@ -74,7 +74,11 @@ describe('REST', () => {
 describe('WebSocket', () => {
   test('when invoking a protected route omits the token', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const result = await client.get('/protected')
 
     await client.close()
@@ -97,7 +101,10 @@ describe('WebSocket', () => {
 
   test('when invoking a protected route with INVALID token', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
 
     const result = await client.get('/protected', {
       headers: new Headers({
@@ -125,7 +132,11 @@ describe('WebSocket', () => {
 
   test('when invoking a protected route with a VALID token', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const { token } = client.connectionData as ConnectionData
 
     const result = await client.get('/protected', {
@@ -154,7 +165,11 @@ describe('WebSocket', () => {
 
   test('when invoking a public route without a token', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const result = await client.get('/public')
 
     await client.close()

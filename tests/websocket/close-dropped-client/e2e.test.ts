@@ -15,8 +15,10 @@ test('when reconnect enabled', async () => {
 
   const client = await SleepySocketClient.open(
     'localhost',
-    server.port,
-    OPTS_RECONNECT,
+    {
+      port: server.port,
+      ...OPTS_RECONNECT,
+    },
   )
 
   client.on('close', handler)
@@ -45,8 +47,10 @@ test('when reconnect disabled', async () => {
 
   const client = await SleepySocketClient.open(
     'localhost',
-    server.port,
-    { reconnect: false },
+    {
+      port: server.port,
+      reconnect: false,
+    },
   )
 
   client.on('close', handler)

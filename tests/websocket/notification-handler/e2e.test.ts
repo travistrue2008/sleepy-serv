@@ -9,7 +9,10 @@ test('when invoked from REST', async () => {
   const received: NotificationMessage[] = []
   const server = await createServer(import.meta.dirname)
   const client = createClient(server)
-  const wsClient = await SleepySocketClient.open('localhost', server.port)
+
+  const wsClient = await SleepySocketClient.open('localhost', {
+    port: server.port,
+  })
 
   wsClient.on('notification', message => {
     received.push(message as NotificationMessage)
@@ -45,8 +48,14 @@ test('when invoked from REST', async () => {
 test('when invoked from ws', async () => {
   const received: NotificationMessage[] = []
   const server = await createServer(import.meta.dirname)
-  const clientA = await SleepySocketClient.open('localhost', server.port)
-  const clientB = await SleepySocketClient.open('localhost', server.port)
+
+  const clientA = await SleepySocketClient.open('localhost', {
+    port: server.port,
+  })
+
+  const clientB = await SleepySocketClient.open('localhost', {
+    port: server.port,
+  })
 
   clientA.on('notification', message => {
     received.push(message as NotificationMessage)

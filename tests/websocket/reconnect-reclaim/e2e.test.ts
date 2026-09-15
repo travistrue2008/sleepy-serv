@@ -7,7 +7,11 @@ import type { TicketBody } from '../../helpers'
 
 test('when reclaiming with a valid token', async () => {
   const server = await createServer(import.meta.dirname)
-  const client = await SleepySocketClient.open('localhost', server.port)
+
+  const client = await SleepySocketClient.open('localhost', {
+    port: server.port,
+  })
+
   const reqClient = createClient(server)
 
   const result = await reqClient.put(
@@ -30,7 +34,10 @@ test('when the token is wrong', async () => {
   const TOKEN_INVALID = 'not-the-real-token'
 
   const server = await createServer(import.meta.dirname)
-  const client = await SleepySocketClient.open('localhost', server.port)
+
+  const client = await SleepySocketClient.open('localhost', {
+    port: server.port,
+  })
 
   const reqClient = createClient(server)
 

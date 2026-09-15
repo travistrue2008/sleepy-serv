@@ -27,8 +27,10 @@ describe('WebSocket', () => {
 
     const client = await SleepySocketClient.open(
       'localhost',
-      server.port,
-      { mountPath: MOUNT_PATH },
+      {
+        port: server.port,
+        mountPath: MOUNT_PATH,
+      },
     )
 
     const result = await client.get('/')

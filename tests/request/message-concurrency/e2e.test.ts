@@ -19,7 +19,11 @@ async function makeRequests (
 describe('WebSocket', () => {
   test('when default "queue" is used', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const results = await makeRequests(client)
 
     await client.close()
@@ -33,8 +37,10 @@ describe('WebSocket', () => {
 
     const client = await SleepySocketClient.open(
       'localhost',
-      server.port,
-      { queue: Queue.None },
+      {
+        port: server.port,
+        queue: Queue.None,
+      },
     )
 
     const results = await makeRequests(client)
@@ -50,8 +56,10 @@ describe('WebSocket', () => {
 
     const client = await SleepySocketClient.open(
       'localhost',
-      server.port,
-      { queue: Queue.Fifo },
+      {
+        port: server.port,
+        queue: Queue.Fifo,
+      },
     )
 
     const results = await makeRequests(client)
@@ -67,8 +75,10 @@ describe('WebSocket', () => {
 
     const client = await SleepySocketClient.open(
       'localhost',
-      server.port,
-      { queue: Queue.Lifo },
+      {
+        port: server.port,
+        queue: Queue.Lifo,
+      },
     )
 
     const results = await makeRequests(client)

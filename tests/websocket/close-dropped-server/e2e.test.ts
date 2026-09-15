@@ -28,8 +28,10 @@ describe('handler', () => {
     const clients = await Promise.all(
       handlers.map(() => SleepySocketClient.open(
         'localhost',
-        server.port,
-        OPTS_RECONNECT,
+        {
+          port: server.port,
+          ...OPTS_RECONNECT,
+        },
       )),
     )
 
@@ -81,8 +83,10 @@ describe('handler', () => {
     const clients = await Promise.all(
       handlers.map(() => SleepySocketClient.open(
         'localhost',
-        server.port,
-        { reconnect: false },
+        {
+          port: server.port,
+          reconnect: false,
+        },
       )),
     )
 
@@ -135,8 +139,10 @@ describe('middleware', () => {
     const clients = await Promise.all(
       handlers.map(() => SleepySocketClient.open(
         'localhost',
-        server.port,
-        OPTS_RECONNECT,
+        {
+          port: server.port,
+          ...OPTS_RECONNECT,
+        },
       )),
     )
 
@@ -188,8 +194,10 @@ describe('middleware', () => {
     const clients = await Promise.all(
       handlers.map(() => SleepySocketClient.open(
         'localhost',
-        server.port,
-        { reconnect: false },
+        {
+          port: server.port,
+          reconnect: false,
+        },
       )),
     )
 
@@ -243,8 +251,10 @@ describe('app', () => {
     const clients = await Promise.all(
       handlers.map(() => SleepySocketClient.open(
         'localhost',
-        server.port,
-        OPTS_RECONNECT,
+        {
+          port: server.port,
+          ...OPTS_RECONNECT,
+        },
       )),
     )
 
@@ -297,8 +307,10 @@ describe('app', () => {
     const clients = await Promise.all(
       handlers.map(() => SleepySocketClient.open(
         'localhost',
-        server.port,
-        { reconnect: false },
+        {
+          port: server.port,
+          reconnect: false,
+        },
       )),
     )
 

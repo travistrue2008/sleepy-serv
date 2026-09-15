@@ -19,7 +19,11 @@ describe('REST', () => {
 describe('WebSocket', () => {
   test('when making request on route with an unsupported method', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const result = await client.post('/')
 
     await client.close()

@@ -33,7 +33,11 @@ describe('REST', () => {
 describe('WebSocket', () => {
   test('when the handler throws a generic Error', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const result = await client.get('/boom')
 
     await client.close()
@@ -56,7 +60,11 @@ describe('WebSocket', () => {
 
   test('when the handler throws a RequestError subclass', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const result = await client.get('/conflict')
 
     await client.close()

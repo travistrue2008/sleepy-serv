@@ -41,7 +41,11 @@ describe('PUT', () => {
   test('when middleware errors', async () => {
     const server = await createServer(import.meta.dirname)
     const client = createClient(server)
-    const wsClient = await SleepySocketClient.open('localhost', server.port)
+
+    const wsClient = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const result = await client.put(`/ws/${wsClient.id}?err`, Fmt.Json)
 
     await wsClient.close()
@@ -57,7 +61,10 @@ describe('PUT', () => {
   test('when middleware is successful', async () => {
     const server = await createServer(import.meta.dirname)
     const client = createClient(server)
-    const wsClient = await SleepySocketClient.open('localhost', server.port)
+
+    const wsClient = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
 
     const result = await client.put(
       `/ws/${wsClient.id}`,

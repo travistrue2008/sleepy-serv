@@ -32,7 +32,7 @@ describe('WebSocket', () => {
 
     const client = await SleepySocketClient.open(
       'localhost',
-      server.port,
+      { port: server.port },
     )
 
     const verb = method.toLowerCase() as Lowercase<typeof method>

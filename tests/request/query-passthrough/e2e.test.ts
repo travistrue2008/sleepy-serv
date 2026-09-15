@@ -31,7 +31,10 @@ describe('REST', () => {
 describe('WebSocket', () => {
   test('when a request carries a query object', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
 
     const result = await client.get('/search', {
       query: {

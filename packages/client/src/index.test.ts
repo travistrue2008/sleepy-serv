@@ -24,7 +24,7 @@ import {
 } from 'bun:test'
 
 import type {
-  OpenOptions,
+  ClientOptions,
   NotificationMessage,
   ResponseMessage,
 } from './'
@@ -217,11 +217,14 @@ function mockTicketFetch (): FetchMock {
   }))
 }
 
-async function connectAndOpen (opts?: OpenOptions): Promise<{
+async function connectAndOpen (opts?: ClientOptions): Promise<{
   client: SleepySocketClient
   socket: MockWebSocket
 }> {
-  const promise = SleepySocketClient.open('localhost', 3000, opts)
+  const promise = SleepySocketClient.open('localhost', {
+    port: 3000,
+    ...opts,
+  })
 
   await settle()
 
@@ -337,7 +340,8 @@ describe('Queue', () => {
 describe('SleepySocketClient', () => {
   describe('.open()', () => {
     test('when "opts.queue" is invalid', async () => {
-      const promise = SleepySocketClient.open('localhost', 3000, {
+      const promise = SleepySocketClient.open('localhost', {
+        port: 3000,
         /* deliberately invalid: the guard under test is a runtime one */
         // @ts-expect-error
         queue: 'nope',
@@ -353,7 +357,7 @@ describe('SleepySocketClient', () => {
         throw new Error('Down')
       }))
 
-      const promise = SleepySocketClient.open('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', { port: 3000 })
 
       await expect(promise).rejects.toThrow(new Error('Connection failed.'))
     })
@@ -369,7 +373,7 @@ describe('SleepySocketClient', () => {
         json: async () => BODY_ERROR,
       })))
 
-      const promise = SleepySocketClient.open('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', { port: 3000 })
 
       await expect(promise).rejects.toThrow(
         new HandshakeError(409, BODY_ERROR),
@@ -391,13 +395,13 @@ describe('SleepySocketClient', () => {
         },
       })))
 
-      const promise = SleepySocketClient.open('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', { port: 3000 })
 
       await expect(promise).rejects.toThrow(new Error('Connection failed.'))
     })
 
     test('when connecting to a server fails', async () => {
-      const promise = SleepySocketClient.open('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', { port: 3000 })
 
       await settle()
 
@@ -407,7 +411,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when connecting to a server times out', async () => {
-      const promise = SleepySocketClient.open('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', { port: 3000 })
 
       jest.advanceTimersByTime(30_000)
 
@@ -415,7 +419,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when opened but no welcome frame arrives', async () => {
-      const promise = SleepySocketClient.open('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', { port: 3000 })
 
       await settle()
 
@@ -427,7 +431,7 @@ describe('SleepySocketClient', () => {
     })
 
     test('when the first frame is not a welcome', async () => {
-      const promise = SleepySocketClient.open('localhost', 3000)
+      const promise = SleepySocketClient.open('localhost', { port: 3000 })
 
       await settle()
 
@@ -466,6 +470,82 @@ describe('SleepySocketClient', () => {
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
         'http://localhost:3000/ws',
+        { method: 'POST' },
+      )
+    })
+
+    test('when no port is provided', async () => {
+      const promise = SleepySocketClient.open('localhost')
+
+      await settle()
+
+      lastSocket().open()
+      lastSocket().receive(sendWelcome(CLIENT_ID))
+
+      const client = await promise
+      const socket = lastSocket()
+
+      expect(client.isConnected).toBe(true)
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost/ws',
+        { method: 'POST' },
+      )
+
+      expect(socket.url).toBe(`ws://localhost/ws?ticket=${TICKET}`)
+    })
+
+    test('when "opts.port" is provided', async () => {
+      const { socket } = await connectAndOpen()
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost:3000/ws',
+        { method: 'POST' },
+      )
+
+      expect(socket.url).toBe(
+        `ws://localhost:3000/ws?ticket=${TICKET}`,
+      )
+    })
+
+    test('when no port and "opts.secure" is set', async () => {
+      const promise = SleepySocketClient.open('localhost', {
+        secure: true,
+      })
+
+      await settle()
+
+      lastSocket().open()
+      lastSocket().receive(sendWelcome(CLIENT_ID))
+
+      const socket = lastSocket()
+
+      await promise
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'https://localhost/ws',
+        { method: 'POST' },
+      )
+
+      expect(socket.url).toBe(
+        `wss://localhost/ws?ticket=${TICKET}`,
+      )
+    })
+
+    test('when no port and "opts.mountPath" is set', async () => {
+      const promise = SleepySocketClient.open('localhost', {
+        mountPath: '/api',
+      })
+
+      await settle()
+
+      lastSocket().open()
+      lastSocket().receive(sendWelcome(CLIENT_ID))
+
+      await promise
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'http://localhost/api/ws',
         { method: 'POST' },
       )
     })

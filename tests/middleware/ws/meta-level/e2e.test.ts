@@ -55,7 +55,11 @@ describe('PUT', () => {
   test('when middleware errors (lvl 1)', async () => {
     const server = await createServer(import.meta.dirname)
     const client = createClient(server)
-    const wsClient = await SleepySocketClient.open('localhost', server.port)
+
+    const wsClient = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const result = await client.put(`/ws/${wsClient.id}?err=lvl_1`, Fmt.Json)
 
     await wsClient.close()
@@ -71,7 +75,11 @@ describe('PUT', () => {
   test('when middleware errors (lvl 2)', async () => {
     const server = await createServer(import.meta.dirname)
     const client = createClient(server)
-    const wsClient = await SleepySocketClient.open('localhost', server.port)
+
+    const wsClient = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const result = await client.put(`/ws/${wsClient.id}?err=lvl_2`, Fmt.Json)
 
     await wsClient.close()
@@ -87,7 +95,11 @@ describe('PUT', () => {
   test('when middleware errors (lvl 3)', async () => {
     const server = await createServer(import.meta.dirname)
     const client = createClient(server)
-    const wsClient = await SleepySocketClient.open('localhost', server.port)
+
+    const wsClient = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const result = await client.put(`/ws/${wsClient.id}?err=lvl_3`, Fmt.Json)
 
     await wsClient.close()
@@ -103,7 +115,10 @@ describe('PUT', () => {
   test('when middleware is successful', async () => {
     const server = await createServer(import.meta.dirname)
     const client = createClient(server)
-    const wsClient = await SleepySocketClient.open('localhost', server.port)
+
+    const wsClient = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
 
     const result = await client.put(
       `/ws/${wsClient.id}`,

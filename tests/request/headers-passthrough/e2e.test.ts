@@ -26,7 +26,10 @@ describe('REST', () => {
 describe('WebSocket', () => {
   test('when a request carries headers', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
 
     const result = await client.get('/whoami', {
       headers: new Headers({

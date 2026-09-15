@@ -37,7 +37,7 @@ describe('WebSocket', () => {
 
     const client = await SleepySocketClient.open(
       'localhost',
-      server.port,
+      { port: server.port },
     )
 
     const result = await client.post('/echo', {

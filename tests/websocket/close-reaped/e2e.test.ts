@@ -7,7 +7,8 @@ test('when reaped AND reconnect enabled', async () => {
   const handler = mock()
   const server = await createServer(import.meta.dirname)
 
-  const client = await SleepySocketClient.open('localhost', server.port, {
+  const client = await SleepySocketClient.open('localhost', {
+    port: server.port,
     serverTimeout: 500,
     reconnect: {
       minDelay: 20,
@@ -50,7 +51,8 @@ test('when reaped AND reconnect disabled', async () => {
   const handler = mock()
   const server = await createServer(import.meta.dirname)
 
-  const client = await SleepySocketClient.open('localhost', server.port, {
+  const client = await SleepySocketClient.open('localhost', {
+    port: server.port,
     serverTimeout: 500,
     reconnect: false,
   })

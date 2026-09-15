@@ -2,7 +2,7 @@ import path from 'path'
 import SleepySocketClient from 'sleepy-socket'
 
 import type { HttpMethod } from 'sleepy-serv'
-import type { NotificationMessage, OpenOptions } from 'sleepy-socket'
+import type { NotificationMessage, ClientOptions } from 'sleepy-socket'
 
 const STARTUP_TIMEOUT = 5000
 
@@ -187,9 +187,10 @@ export function createClient (source: HasPort): Requestor {
   }
 }
 
-export type WsClientOptions = Omit<OpenOptions, 'ctx'> & {
-  ctx?: Record<string, unknown>
-}
+export type WsClientOptions =
+  Omit<ClientOptions, 'ctx' | 'port'> & {
+    ctx?: Record<string, unknown>
+  }
 
 export async function createWsClients (
   server: ServerHandle,
@@ -199,8 +200,9 @@ export async function createWsClients (
 
   return Promise.all(
     Array.from({ length: COUNT }).map(async (_item, index) => {
-      return SleepySocketClient.open('localhost', server.port, {
+      return SleepySocketClient.open('localhost', {
         ...opts,
+        port: server.port,
         ctx: {
           ...opts?.ctx,
           userId: `user-${index + 1}`,
