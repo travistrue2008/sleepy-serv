@@ -119,7 +119,7 @@ function buildSocket (clientId: string): SocketMock {
       superseded: false,
       reaped: false,
       reaperHandle: null,
-      app: null,
+      data: null,
     },
     get welcome () {
       return JSON.parse(send.mock.calls[0][0])
@@ -737,13 +737,13 @@ describe('buildTestServer()', () => {
       state.inactiveSessions.set('stale', {
         token: 'a',
         expiresAt: Date.now() - 1,
-        app: null,
+        data: null,
       })
 
       state.inactiveSessions.set('fresh', {
         token: 'b',
         expiresAt: Date.now() + 10_000,
-        app: null,
+        data: null,
       })
 
       server.open(ws)
@@ -1314,7 +1314,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
     })
@@ -1361,7 +1361,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
     })
@@ -1388,7 +1388,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
 
@@ -1437,7 +1437,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
     })
@@ -1465,7 +1465,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
     })
@@ -1497,7 +1497,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
     })
@@ -1530,7 +1530,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
 
@@ -1565,7 +1565,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
 
@@ -1604,7 +1604,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: appData,
+          data: appData,
         },
       })
 
@@ -1980,7 +1980,7 @@ describe('buildSocketHandlers()', () => {
       const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
-      ws.data.app = { playerId: 'p1' }
+      ws.data.data = { playerId: 'p1' }
 
       server.open(ws)
 
@@ -2198,7 +2198,7 @@ describe('buildSocketCommands()', () => {
         {
           clientId: clientIds[1],
           type: SessionType.Active,
-          data: webSockets[1].data.app,
+          data: webSockets[1].data.data,
         },
         0,
       )
@@ -2208,7 +2208,7 @@ describe('buildSocketCommands()', () => {
         {
           clientId: clientIds[2],
           type: SessionType.Active,
-          data: webSockets[2].data.app,
+          data: webSockets[2].data.data,
         },
         1,
       )
@@ -2218,7 +2218,7 @@ describe('buildSocketCommands()', () => {
         {
           clientId: clientIds[3],
           type: SessionType.Active,
-          data: webSockets[3].data.app,
+          data: webSockets[3].data.data,
         },
         2,
       )
@@ -2396,7 +2396,7 @@ describe('buildSocketCommands()', () => {
       const sockets = clientIds.map(id => {
         const ws = buildSocket(id)
 
-        ws.data.app = { name: id }
+        ws.data.data = { name: id }
 
         return ws
       })
@@ -2434,7 +2434,7 @@ describe('buildSocketCommands()', () => {
       const sockets = clientIds.map(id => {
         const ws = buildSocket(id)
 
-        ws.data.app = { role: 'player' }
+        ws.data.data = { role: 'player' }
 
         return ws
       })
@@ -2467,8 +2467,8 @@ describe('buildSocketCommands()', () => {
       const activeWs = buildSocket(ACTIVE_ID)
       const inactiveWs = buildSocket(INACTIVE_ID)
 
-      activeWs.data.app = { role: 'presenter' }
-      inactiveWs.data.app = { role: 'player' }
+      activeWs.data.data = { role: 'presenter' }
+      inactiveWs.data.data = { role: 'player' }
 
       server.open(activeWs)
       server.open(inactiveWs)
@@ -2500,8 +2500,8 @@ describe('buildSocketCommands()', () => {
       const activeWs = buildSocket(ACTIVE_ID)
       const inactiveWs = buildSocket(INACTIVE_ID)
 
-      activeWs.data.app = { role: 'presenter' }
-      inactiveWs.data.app = { role: 'player' }
+      activeWs.data.data = { role: 'presenter' }
+      inactiveWs.data.data = { role: 'player' }
 
       server.open(activeWs)
       server.open(inactiveWs)
@@ -2533,8 +2533,8 @@ describe('buildSocketCommands()', () => {
       const activeWs = buildSocket(ACTIVE_ID)
       const inactiveWs = buildSocket(INACTIVE_ID)
 
-      activeWs.data.app = { role: 'presenter' }
-      inactiveWs.data.app = { gameId: 'g1' }
+      activeWs.data.data = { role: 'presenter' }
+      inactiveWs.data.data = { gameId: 'g1' }
 
       server.open(activeWs)
       server.open(inactiveWs)
@@ -2566,8 +2566,8 @@ describe('buildSocketCommands()', () => {
       const activeWs = buildSocket(ACTIVE_ID)
       const inactiveWs = buildSocket(INACTIVE_ID)
 
-      activeWs.data.app = { role: 'presenter' }
-      inactiveWs.data.app = { gameId: 'g1' }
+      activeWs.data.data = { role: 'presenter' }
+      inactiveWs.data.data = { gameId: 'g1' }
 
       server.open(activeWs)
       server.open(inactiveWs)
@@ -2598,8 +2598,8 @@ describe('buildSocketCommands()', () => {
       const activeWs = buildSocket(ACTIVE_ID)
       const inactiveWs = buildSocket(INACTIVE_ID)
 
-      activeWs.data.app = { role: 'presenter' }
-      inactiveWs.data.app = { role: 'player' }
+      activeWs.data.data = { role: 'presenter' }
+      inactiveWs.data.data = { role: 'player' }
 
       server.open(activeWs)
       server.open(inactiveWs)

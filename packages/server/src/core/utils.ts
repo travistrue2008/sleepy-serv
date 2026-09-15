@@ -119,7 +119,7 @@ export type SocketData = {
   superseded: boolean
   reaped: boolean
   reaperHandle: TimeoutHandle | null
-  app: unknown
+  data: unknown
 }
 
 export const SessionType = {

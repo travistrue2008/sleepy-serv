@@ -101,7 +101,7 @@ export type ActiveSession = {
 export type InactiveSession = {
   token: string
   expiresAt: number
-  app: unknown
+  data: unknown
 }
 
 export type ActiveSessions = ReadonlyMap<string, ActiveSession>
@@ -564,7 +564,7 @@ export function buildSocketServer (
         inactiveSessions.set(ws.data.clientId, {
           token: exists.token,
           expiresAt: Date.now() + reclaimTtl,
-          app: ws.data.app,
+          data: ws.data.data,
         })
       }
 
@@ -680,7 +680,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
         ctx.data.superseded = false
         ctx.data.reaped = false
         ctx.data.reaperHandle = null
-        ctx.data.app = ticket.data
+        ctx.data.data = ticket.data
 
         const useSocket = validReq.server.upgrade(validReq.raw, ctx)
 
@@ -736,7 +736,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
           throw new UnauthorizedError('Invalid token')
         }
 
-        const appData = 'ws' in session ? session.ws.data.app : session.app
+        const appData = 'ws' in session ? session.ws.data.data : session.data
 
         return Response.json({
           clientId: validReq.params.clientId,
@@ -790,7 +790,7 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
         const entry: SessionEntry = {
           clientId,
           type: SessionType.Active,
-          data: session.ws.data.app,
+          data: session.ws.data.data,
         }
 
         if (fn(entry, index)) {
@@ -815,7 +815,7 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
         const entry: SessionEntry = {
           clientId,
           type: SessionType.Active,
-          data: session.ws.data.app,
+          data: session.ws.data.data,
         }
 
         if (fn(entry, index)) {
@@ -847,9 +847,7 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
         }
 
         for (const [clientId, session] of sessions) {
-          const data = type === SessionType.Active
-            ? (session as ActiveSession).ws.data.app
-            : (session as InactiveSession).app
+          const data = 'ws' in session ? session.ws.data.data : session.data
 
           const entry: SessionEntry = {
             clientId,
