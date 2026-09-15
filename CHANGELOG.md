@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.26.0](https://www.npmjs.com/package/sleepy-serv/v/0.26.0) - 2026-09-15
+
 ### Changed
 
 - **`SleepySocketClient.open()` signature redesigned.** The `port`
