@@ -66,6 +66,31 @@ When the server rejects a handshake with a non-ok HTTP response and a JSON body,
 
 `ConnectOptions.ctx` lets the client attach arbitrary app data to the initial connection. It is sent as `{ data: ctx }` in the `POST /ws` body only. On reconnect, `PUT /ws/:clientId` sends no body -- the server is the source of truth. The server stores the middleware chain's `res` value (not the raw body) in `ws.data.data` via the ticket. Apps must provide middleware on `POST /ws` that parses the body and passes the extracted data through `next()` for it to reach the session. On close, the value is copied to the inactive session (`InactiveSession.data`). On reclaim, the PUT handler reads app data from the session (`'ws' in session ? session.ws.data.data : session.data`) rather than from the request body, preserving the original context through the full inactive/reclaim cycle.
 
+## Generic type parameter on connection data
+
+Every type that touches per-connection data carries a generic `<T = void>` that defaults to `void`. When omitted, `session.data` is typed `void`, blocking property access and signaling "no connection data declared." When provided, `session.data` is typed `T` and property access is direct with no casts.
+
+The parameter propagates from `createApp<T>()` through the full type chain:
+
+```
+createApp<T>() -> App<T>.ws: SocketCommands<T>
+                  SocketCommands<T>.send/drop/query use FilterFn<T>
+                  FilterFn<T> takes SessionEntry<T>
+                  SessionEntry<T>.data: T
+
+              -> RouteConfig<T> / AppOptions<T> carry T into middleware/handler chains
+                  BaseRequest<T>.ws: SocketCommands<T>
+                  Request<T>, Middleware<T>, Handler<T>
+```
+
+Leaf types with `data: T`: `SocketData<T>`, `SessionEntry<T>`, `InactiveSession<T>`, `Ticket<T>`. Transitive types that reference the leaves: `FilterFn<T>`, `SocketCommands<T>`, `Server<T>`, `SocketConnection<T>`, `ActiveSession<T>`, `SocketState<T>`, `BaseRequest<T>`, `EndpointRequest<T>`, `WebSocketRequest<T>`, `Request<T>`, `Middleware<T>`, `Handler<T>`, `MiddlewareChain<T>`. The `void` default was chosen over `unknown` because `void` blocks property access at compile time ("you haven't typed your connection data"), while `unknown` merely requires a cast ("something exists but its type isn't declared"). Both require providing `T` to access `session.data` properties; the difference is the error message.
+
+Internal framework code works with any `T` through a single cast boundary in `buildSocketHandlers`: the `POST /ws` handler stores `res as T` when issuing a ticket, since `res` is `unknown` from the middleware chain signature. All other internal data flow is type-safe through the parameter.
+
+`parseJsonBody<T>()` and `validateSchemas<T>()` are also generic for compatibility with typed middleware chains (`Middleware<T>[]`). Under `strictFunctionTypes`, `Middleware<void>` is not assignable to `Middleware<ConnectionData>`, so utility middleware must carry the same `T`. Since neither function accesses `req.ws` or session data, the parameter flows through structurally.
+
+Types that stay non-generic: `SocketOptions` (no session data references), `NextFn` (its `data` parameter is middleware pipeline data, not session data), `HandlerResult`, `AsyncHandlerResult`, `CloseSignal`.
+
 ## Close codes and signals
 
 The framework uses two signal systems. `CloseSignal` (type `{ code: number, reason: string }`) is the general shape for all close signals, including app-defined ones. Each package exports its own collection of predefined signals: `ServerCloseSignals` from `sleepy-serv` and `ClientCloseSignals` from `sleepy-socket`.
