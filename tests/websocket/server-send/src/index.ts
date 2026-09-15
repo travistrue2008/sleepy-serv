@@ -8,7 +8,7 @@ type ConnectionData = {
   userId: string
 }
 
-const app = createApp(0, { ws: true })
+const app = createApp<ConnectionData>(0, { ws: true })
 
 const admin = Bun.serve({
   port: 0,
@@ -22,9 +22,7 @@ const admin = Bun.serve({
         }
 
         app.ws.send('player_joined', message, (session) => {
-          const data = session.data as ConnectionData
-
-          return data.userId !== body.userId
+          return session.data.userId !== body.userId
         })
 
         return new Response('', { status: 204 })

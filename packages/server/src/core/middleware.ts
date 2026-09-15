@@ -39,7 +39,7 @@ export type SchemaKey = keyof ValidationSchemas
 let _schemasCompiled = false
 let _customFormats: Record<string, Format> | null = null
 
-async function parseBody (req: Request): Promise<unknown> {
+async function parseBody<T> (req: Request<T>): Promise<unknown> {
   try {
     const result = await req.json()
 
@@ -117,9 +117,9 @@ function compileSchemas (
     })
 }
 
-export function parseJsonBody (): Middleware {
+export function parseJsonBody<T = void> (): Middleware<T> {
   return async (
-    req: Request,
+    req: Request<T>,
     res: unknown,
     next: NextFn,
   ): AsyncHandlerResult => {
@@ -158,8 +158,8 @@ export function resetValidationFormatsState (): void {
   _schemasCompiled = false
 }
 
-function buildValidationSource (
-  req: Request,
+function buildValidationSource<T> (
+  req: Request<T>,
   res: unknown,
 ): Record<SchemaKey, unknown> {
   return {
@@ -170,13 +170,15 @@ function buildValidationSource (
   }
 }
 
-export function validateSchemas (schemas: ValidationSchemas): Middleware {
+export function validateSchemas<T = void> (
+  schemas: ValidationSchemas,
+): Middleware<T> {
   const entries = compileSchemas(schemas)
 
   _schemasCompiled = true
 
   return (
-    req: Request,
+    req: Request<T>,
     res: unknown,
     next: NextFn,
   ): HandlerResult => {

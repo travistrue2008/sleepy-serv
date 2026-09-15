@@ -50,7 +50,10 @@ import type {
   ResponseMessage,
 } from './messages'
 
-type SocketHandler = (req: Request, res: unknown) => AsyncHandlerResult
+type SocketHandler<T = void> = (
+  req: Request<T>,
+  res: unknown,
+) => AsyncHandlerResult
 
 type UpgradeData = {
   clientId?: string
@@ -62,10 +65,10 @@ type UpgradeContext = {
   [key: string]: unknown
 }
 
-type SocketEndpoint = {
+type SocketEndpoint<T = void> = {
   method: HttpMethod
   path: string
-  handler: SocketHandler
+  handler: SocketHandler<T>
 }
 
 type CreateSocketRequest = {
@@ -87,24 +90,24 @@ type UpdateTicketRequest = {
   }
 }
 
-export type SocketConnection = {
-  data: SocketData
+export type SocketConnection<T = void> = {
+  data: SocketData<T>
   send: (data: string) => unknown
   close: (code?: number, reason?: string) => void
 }
 
-export type ActiveSession = {
+export type ActiveSession<T = void> = {
   token: string
-  ws: SocketConnection
+  ws: SocketConnection<T>
 }
 
-export type InactiveSession = {
+export type InactiveSession<T = void> = {
   token: string
   expiresAt: number
-  data: unknown
+  data: T
 }
 
-export type ActiveSessions = ReadonlyMap<string, ActiveSession>
+export type ActiveSessions<T = void> = ReadonlyMap<string, ActiveSession<T>>
 
 export const ServerCloseSignals: Record<string, CloseSignal> = {
   Ok: {
@@ -124,7 +127,7 @@ export const ServerCloseSignals: Record<string, CloseSignal> = {
 export type ServerCloseSignals =
   typeof ServerCloseSignals[keyof typeof ServerCloseSignals]
 
-export type Session = ActiveSession | InactiveSession
+export type Session<T = void> = ActiveSession<T> | InactiveSession<T>
 
 export type SocketOptions = {
   dropThreshold?: number
@@ -136,30 +139,30 @@ export type SocketOptions = {
   onClose?: (clientId: string, signal: CloseSignal) => void
 }
 
-export type Ticket = {
+export type Ticket<T = void> = {
   clientId: string
   expiresAt: number
-  data: unknown
+  data: T
 }
 
-export type SocketState = {
+export type SocketState<T = void> = {
   dropThreshold: number
   heartbeatInterval: number
   maxTickets: number
   reclaimTtl: number
   ticketTtl: number
-  tickets: Map<string, Ticket>
-  activeSessions: Map<string, ActiveSession>
-  inactiveSessions: Map<string, InactiveSession>
+  tickets: Map<string, Ticket<T>>
+  activeSessions: Map<string, ActiveSession<T>>
+  inactiveSessions: Map<string, InactiveSession<T>>
   onOpen: ((clientId: string) => void) | null
   onClose: ((clientId: string, signal: CloseSignal) => void) | null
 }
 
-export type SocketRoute = {
+export type SocketRoute<T = void> = {
   method: HttpMethod
   path: string
   segments: string[]
-  chain: MiddlewareChain
+  chain: MiddlewareChain<T>
 }
 
 const ajv = new Ajv({
@@ -263,7 +266,7 @@ const updateTicketValidator = ajv.compile<UpdateTicketRequest>({
   },
 })
 
-function isSessionActive (session: InactiveSession): boolean {
+function isSessionActive<T> (session: InactiveSession<T>): boolean {
   return !session.expiresAt || session.expiresAt > Date.now()
 }
 
@@ -285,7 +288,7 @@ function parseMessage (raw: string | Buffer): RawMessage | undefined {
   }
 }
 
-function sweepInactiveSessions (state: SocketState): void {
+function sweepInactiveSessions<T> (state: SocketState<T>): void {
   for (const [key, session] of state.inactiveSessions) {
     if (!isSessionActive(session)) {
       state.inactiveSessions.delete(key)
@@ -335,10 +338,10 @@ function matchesSegments (
   )
 }
 
-function matchRoute (
-  routes: SocketRoute[],
+function matchRoute<T> (
+  routes: SocketRoute<T>[],
   message: RequestMessage,
-): SocketRoute {
+): SocketRoute<T> {
   const requestSegments = toSegments(message.route)
 
   const matchingPaths = routes.filter(route =>
@@ -358,8 +361,8 @@ function matchRoute (
   return route
 }
 
-function buildParams (
-  route: SocketRoute,
+function buildParams<T> (
+  route: SocketRoute<T>,
   message: RequestMessage,
 ): Record<string, string> {
   const requestSegments = toSegments(message.route)
@@ -372,11 +375,11 @@ function buildParams (
       } : accum, {})
 }
 
-function buildRequest (
+function buildRequest<T> (
   params: Record<string, string>,
   message: RequestMessage,
-  ws: SocketCommands,
-): WebSocketRequest {
+  ws: SocketCommands<T>,
+): WebSocketRequest<T> {
   const { id, clientId, method, route } = message
   const headers = new Headers(message.headers ?? {})
   const query = message.query ?? {}
@@ -431,7 +434,9 @@ function buildErrorMessage (
   })
 }
 
-export function buildSocketState (opts: SocketOptions = {}): SocketState {
+export function buildSocketState<T = void> (
+  opts: SocketOptions = {},
+): SocketState<T> {
   return {
     dropThreshold: opts.dropThreshold ?? 120_000,
     heartbeatInterval: opts.heartbeatInterval ?? 30_000,
@@ -446,11 +451,11 @@ export function buildSocketState (opts: SocketOptions = {}): SocketState {
   }
 }
 
-export function buildSocketServer (
-  routes: SocketRoute[],
-  state: SocketState,
-  commands: SocketCommands,
-): WebSocketHandler<SocketData> {
+export function buildSocketServer<T = void> (
+  routes: SocketRoute<T>[],
+  state: SocketState<T>,
+  commands: SocketCommands<T>,
+): WebSocketHandler<SocketData<T>> {
   const {
     dropThreshold,
     heartbeatInterval,
@@ -461,7 +466,7 @@ export function buildSocketServer (
     onClose,
   } = state
 
-  function armReaper (ws: SocketConnection) {
+  function armReaper (ws: SocketConnection<T>) {
     if (ws.data.reaperHandle) {
       clearTimeout(ws.data.reaperHandle)
     }
@@ -476,7 +481,7 @@ export function buildSocketServer (
     }, dropThreshold)
   }
 
-  function invokeOpen (ws: SocketConnection) {
+  function invokeOpen (ws: SocketConnection<T>) {
     if (onOpen) {
       try {
         onOpen(ws.data.clientId)
@@ -486,7 +491,7 @@ export function buildSocketServer (
     }
   }
 
-  function invokeClose (ws: SocketConnection, signal: CloseSignal) {
+  function invokeClose (ws: SocketConnection<T>, signal: CloseSignal) {
     if (onClose) {
       try {
         onClose(ws.data.clientId, signal)
@@ -497,7 +502,7 @@ export function buildSocketServer (
   }
 
   return {
-    open (ws: SocketConnection): void {
+    open (ws: SocketConnection<T>): void {
       sweepInactiveSessions(state)
 
       const token = randomToken()
@@ -536,7 +541,7 @@ export function buildSocketServer (
       ws.send(JSON.stringify(welcomeMessage))
       invokeOpen(ws)
     },
-    close (ws: SocketConnection, code: number, reason: string): void {
+    close (ws: SocketConnection<T>, code: number, reason: string): void {
       const signal: CloseSignal = {
         code,
         reason,
@@ -570,7 +575,10 @@ export function buildSocketServer (
 
       invokeClose(ws, signal)
     },
-    async message (ws: SocketConnection, raw: string | Buffer): Promise<void> {
+    async message (
+      ws: SocketConnection<T>,
+      raw: string | Buffer,
+    ): Promise<void> {
       const incomingMsg = parseMessage(raw)
 
       if (incomingMsg === undefined) {
@@ -610,7 +618,9 @@ export function buildSocketServer (
   }
 }
 
-export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
+export function buildSocketHandlers<T = void> (
+  state: SocketState<T>,
+): SocketEndpoint<T>[] {
   const {
     maxTickets,
     ticketTtl,
@@ -619,7 +629,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     inactiveSessions,
   } = state
 
-  function issueTicket (clientId: string, data: unknown): string {
+  function issueTicket (clientId: string, data: T): string {
     for (const [key, entry] of tickets) {
       if (entry.expiresAt > Date.now()) {
         break
@@ -644,7 +654,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     return hash
   }
 
-  function redeemTicket (hash: string): Ticket | undefined {
+  function redeemTicket (hash: string): Ticket<T> | undefined {
     const entry = hash ? tickets.get(hash) : undefined
 
     if (!entry) {
@@ -661,7 +671,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     {
       method: 'GET',
       path: '/ws',
-      handler (req: Request, res: unknown): AsyncHandlerResult {
+      handler (req: Request<T>, res: unknown): AsyncHandlerResult {
         const validReq = validateSchema(req, createSocketValidator)
 
         if (typeof res !== 'object') {
@@ -694,11 +704,11 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     {
       method: 'POST',
       path: '/ws',
-      async handler (req: Request, res: unknown): AsyncHandlerResult {
+      async handler (req: Request<T>, res: unknown): AsyncHandlerResult {
         validateSchema(req, createTicketValidator)
 
         const clientId = crypto.randomUUID()
-        const ticket = issueTicket(clientId, res)
+        const ticket = issueTicket(clientId, res as T)
 
         return Response.json({
           clientId,
@@ -710,12 +720,12 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
     {
       method: 'PUT',
       path: '/ws/:clientId',
-      async handler (req: Request, res: unknown): AsyncHandlerResult {
+      async handler (req: Request<T>, res: unknown): AsyncHandlerResult {
         const validReq = validateSchema(req, updateTicketValidator)
         const authHeader = validReq.headers.get('authorization')!
         const token = authHeader.slice('Bearer '.length)
 
-        let session: Session | undefined =
+        let session: Session<T> | undefined =
           activeSessions.get(validReq.params.clientId)
 
         if (!session) {
@@ -748,7 +758,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
   ]
 }
 
-export function buildDisabledSocketCommands (): SocketCommands {
+export function buildDisabledSocketCommands<T = void> (): SocketCommands<T> {
   const msg = 'WebSocket support is not enabled'
 
   return {
@@ -759,7 +769,9 @@ export function buildDisabledSocketCommands (): SocketCommands {
   }
 }
 
-export function buildSocketCommands (state: SocketState): SocketCommands {
+export function buildSocketCommands<T = void> (
+  state: SocketState<T>,
+): SocketCommands<T> {
   function sendToClient (clientId: string, event: string, body: unknown) {
     const session = state.activeSessions.get(clientId)
 
@@ -782,12 +794,12 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
         sendToClient(clientId, event, body)
       }
     },
-    send (event: string, body: unknown, fn: FilterFn) {
+    send (event: string, body: unknown, fn: FilterFn<T>) {
       let index = 0
 
       /* TODO: look into concurrency at some point */
       for (const [clientId, session] of state.activeSessions) {
-        const entry: SessionEntry = {
+        const entry: SessionEntry<T> = {
           clientId,
           type: SessionType.Active,
           data: session.ws.data.data,
@@ -800,7 +812,7 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
         index += 1
       }
     },
-    drop (signal: CloseSignal, fn: FilterFn) {
+    drop (signal: CloseSignal, fn: FilterFn<T>) {
       const { code, reason } = signal
 
       let index = 0
@@ -812,7 +824,7 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
       }
 
       for (const [clientId, session] of state.activeSessions) {
-        const entry: SessionEntry = {
+        const entry: SessionEntry<T> = {
           clientId,
           type: SessionType.Active,
           data: session.ws.data.data,
@@ -826,10 +838,10 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
       }
     },
     query (
-      fn: FilterFn,
+      fn: FilterFn<T>,
       filter: SessionFilter = SessionFilter.Active,
     ) {
-      const results: SessionEntry[] = []
+      const results: SessionEntry<T>[] = []
 
       function processSessions (
         type: SessionType,
@@ -849,7 +861,7 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
         for (const [clientId, session] of sessions) {
           const data = 'ws' in session ? session.ws.data.data : session.data
 
-          const entry: SessionEntry = {
+          const entry: SessionEntry<T> = {
             clientId,
             type,
             data,
