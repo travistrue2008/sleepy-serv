@@ -12,8 +12,10 @@ test('when "ctx" is provided to the POST handshake', async () => {
 
   const client = await SleepySocketClient.open(
     'localhost',
-    server.port,
-    { ctx: CTX },
+    {
+      port: server.port,
+      ctx: CTX,
+    },
   )
 
   await client.close()

@@ -13,8 +13,10 @@ test('when a reply arrives for an already-timed-out request', async () => {
 
   const client = await SleepySocketClient.open(
     'localhost',
-    server.port,
-    { timeout: 100 },
+    {
+      port: server.port,
+      timeout: 100,
+    },
   )
 
   const promise = client.get('/slow-reply')

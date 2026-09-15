@@ -26,7 +26,11 @@ describe('REST', () => {
 describe('WebSocket', () => {
   test('when making a request on a dynamic route', async () => {
     const server = await createServer(import.meta.dirname)
-    const client = await SleepySocketClient.open('localhost', server.port)
+
+    const client = await SleepySocketClient.open('localhost', {
+      port: server.port,
+    })
+
     const result = await client.get('/users/123')
 
     await client.close()

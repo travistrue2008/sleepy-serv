@@ -26,7 +26,10 @@ function nextMessage (client: SleepySocketClient): Promise<unknown> {
 
 test('when a heartbeat is sent', async () => {
   const server = await createServer(import.meta.dirname)
-  const client = await SleepySocketClient.open('localhost', server.port)
+
+  const client = await SleepySocketClient.open('localhost', {
+    port: server.port,
+  })
 
   const sendSpy = spyOn(client.socket!, 'send')
   const nextMessagePromise = nextMessage(client)

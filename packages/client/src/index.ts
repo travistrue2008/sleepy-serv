@@ -24,7 +24,8 @@ export type ReconnectOptions = {
   random?: () => number
 }
 
-export type OpenOptions = {
+export type ClientOptions = {
+  port?: number
   queue?: Queue
   secure?: boolean
   timeout?: number
@@ -121,7 +122,7 @@ export default class SleepySocketClient {
   #serverTimeout = 120_000
   #heartbeatInterval = 30_000
   #mountPath = ''
-  #host: string | null = null
+  #hostname: string | null = null
   #port: number | null = null
   #token: string | null = null
   #socket: WebSocket | null = null
@@ -190,9 +191,8 @@ export default class SleepySocketClient {
   }
 
   static async open (
-    host: string,
-    port: number,
-    opts: OpenOptions = {},
+    hostname: string,
+    opts: ClientOptions = {},
   ): Promise<SleepySocketClient> {
     if (opts.queue && !Object.values(Queue).includes(opts.queue)) {
       throw new RangeError(`Invalid queue type: ${opts.queue}`)
@@ -205,8 +205,8 @@ export default class SleepySocketClient {
         ? opts.reconnect
         : {}
 
-    client.#host = host
-    client.#port = port
+    client.#hostname = hostname
+    client.#port = opts.port ?? null
     client.#queueType = opts.queue ?? Queue.None
     client.#secure = opts.secure ?? false
     client.#timeout = opts.timeout ?? 30_000
@@ -229,17 +229,25 @@ export default class SleepySocketClient {
     return client
   }
 
+  #getBaseUrl (protocol: string): string {
+    const authority = this.#port
+      ? `${this.#hostname}:${this.#port}`
+      : this.#hostname!
+
+    return `${protocol}://${authority}${this.#mountPath}/ws`
+  }
+
   #getEndpointBaseUrl (): string {
     const protocol = this.#secure ? 'https' : 'http'
 
-    return `${protocol}://${this.#host}:${this.#port}${this.#mountPath}`
+    return this.#getBaseUrl(protocol)
   }
 
   #getSocketUrl (ticket: string): string {
     const protocol = this.#secure ? 'wss' : 'ws'
-    const authority = `${this.#host}:${this.#port}${this.#mountPath}`
+    const baseUrl = this.#getBaseUrl(protocol)
 
-    return `${protocol}://${authority}/ws?ticket=${ticket}`
+    return `${baseUrl}?ticket=${ticket}`
   }
 
   async #handleError (response: Response): Promise<void> {
@@ -255,7 +263,7 @@ export default class SleepySocketClient {
   }
 
   async #createTicket (): Promise<TicketData> {
-    const url = `${this.#getEndpointBaseUrl()}/ws`
+    const url = this.#getEndpointBaseUrl()
 
     const response = await fetch(url, {
       method: 'POST',
@@ -277,7 +285,7 @@ export default class SleepySocketClient {
   }
 
   async #reclaimTicket (): Promise<TicketData | null> {
-    const url = `${this.#getEndpointBaseUrl()}/ws/${this.#id}`
+    const url = `${this.#getEndpointBaseUrl()}/${this.#id}`
 
     const response = await fetch(url, {
       method: 'PUT',

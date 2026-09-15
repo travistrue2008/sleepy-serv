@@ -7,8 +7,10 @@ test('when the server never replies', async () => {
 
   const client = await SleepySocketClient.open(
     'localhost',
-    server.port,
-    { timeout: 100 },
+    {
+      port: server.port,
+      timeout: 100,
+    },
   )
 
   const promise = client.get('/hang')

@@ -7,7 +7,8 @@ test('when closed from client AND reconnect enabled', async () => {
   const handler = mock()
   const server = await createServer(import.meta.dirname)
 
-  const client = await SleepySocketClient.open('localhost', server.port, {
+  const client = await SleepySocketClient.open('localhost', {
+    port: server.port,
     reconnect: {
       minDelay: 100,
       random: () => 0,
@@ -39,8 +40,10 @@ test('when closed from client AND reconnect disabled', async () => {
 
   const client = await SleepySocketClient.open(
     'localhost',
-    server.port,
-    { reconnect: false },
+    {
+      port: server.port,
+      reconnect: false,
+    },
   )
 
   client.on('close', handler)

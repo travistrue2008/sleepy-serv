@@ -8,7 +8,8 @@ test('when superseded AND reconnect enabled', async () => {
   const server = await createServer(import.meta.dirname)
   const reqClient = createClient(server)
 
-  const client = await SleepySocketClient.open('localhost', server.port, {
+  const client = await SleepySocketClient.open('localhost', {
+    port: server.port,
     reconnect: {
       minDelay: 20,
       random: () => 0,
@@ -58,8 +59,10 @@ test('when superseded AND reconnect disabled', async () => {
 
   const client = await SleepySocketClient.open(
     'localhost',
-    server.port,
-    { reconnect: false },
+    {
+      port: server.port,
+      reconnect: false,
+    },
   )
 
   client.on('close', handler)

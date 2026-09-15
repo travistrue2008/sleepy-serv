@@ -5,7 +5,11 @@ import { createServer, Fmt, createClient } from '../../helpers'
 
 test('when a willingly-closed clientId is reclaimed', async () => {
   const server = await createServer(import.meta.dirname)
-  const client = await SleepySocketClient.open('localhost', server.port)
+
+  const client = await SleepySocketClient.open('localhost', {
+    port: server.port,
+  })
+
   const reqClient = createClient(server)
 
   await client.close()

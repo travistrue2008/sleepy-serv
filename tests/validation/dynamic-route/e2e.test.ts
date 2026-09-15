@@ -99,7 +99,10 @@ describe('WebSocket', () => {
   describe('body', () => {
     test('when NO "email" is provided', async () => {
       const server = await createServer(import.meta.dirname)
-      const client = await SleepySocketClient.open('localhost', server.port)
+
+      const client = await SleepySocketClient.open('localhost', {
+        port: server.port,
+      })
 
       const result = await client.put(`/users/${USER_ID}`, {
         headers: new Headers({
@@ -134,7 +137,10 @@ describe('WebSocket', () => {
 
     test('when "email" is invalid', async () => {
       const server = await createServer(import.meta.dirname)
-      const client = await SleepySocketClient.open('localhost', server.port)
+
+      const client = await SleepySocketClient.open('localhost', {
+        port: server.port,
+      })
 
       const result = await client.put(`/users/${USER_ID}`, {
         headers: new Headers({
@@ -169,7 +175,10 @@ describe('WebSocket', () => {
 
     test('when successful', async () => {
       const server = await createServer(import.meta.dirname)
-      const client = await SleepySocketClient.open('localhost', server.port)
+
+      const client = await SleepySocketClient.open('localhost', {
+        port: server.port,
+      })
 
       const result = await client.put(`/users/${USER_ID}`, {
         headers: new Headers({

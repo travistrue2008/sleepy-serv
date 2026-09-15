@@ -5,7 +5,10 @@ import { createServer, wait } from '../../helpers'
 
 test('when app middleware rejects the handshake', async () => {
   const server = await createServer(import.meta.dirname)
-  const promise = SleepySocketClient.open('localhost', server.port)
+
+  const promise = SleepySocketClient.open('localhost', {
+    port: server.port,
+  })
 
   await expect(promise).rejects.toThrow(HandshakeError)
 
@@ -36,7 +39,8 @@ test('when the rejected handshake does not retry', async () => {
     return origFetch(...args)
   }) as typeof fetch
 
-  await SleepySocketClient.open('localhost', server.port, {
+  await SleepySocketClient.open('localhost', {
+    port: server.port,
     reconnect: {
       minDelay: 20,
       random: () => 0,
