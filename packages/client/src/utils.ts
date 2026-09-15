@@ -74,7 +74,7 @@ export type CloseSignal = {
   reason: string
 }
 
-export const InternalCloseSignal = {
+export const ClientCloseSignals: Record<string, CloseSignal> = {
   Ok: {
     code: 1000,
     reason: 'ok',

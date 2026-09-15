@@ -1,5 +1,5 @@
 import { MessageType, createMessage } from './messages.js'
-import { InternalCloseSignal, joinRoute } from './utils.js'
+import { ClientCloseSignals, joinRoute } from './utils.js'
 
 import type { CloseSignal } from './utils.js'
 
@@ -93,8 +93,8 @@ const RECONNECT_JITTER = 0.5
 const JSON_CONTENT_TYPE = 'application/json;charset=utf-8'
 
 const CODES_RECONNECT: number[] = [
-  InternalCloseSignal.Abnormal.code,
-  InternalCloseSignal.Reaped.code,
+  ClientCloseSignals.Abnormal.code,
+  ClientCloseSignals.Reaped.code,
 ]
 
 export class HandshakeError extends Error {
@@ -428,8 +428,8 @@ export default class SleepySocketClient {
 
     this.#livenessTimer = setTimeout(() => {
       this.#socket?.close(
-        InternalCloseSignal.Reaped.code,
-        InternalCloseSignal.Reaped.reason,
+        ClientCloseSignals.Reaped.code,
+        ClientCloseSignals.Reaped.reason,
       )
     }, this.serverTimeout)
   }
@@ -687,7 +687,7 @@ export default class SleepySocketClient {
     this.#listeners.get(event)?.delete(handler)
   }
 
-  close (signal: CloseSignal = InternalCloseSignal.Ok): Promise<void> {
+  close (signal: CloseSignal = ClientCloseSignals.Ok): Promise<void> {
     if (this.#closing) {
       return Promise.reject(new Error('Socket is closed'))
     }

@@ -1,6 +1,8 @@
 import type { ErrorObject } from 'ajv'
 import type { BunRequest, Server as BunServer } from 'bun'
 
+export type TimeoutHandle = ReturnType<typeof setTimeout>
+
 export const HttpMethod = {
   Head: 'HEAD',
   Get: 'GET',
@@ -107,28 +109,42 @@ export type Handler = (
 
 export type MiddlewareChain = (Middleware | Handler)[]
 
-export type ActiveSession = {
-  token: string
-  ws: SocketConnection
+export type CloseSignal = {
+  code: number
+  reason: string
 }
 
-export type InactiveSession = {
-  token: string
-  expiresAt: number
-  app: unknown
+export type SocketData = {
+  clientId: string
+  superseded: boolean
+  reaped: boolean
+  reaperHandle: TimeoutHandle | null
+  data: unknown
 }
 
-export type ActiveSessions = ReadonlyMap<string, ActiveSession>
-export type Session = ActiveSession | InactiveSession
+export const SessionType = {
+  Active: 'active',
+  Inactive: 'inactive',
+} as const
+
+export type SessionType = typeof SessionType[keyof typeof SessionType]
+
+export const SessionFilter = {
+  Active: 'active',
+  Inactive: 'inactive',
+  All: 'all',
+} as const
+
+export type SessionFilter = typeof SessionFilter[keyof typeof SessionFilter]
 
 export type SessionEntry = {
   clientId: string
-  app: unknown
+  type: SessionType
+  data: unknown
 }
 
 export type FilterFn = (
-  clientId: string,
-  data: unknown,
+  session: SessionEntry,
   index: number,
 ) => boolean
 
@@ -136,7 +152,7 @@ export type SocketCommands = {
   broadcast: (event: string, body: unknown) => void
   send: (event: string, body: unknown, fn: FilterFn) => void
   drop: (signal: CloseSignal, fn: FilterFn) => void
-  query: (fn: FilterFn) => SessionEntry[]
+  query: (fn: FilterFn, filter?: SessionFilter) => SessionEntry[]
 }
 
 export type BaseRequest = {
@@ -161,75 +177,7 @@ export type WebSocketRequest = BaseRequest & {
 
 export type Request = EndpointRequest | WebSocketRequest
 
-export type CloseSignal = {
-  code: number
-  reason: string
-}
-
-export const InternalCloseSignal = {
-  Ok: {
-    code: 1000,
-    reason: 'ok',
-  },
-  Reaped: {
-    code: 4998,
-    reason: 'reaped',
-  },
-  Superseded: {
-    code: 4999,
-    reason: 'superseded',
-  },
-} as const
-
-export type SocketOptions = {
-  dropThreshold?: number
-  heartbeatInterval?: number
-  maxTickets?: number
-  reclaimTtl?: number
-  ticketTtl?: number
-  onOpen?: (clientId: string) => void
-  onClose?: (clientId: string, signal: CloseSignal) => void
-}
-
-export type SocketData = {
-  clientId: string
-  superseded: boolean
-  reaped: boolean
-  reaperHandle: ReturnType<typeof setTimeout> | null
-  app: unknown
-}
-
-export type SocketConnection = {
-  data: SocketData
-  send: (data: string) => unknown
-  close: (code?: number, reason?: string) => void
-}
-
 export type Server = BunServer<SocketData>
-
-export type RouteDefinition = {
-  method: HttpMethod
-  path: string
-  chain: Handler | MiddlewareChain
-}
-
-export type MetaEntry = {
-  path: string
-  middleware: Middleware[]
-}
-
-export type RouteConfig = {
-  routes: RouteDefinition[]
-  meta?: MetaEntry[]
-}
-
-export type AppOptions = {
-  hostname?: string
-  mountPath?: string
-  middleware?: Middleware[]
-  ws?: boolean | SocketOptions
-  onClose?: () => Promise<void> | void
-}
 
 export function toSegments (pathString: string): string[] {
   const [pathname] = String(pathString).split('?')

@@ -5,9 +5,7 @@ type AppData = {
 }
 
 type ConnectionData = {
-  app: {
-    userId: string
-  }
+  userId: string
 }
 
 const app = createApp(0, { ws: true })
@@ -20,10 +18,10 @@ const admin = Bun.serve({
         const url = new URL(req.url)
         const userId = url.searchParams.get('userId')
 
-        const entries = app.ws.query((_clientId, data) => {
-          const connectionData = data as ConnectionData
+        const entries = app.ws.query((session) => {
+          const data = session.data as ConnectionData
 
-          return connectionData.app.userId !== userId
+          return data.userId !== userId
         })
 
         return Response.json({ count: entries.length })

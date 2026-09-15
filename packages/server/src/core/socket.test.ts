@@ -1,8 +1,14 @@
 import crypto from 'node:crypto'
 import { MessageType } from './messages'
-import { StatusCode, InternalCloseSignal } from './utils'
+import { ServerCloseSignals } from './socket'
 
-import type { CloseSignal } from './utils'
+import {
+  StatusCode,
+  SessionType,
+  SessionFilter,
+} from './utils'
+
+import type { CloseSignal, SessionEntry } from './utils'
 
 import {
   jest,
@@ -113,7 +119,7 @@ function buildSocket (clientId: string): SocketMock {
       superseded: false,
       reaped: false,
       reaperHandle: null,
-      app: null,
+      data: null,
     },
     get welcome () {
       return JSON.parse(send.mock.calls[0][0])
@@ -662,8 +668,8 @@ describe('buildTestServer()', () => {
       expect(oldWs.close).toHaveBeenCalledOnce()
 
       expect(oldWs.close).toHaveBeenCalledWith(
-        InternalCloseSignal.Superseded.code,
-        InternalCloseSignal.Superseded.reason,
+        ServerCloseSignals.Superseded.code,
+        ServerCloseSignals.Superseded.reason,
       )
     })
 
@@ -676,8 +682,8 @@ describe('buildTestServer()', () => {
       expect(ws.close).toHaveBeenCalledOnce()
 
       expect(ws.close).toHaveBeenCalledWith(
-        InternalCloseSignal.Reaped.code,
-        InternalCloseSignal.Reaped.reason,
+        ServerCloseSignals.Reaped.code,
+        ServerCloseSignals.Reaped.reason,
       )
 
       expect(ws.data.reaped).toBe(true)
@@ -731,13 +737,13 @@ describe('buildTestServer()', () => {
       state.inactiveSessions.set('stale', {
         token: 'a',
         expiresAt: Date.now() - 1,
-        app: null,
+        data: null,
       })
 
       state.inactiveSessions.set('fresh', {
         token: 'b',
         expiresAt: Date.now() + 10_000,
-        app: null,
+        data: null,
       })
 
       server.open(ws)
@@ -760,8 +766,8 @@ describe('buildTestServer()', () => {
 
       server.close(
         ws,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       const fn = () => server.close(
@@ -782,8 +788,8 @@ describe('buildTestServer()', () => {
 
       server.close(
         oldSocket,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       server.open(newSocket)
@@ -845,8 +851,8 @@ describe('buildTestServer()', () => {
 
       server.close(
         ws,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       const res = await updateTicket({
@@ -918,8 +924,8 @@ describe('buildTestServer()', () => {
 
       server.close(
         ws,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       expect(fn).toThrow(new NotFoundError())
@@ -939,8 +945,8 @@ describe('buildTestServer()', () => {
       expect(ws.close).toHaveBeenCalledOnce()
 
       expect(ws.close).toHaveBeenCalledWith(
-        InternalCloseSignal.Reaped.code,
-        InternalCloseSignal.Reaped.reason,
+        ServerCloseSignals.Reaped.code,
+        ServerCloseSignals.Reaped.reason,
       )
     })
 
@@ -956,8 +962,8 @@ describe('buildTestServer()', () => {
       expect(oldWs.close).toHaveBeenCalledOnce()
 
       expect(oldWs.close).toHaveBeenCalledWith(
-        InternalCloseSignal.Superseded.code,
-        InternalCloseSignal.Superseded.reason,
+        ServerCloseSignals.Superseded.code,
+        ServerCloseSignals.Superseded.reason,
       )
     })
   })
@@ -1009,8 +1015,8 @@ describe('buildTestServer()', () => {
 
       server.close(
         ws,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       expect(state.activeSessions.size).toBe(0)
@@ -1018,7 +1024,7 @@ describe('buildTestServer()', () => {
 
       expect(state.onClose).toHaveBeenCalledWith(
         CLIENT_ID,
-        InternalCloseSignal.Ok,
+        ServerCloseSignals.Ok,
       )
     })
 
@@ -1061,16 +1067,16 @@ describe('buildTestServer()', () => {
 
       server.close(
         ws,
-        InternalCloseSignal.Reaped.code,
-        InternalCloseSignal.Reaped.reason,
+        ServerCloseSignals.Reaped.code,
+        ServerCloseSignals.Reaped.reason,
       )
 
       expect(state.activeSessions.size).toBe(0)
       expect(state.onClose).toHaveBeenCalledOnce()
 
       expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, {
-        code: InternalCloseSignal.Reaped.code,
-        reason: InternalCloseSignal.Reaped.reason,
+        code: ServerCloseSignals.Reaped.code,
+        reason: ServerCloseSignals.Reaped.reason,
       })
     })
 
@@ -1088,16 +1094,16 @@ describe('buildTestServer()', () => {
 
       server.close(
         oldWs,
-        InternalCloseSignal.Superseded.code,
-        InternalCloseSignal.Superseded.reason,
+        ServerCloseSignals.Superseded.code,
+        ServerCloseSignals.Superseded.reason,
       )
 
       expect(state.activeSessions.size).toBe(1)
       expect(state.onClose).toHaveBeenCalledOnce()
 
       expect(state.onClose).toHaveBeenCalledWith(CLIENT_ID, {
-        code: InternalCloseSignal.Superseded.code,
-        reason: InternalCloseSignal.Superseded.reason,
+        code: ServerCloseSignals.Superseded.code,
+        reason: ServerCloseSignals.Superseded.reason,
       })
     })
 
@@ -1115,8 +1121,8 @@ describe('buildTestServer()', () => {
 
       const fn = () => server.close(
         ws,
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
       expect(fn).not.toThrow()
@@ -1126,7 +1132,7 @@ describe('buildTestServer()', () => {
 
       expect(state.onClose).toHaveBeenCalledWith(
         CLIENT_ID,
-        InternalCloseSignal.Ok,
+        ServerCloseSignals.Ok,
       )
     })
   })
@@ -1308,7 +1314,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
     })
@@ -1355,7 +1361,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
     })
@@ -1382,7 +1388,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
 
@@ -1431,7 +1437,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
     })
@@ -1459,7 +1465,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
     })
@@ -1491,7 +1497,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
     })
@@ -1524,7 +1530,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
 
@@ -1559,7 +1565,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: {},
+          data: {},
         },
       })
 
@@ -1598,7 +1604,7 @@ describe('buildSocketHandlers()', () => {
           superseded: false,
           reaped: false,
           reaperHandle: null,
-          app: appData,
+          data: appData,
         },
       })
 
@@ -1974,7 +1980,7 @@ describe('buildSocketHandlers()', () => {
       const server = buildTestServer([], state)
       const ws = buildSocket(CLIENT_ID)
 
-      ws.data.app = { playerId: 'p1' }
+      ws.data.data = { playerId: 'p1' }
 
       server.open(ws)
 
@@ -2112,11 +2118,13 @@ describe('buildSocketCommands()', () => {
 
       server.close(
         webSockets[0],
-        InternalCloseSignal.Ok.code,
-        InternalCloseSignal.Ok.reason,
+        ServerCloseSignals.Ok.code,
+        ServerCloseSignals.Ok.reason,
       )
 
-      const filterFn = mock((clientId, _data) => clientId !== clientIds[3])
+      const filterFn = mock((session: SessionEntry) =>
+        session.clientId !== clientIds[3],
+      )
 
       commands.send(EVENT, { score: 1 }, filterFn)
 
@@ -2187,22 +2195,31 @@ describe('buildSocketCommands()', () => {
 
       expect(filterFn).toHaveBeenNthCalledWith(
         1,
-        clientIds[1],
-        webSockets[1].data,
+        {
+          clientId: clientIds[1],
+          type: SessionType.Active,
+          data: webSockets[1].data.data,
+        },
         0,
       )
 
       expect(filterFn).toHaveBeenNthCalledWith(
         2,
-        clientIds[2],
-        webSockets[2].data,
+        {
+          clientId: clientIds[2],
+          type: SessionType.Active,
+          data: webSockets[2].data.data,
+        },
         1,
       )
 
       expect(filterFn).toHaveBeenNthCalledWith(
         3,
-        clientIds[3],
-        webSockets[3].data,
+        {
+          clientId: clientIds[3],
+          type: SessionType.Active,
+          data: webSockets[3].data.data,
+        },
         2,
       )
     })
@@ -2216,8 +2233,8 @@ describe('buildSocketCommands()', () => {
 
       server.open(ws)
 
-      const fn = () => commands.send(EVENT, { score: 1 }, (id) => {
-        state.activeSessions.delete(id)
+      const fn = () => commands.send(EVENT, { score: 1 }, session => {
+        state.activeSessions.delete(session.clientId)
 
         return true
       })
@@ -2321,7 +2338,7 @@ describe('buildSocketCommands()', () => {
           code: 4000,
           reason: 'kicked',
         },
-        id => id !== clientIds[1],
+        session => session.clientId !== clientIds[1],
       )
 
       expect(sockets[0].close).toHaveBeenCalledOnce()
@@ -2347,7 +2364,8 @@ describe('buildSocketCommands()', () => {
           code: 4000,
           reason: 'kicked',
         },
-        id => id === '00000000-0000-0000-0000-000000000060',
+        session =>
+          session.clientId === '00000000-0000-0000-0000-000000000060',
       )
 
       expect(ws.close).toHaveBeenCalledOnce()
@@ -2378,7 +2396,7 @@ describe('buildSocketCommands()', () => {
       const sockets = clientIds.map(id => {
         const ws = buildSocket(id)
 
-        ws.data.app = { name: id }
+        ws.data.data = { name: id }
 
         return ws
       })
@@ -2386,17 +2404,19 @@ describe('buildSocketCommands()', () => {
       sockets.forEach(ws => server.open(ws))
 
       const result = commands.query(
-        id => id !== clientIds[1],
+        session => session.clientId !== clientIds[1],
       )
 
       expect(result).toStrictEqual([
         {
           clientId: clientIds[0],
-          app: { name: clientIds[0] },
+          type: SessionType.Active,
+          data: { name: clientIds[0] },
         },
         {
           clientId: clientIds[2],
-          app: { name: clientIds[2] },
+          type: SessionType.Active,
+          data: { name: clientIds[2] },
         },
       ])
     })
@@ -2414,7 +2434,7 @@ describe('buildSocketCommands()', () => {
       const sockets = clientIds.map(id => {
         const ws = buildSocket(id)
 
-        ws.data.app = { role: 'player' }
+        ws.data.data = { role: 'player' }
 
         return ws
       })
@@ -2426,11 +2446,182 @@ describe('buildSocketCommands()', () => {
       expect(result).toStrictEqual([
         {
           clientId: clientIds[0],
-          app: { role: 'player' },
+          type: SessionType.Active,
+          data: { role: 'player' },
         },
         {
           clientId: clientIds[1],
-          app: { role: 'player' },
+          type: SessionType.Active,
+          data: { role: 'player' },
+        },
+      ])
+    })
+
+    test('when no filter arg is provided', () => {
+      const ACTIVE_ID = '00000000-0000-0000-0000-000000000070'
+      const INACTIVE_ID = '00000000-0000-0000-0000-000000000071'
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const activeWs = buildSocket(ACTIVE_ID)
+      const inactiveWs = buildSocket(INACTIVE_ID)
+
+      activeWs.data.data = { role: 'presenter' }
+      inactiveWs.data.data = { role: 'player' }
+
+      server.open(activeWs)
+      server.open(inactiveWs)
+
+      server.close(
+        inactiveWs,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
+      const result = commands.query(() => true)
+
+      expect(result).toStrictEqual([
+        {
+          clientId: ACTIVE_ID,
+          type: SessionType.Active,
+          data: { role: 'presenter' },
+        },
+      ])
+    })
+
+    test('when SessionFilter.Active is provided', () => {
+      const ACTIVE_ID = '00000000-0000-0000-0000-000000000072'
+      const INACTIVE_ID = '00000000-0000-0000-0000-000000000073'
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const activeWs = buildSocket(ACTIVE_ID)
+      const inactiveWs = buildSocket(INACTIVE_ID)
+
+      activeWs.data.data = { role: 'presenter' }
+      inactiveWs.data.data = { role: 'player' }
+
+      server.open(activeWs)
+      server.open(inactiveWs)
+
+      server.close(
+        inactiveWs,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
+      const result = commands.query(() => true, SessionFilter.Active)
+
+      expect(result).toStrictEqual([
+        {
+          clientId: ACTIVE_ID,
+          type: SessionType.Active,
+          data: { role: 'presenter' },
+        },
+      ])
+    })
+
+    test('when SessionFilter.Inactive is provided', () => {
+      const ACTIVE_ID = '00000000-0000-0000-0000-000000000074'
+      const INACTIVE_ID = '00000000-0000-0000-0000-000000000075'
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const activeWs = buildSocket(ACTIVE_ID)
+      const inactiveWs = buildSocket(INACTIVE_ID)
+
+      activeWs.data.data = { role: 'presenter' }
+      inactiveWs.data.data = { gameId: 'g1' }
+
+      server.open(activeWs)
+      server.open(inactiveWs)
+
+      server.close(
+        inactiveWs,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
+      const result = commands.query(() => true, SessionFilter.Inactive)
+
+      expect(result).toStrictEqual([
+        {
+          clientId: INACTIVE_ID,
+          type: SessionType.Inactive,
+          data: { gameId: 'g1' },
+        },
+      ])
+    })
+
+    test('when SessionFilter.Inactive sweeps expired sessions', () => {
+      const ACTIVE_ID = '00000000-0000-0000-0000-000000000076'
+      const INACTIVE_ID = '00000000-0000-0000-0000-000000000077'
+
+      const state = buildSocketState({ reclaimTtl: 100 })
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const activeWs = buildSocket(ACTIVE_ID)
+      const inactiveWs = buildSocket(INACTIVE_ID)
+
+      activeWs.data.data = { role: 'presenter' }
+      inactiveWs.data.data = { gameId: 'g1' }
+
+      server.open(activeWs)
+      server.open(inactiveWs)
+
+      server.close(
+        inactiveWs,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
+      expect(state.inactiveSessions.size).toBe(1)
+
+      jest.advanceTimersByTime(101)
+
+      const result = commands.query(() => true, SessionFilter.Inactive)
+
+      expect(result).toStrictEqual([])
+      expect(state.inactiveSessions.size).toBe(0)
+    })
+
+    test('when SessionFilter.All is provided', () => {
+      const ACTIVE_ID = '00000000-0000-0000-0000-000000000078'
+      const INACTIVE_ID = '00000000-0000-0000-0000-000000000079'
+
+      const state = buildSocketState()
+      const server = buildTestServer([], state)
+      const commands = buildSocketCommands(state)
+      const activeWs = buildSocket(ACTIVE_ID)
+      const inactiveWs = buildSocket(INACTIVE_ID)
+
+      activeWs.data.data = { role: 'presenter' }
+      inactiveWs.data.data = { role: 'player' }
+
+      server.open(activeWs)
+      server.open(inactiveWs)
+
+      server.close(
+        inactiveWs,
+        AbnormalCloseSignal.code,
+        AbnormalCloseSignal.reason,
+      )
+
+      const result = commands.query(() => true, SessionFilter.All)
+
+      expect(result).toStrictEqual([
+        {
+          clientId: ACTIVE_ID,
+          type: SessionType.Active,
+          data: { role: 'presenter' },
+        },
+        {
+          clientId: INACTIVE_ID,
+          type: SessionType.Inactive,
+          data: { role: 'player' },
         },
       ])
     })

@@ -4,6 +4,7 @@
 
 These behaviors differ from Express and aren't obvious from a single file, so see the focused notes:
 
+- [Core Modules](./core-modules.md): type ownership and dependency direction within `src/core/`.
 - [Layout](./layout.md): where the packages live.
 - [Routing](./routing.md): how directories map to routes.
 - [Request Flow](./request-flow.md): how routes are built and served.

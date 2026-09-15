@@ -16,7 +16,9 @@ const admin = Bun.serve({
       POST: async (req) => {
         const body = await req.json() as { clientId: string }
 
-        app.ws.drop(KickedCloseSignal, id => id === body.clientId)
+        app.ws.drop(KickedCloseSignal, session =>
+          session.clientId === body.clientId,
+        )
 
         return new Response('', { status: 204 })
       },

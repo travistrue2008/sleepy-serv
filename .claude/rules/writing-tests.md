@@ -47,8 +47,8 @@ unit tests (colocated `*.test.js`) and integration tests
 
 ## Named Constants
 
-- Use `StatusCode` and `CloseCode` instead of numeric literals for status codes and close codes.
-- Import both from `sleepy-serv` in E2E tests, and from the relative `../src` path in integration and unit tests.
+- Use `StatusCode` and `ServerCloseSignals`/`ClientCloseSignals` instead of numeric literals for status codes and close codes.
+- Import from `sleepy-serv` in E2E tests, and from the relative `../src` path in integration and unit tests.
 
 ## References
 

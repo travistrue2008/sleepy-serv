@@ -5,6 +5,7 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 ## Architecture
 
 - [Overview](./architecture/overview.md): what `sleepy-serv` is; engine location and public API.
+- [Core Modules](./architecture/core-modules.md): `utils.ts`/`socket.ts`/`errors.ts`/`index.ts` roles, dependency direction, and type placement rules.
 - [Layout](./architecture/layout.md): Bun workspace and repo structure.
 - [Routing](./architecture/routing.md): directory-to-route convention, 404 vs 405.
 - [Plugin](./architecture/plugin.md): route discovery via Bun plugin; scanner, codegen, config; runtime plugin limitations.
@@ -12,7 +13,7 @@ Knowledge base for `sleepy-serv` (server) and `sleepy-socket` (client). See [CLA
 - [Request Flow](./architecture/request-flow.md): route build pipeline; the `res` accumulator model.
 - [Middleware](./architecture/middleware.md): resolution order, built-ins, catch-all validators vs the `/ws` handshake.
 - [Errors](./architecture/errors.md): how errors map to HTTP status.
-- [Real-time / WebSocket Layer](./architecture/websocket.md): `/ws` upgrade, message model, welcome handshake, heartbeat/presence, the active/inactive session model, close signals (`InternalCloseSignal`/`CloseSignal`), lifecycle hooks, WebSocket commands (`send`/`broadcast`/`drop`/`query` via `app.ws` and `req.ws`), client state getters, client `close(signal?)` behavior, reconnect allowlist, connection context (`ctx`), `HandshakeError`, client bundling constraints, handshake resource bounding, identifier naming (`id` vs `clientId`), and the open defect that inbound frames are not bound to their socket.
+- [Real-time / WebSocket Layer](./architecture/websocket.md): `/ws` upgrade, message model, welcome handshake, heartbeat/presence, the active/inactive session model, close signals (`ServerCloseSignals`/`ClientCloseSignals`/`CloseSignal`), lifecycle hooks, WebSocket commands (`send`/`broadcast`/`drop`/`query` via `app.ws` and `req.ws`), client state getters, client `close(signal?)` behavior, reconnect allowlist, connection context (`ctx`), `HandshakeError`, client bundling constraints, handshake resource bounding, identifier naming (`id` vs `clientId`), and the open defect that inbound frames are not bound to their socket.
 - [Testing](./architecture/testing.md): test styles (unit / integration / E2E).
 
 ## Operations

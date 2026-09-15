@@ -5,9 +5,7 @@ type AppData = {
 }
 
 type ConnectionData = {
-  app: {
-    userId: string
-  }
+  userId: string
 }
 
 const app = createApp(0, { ws: true })
@@ -23,10 +21,10 @@ const admin = Bun.serve({
           message: `Hello from ${body.userId}`,
         }
 
-        app.ws.send('player_joined', message, (_clientId, data) => {
-          const connectionData = data as ConnectionData
+        app.ws.send('player_joined', message, (session) => {
+          const data = session.data as ConnectionData
 
-          return connectionData.app.userId !== body.userId
+          return data.userId !== body.userId
         })
 
         return new Response('', { status: 204 })

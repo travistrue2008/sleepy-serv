@@ -10,7 +10,8 @@ import {
 
 import {
   StatusCode,
-  InternalCloseSignal,
+  SessionType,
+  SessionFilter,
   toSegments,
   formatError,
   executeMiddlewareChain,
@@ -37,14 +38,9 @@ import type {
   FilterFn,
   MiddlewareChain,
   SocketCommands,
+  SocketData,
   SessionEntry,
   WebSocketRequest,
-  SocketData,
-  SocketConnection,
-  ActiveSession,
-  InactiveSession,
-  Session,
-  SocketOptions,
 } from './utils'
 
 import type {
@@ -89,6 +85,55 @@ type UpdateTicketRequest = {
   params: {
     clientId: string
   }
+}
+
+export type SocketConnection = {
+  data: SocketData
+  send: (data: string) => unknown
+  close: (code?: number, reason?: string) => void
+}
+
+export type ActiveSession = {
+  token: string
+  ws: SocketConnection
+}
+
+export type InactiveSession = {
+  token: string
+  expiresAt: number
+  data: unknown
+}
+
+export type ActiveSessions = ReadonlyMap<string, ActiveSession>
+
+export const ServerCloseSignals: Record<string, CloseSignal> = {
+  Ok: {
+    code: 1000,
+    reason: 'ok',
+  },
+  Reaped: {
+    code: 4998,
+    reason: 'reaped',
+  },
+  Superseded: {
+    code: 4999,
+    reason: 'superseded',
+  },
+} as const
+
+export type ServerCloseSignals =
+  typeof ServerCloseSignals[keyof typeof ServerCloseSignals]
+
+export type Session = ActiveSession | InactiveSession
+
+export type SocketOptions = {
+  dropThreshold?: number
+  heartbeatInterval?: number
+  maxTickets?: number
+  reclaimTtl?: number
+  ticketTtl?: number
+  onOpen?: (clientId: string) => void
+  onClose?: (clientId: string, signal: CloseSignal) => void
 }
 
 export type Ticket = {
@@ -425,8 +470,8 @@ export function buildSocketServer (
       ws.data.reaped = true
 
       ws.close(
-        InternalCloseSignal.Reaped.code,
-        InternalCloseSignal.Reaped.reason,
+        ServerCloseSignals.Reaped.code,
+        ServerCloseSignals.Reaped.reason,
       )
     }, dropThreshold)
   }
@@ -462,8 +507,8 @@ export function buildSocketServer (
         existingSession.ws.data.superseded = true
 
         existingSession.ws.close(
-          InternalCloseSignal.Superseded.code,
-          InternalCloseSignal.Superseded.reason,
+          ServerCloseSignals.Superseded.code,
+          ServerCloseSignals.Superseded.reason,
         )
       }
 
@@ -515,11 +560,11 @@ export function buildSocketServer (
 
       activeSessions.delete(ws.data.clientId)
 
-      if (code !== InternalCloseSignal.Ok.code || ws.data.reaped) {
+      if (code !== ServerCloseSignals.Ok.code || ws.data.reaped) {
         inactiveSessions.set(ws.data.clientId, {
           token: exists.token,
           expiresAt: Date.now() + reclaimTtl,
-          app: ws.data.app,
+          data: ws.data.data,
         })
       }
 
@@ -635,7 +680,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
         ctx.data.superseded = false
         ctx.data.reaped = false
         ctx.data.reaperHandle = null
-        ctx.data.app = ticket.data
+        ctx.data.data = ticket.data
 
         const useSocket = validReq.server.upgrade(validReq.raw, ctx)
 
@@ -691,7 +736,7 @@ export function buildSocketHandlers (state: SocketState): SocketEndpoint[] {
           throw new UnauthorizedError('Invalid token')
         }
 
-        const appData = 'ws' in session ? session.ws.data.app : session.app
+        const appData = 'ws' in session ? session.ws.data.data : session.data
 
         return Response.json({
           clientId: validReq.params.clientId,
@@ -742,7 +787,13 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
 
       /* TODO: look into concurrency at some point */
       for (const [clientId, session] of state.activeSessions) {
-        if (fn(clientId, session.ws.data, index)) {
+        const entry: SessionEntry = {
+          clientId,
+          type: SessionType.Active,
+          data: session.ws.data.data,
+        }
+
+        if (fn(entry, index)) {
           sendToClient(clientId, event, body)
         }
 
@@ -761,27 +812,65 @@ export function buildSocketCommands (state: SocketState): SocketCommands {
       }
 
       for (const [clientId, session] of state.activeSessions) {
-        if (fn(clientId, session.ws.data, index)) {
+        const entry: SessionEntry = {
+          clientId,
+          type: SessionType.Active,
+          data: session.ws.data.data,
+        }
+
+        if (fn(entry, index)) {
           session.ws.close(code, reason)
         }
 
         index += 1
       }
     },
-    query (fn: FilterFn) {
+    query (
+      fn: FilterFn,
+      filter: SessionFilter = SessionFilter.Active,
+    ) {
       const results: SessionEntry[] = []
-      let index = 0
 
-      for (const [clientId, session] of state.activeSessions) {
-        if (fn(clientId, session.ws.data, index)) {
-          results.push({
-            clientId,
-            app: session.ws.data.app,
-          })
+      function processSessions (
+        type: SessionType,
+        filter: SessionFilter,
+        startIndex: number,
+      ): number {
+        let index = startIndex
+
+        const sessions = type === SessionType.Active
+          ? state.activeSessions
+          : state.inactiveSessions
+
+        if (type !== filter && filter !== SessionFilter.All) {
+          return index
         }
 
-        index += 1
+        for (const [clientId, session] of sessions) {
+          const data = 'ws' in session ? session.ws.data.data : session.data
+
+          const entry: SessionEntry = {
+            clientId,
+            type,
+            data,
+          }
+
+          if (fn(entry, index)) {
+            results.push(entry)
+          }
+
+          index += 1
+        }
+
+        return index
       }
+
+      let index = 0
+
+      sweepInactiveSessions(state)
+
+      index = processSessions(SessionType.Active, filter, index)
+      index = processSessions(SessionType.Inactive, filter, index)
 
       return results
     },

@@ -8,15 +8,33 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+
+- **`ws.query()` accepts an optional `SessionFilter`.** Pass `'active'`
+  (default), `'inactive'`, or `'all'` to control which sessions the
+  filter function runs against. Previously, `query()` only iterated
+  active sessions.
+
+- **`FilterFn` receives a `SessionEntry` object.** The callback
+  signature changed from `(clientId, data, index)` to `(session, index)`
+  where `session` is `{ clientId, type, data }`. The `type` field is the
+  new `SessionType` (`'active'` or `'inactive'`), and `data` (renamed
+  from `app`) holds the session's application state.
+
+- **`SessionEntry.app` renamed to `SessionEntry.data`.** Aligns with
+  the `data` naming used throughout the rest of the API.
+
 ## [0.23.0](https://www.npmjs.com/package/sleepy-serv/v/0.23.0) - 2026-09-14
 
 ### Changed
 
 - **Replaced `CloseCode` and `CloseReason` with `CloseSignal` and
-  `InternalCloseSignal`.** Close signals are now explicit `{ code, reason }`
-  pairs. `InternalCloseSignal` holds the framework-owned signals: `Ok`
-  (1000), `Reaped` (4998, was 4999), and `Superseded` (4999, new).
-  The `CloseReason` enum and `getCloseReason()` function are removed.
+  `ServerCloseSignals`/`ClientCloseSignals`.** Close signals are now
+  explicit `{ code, reason }` pairs. `ServerCloseSignals` holds the
+  server's framework-owned signals: `Ok` (1000), `Reaped` (4998, was
+  4999), and `Superseded` (4999, new). `ClientCloseSignals` is the
+  client's superset, adding `Abnormal` (1006). The `CloseReason` enum
+  and `getCloseReason()` function are removed.
 
 - **`drop()` requires a `CloseSignal` and takes `(signal, fn)` argument
   order.** The old `(fn, code?, reason?)` signature is replaced by
@@ -32,7 +50,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   string from the WebSocket close frame.
 
 - **Client `close()` accepts an optional `CloseSignal`.** Defaults to
-  `InternalCloseSignal.Ok` (`{ code: 1000, reason: 'ok' }`). Apps can
+  `ClientCloseSignals.Ok` (`{ code: 1000, reason: 'ok' }`). Apps can
   pass a custom signal to indicate why the client is disconnecting.
 
 - **Client reconnect uses an allowlist.** Only codes 1006 (Abnormal)
@@ -41,8 +59,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
-- **`CloseCode` constant and type.** Replaced by `InternalCloseSignal`
-  entries for framework codes and `CloseSignal` type for app codes.
+- **`CloseCode` constant and type.** Replaced by `ServerCloseSignals`
+  / `ClientCloseSignals` entries for framework codes and `CloseSignal`
+  type for app codes.
 
 - **`CloseReason` constant and type.** The categorical enum
   (`ok`/`dropped`/`reaped`/`superseded`) is removed in favor of the

@@ -31,26 +31,28 @@ import type {
   Middleware,
   MiddlewareChain,
   EndpointRequest,
-  MetaEntry,
-  RouteConfig,
-  RouteDefinition,
-  SocketCommands,
-  SocketOptions,
-  AppOptions,
+  Handler,
   Server,
 } from './utils'
 
 import type {
+  SocketCommands,
+} from './utils'
+
+import type {
+  SocketOptions,
   SocketRoute,
   SocketState,
 } from './socket'
 
 export * from './errors'
+export { ServerCloseSignals } from './socket'
 
 export {
   StatusCode,
   HttpMethod,
-  InternalCloseSignal,
+  SessionType,
+  SessionFilter,
 } from './utils'
 
 export {
@@ -59,27 +61,31 @@ export {
   validateSchemas,
 } from './middleware'
 
-export type { FilterFn, SessionEntry, SocketCommands } from './utils'
+export type {
+  ActiveSession,
+  ActiveSessions,
+  InactiveSession,
+  SocketConnection,
+  SocketOptions,
+} from './socket'
 
 export type {
-  AppOptions,
   AsyncHandlerResult,
   BaseRequest,
   CloseSignal,
   EndpointRequest,
+  FilterFn,
   FormattedError,
   Handler,
-  MetaEntry,
+  HandlerResult,
   Middleware,
   MiddlewareChain,
   NextFn,
-  HandlerResult,
   Request,
-  RouteConfig,
-  RouteDefinition,
   Server,
-  SocketConnection,
-  SocketOptions,
+  SessionEntry,
+  SocketCommands,
+  SocketData,
   WebSocketRequest,
 } from './utils'
 
@@ -88,6 +94,30 @@ export type {
   FormatterSchema,
   ValidationSchemas,
 } from './middleware'
+
+export type RouteDefinition = {
+  method: HttpMethod
+  path: string
+  chain: Handler | MiddlewareChain
+}
+
+export type MetaEntry = {
+  path: string
+  middleware: Middleware[]
+}
+
+export type RouteConfig = {
+  routes: RouteDefinition[]
+  meta?: MetaEntry[]
+}
+
+export type AppOptions = {
+  hostname?: string
+  mountPath?: string
+  middleware?: Middleware[]
+  ws?: boolean | SocketOptions
+  onClose?: () => Promise<void> | void
+}
 
 type OutputRoutes = Record<string, string[]>
 type ServerRoutes = Record<string, Record<string, EndpointHandler>>

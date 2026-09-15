@@ -5,9 +5,7 @@ type Body = {
 }
 
 type ConnectionData = {
-  app: {
-    userId: string
-  }
+  userId: string
 }
 
 export const middleware: Middleware[] = [
@@ -18,10 +16,10 @@ export const middleware: Middleware[] = [
       message: `Hello from ${body.userId}`,
     }
 
-    req.ws.send('player_joined', message, (_clientId, data) => {
-      const connectionData = data as ConnectionData
+    req.ws.send('player_joined', message, (session) => {
+      const data = session.data as ConnectionData
 
-      return connectionData.app.userId !== body.userId
+      return data.userId !== body.userId
     })
 
     return next()
