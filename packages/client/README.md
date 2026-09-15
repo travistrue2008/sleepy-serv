@@ -21,7 +21,8 @@ Here's a minimalist example on how to connect and make a request:
 ```js
 import SleepySocketClient from 'sleepy-socket'
 
-const client = await SleepySocketClient.open('localhost', 3000)
+const client = await SleepySocketClient.open('localhost', { port: 3000 })
+
 const res = await client.get('/users')
 
 console.log(res.status) // 200
@@ -139,12 +140,16 @@ This fires on client-initiated closes (`client.close()`), server-initiated close
 You can attach arbitrary app data to the initial connection using the `ctx` option:
 
 ```js
-const client = await SleepySocketClient.open('localhost', 3000, {
-  ctx: { gameId: 'abc', playerId: 'p1' },
+const client = await SleepySocketClient.open('localhost', {
+  port: 3000,
+  ctx: {
+    gameId: 'abc',
+    playerId: 'p1',
+  },
 })
 ```
 
-The server stores this in `ws.data.app` and preserves it through reconnects. On a reclaim (`PUT /ws/:clientId`), the client sends no body; the server is the source of truth for the connection context.
+The server stores this in `ws.data.data` and preserves it through reconnects. On a reclaim (`PUT /ws/:clientId`), the client sends no body; the server is the source of truth for the connection context.
 
 ### Reconnection
 
@@ -157,7 +162,8 @@ If the server rejects a reconnect handshake with an error response (surfaced as 
 You can tune the backoff:
 
 ```js
-const client = await SleepySocketClient.open('localhost', 3000, {
+const client = await SleepySocketClient.open('localhost', {
+  port: 3000,
   reconnect: {
     minDelay: 1_000,
     maxDelay: 10_000,
@@ -169,7 +175,8 @@ const client = await SleepySocketClient.open('localhost', 3000, {
 Set `reconnect` to `false` to turn it off entirely:
 
 ```js
-const client = await SleepySocketClient.open('localhost', 3000, {
+const client = await SleepySocketClient.open('localhost', {
+  port: 3000,
   reconnect: false,
 })
 ```
@@ -185,7 +192,8 @@ For example, if you fire three requests that take 300ms, 100ms, and 200ms:
 ```js
 import SleepySocketClient, { Queue } from 'sleepy-socket'
 
-const client = await SleepySocketClient.open('localhost', 3000, {
+const client = await SleepySocketClient.open('localhost', {
+  port: 3000,
   queue: Queue.Fifo,
 })
 
@@ -210,7 +218,8 @@ The three queue types resolve those promises differently:
 If the server was created with a `mountPath`, give the client the same value:
 
 ```js
-const client = await SleepySocketClient.open('localhost', 3000, {
+const client = await SleepySocketClient.open('localhost', {
+  port: 3000,
   mountPath: '/api/v2',
 })
 
@@ -221,16 +230,16 @@ The routes you pass to request methods stay mount-relative. The client joins the
 
 ## API
 
-### `SleepySocketClient.open(host, port, opts)`
+### `SleepySocketClient.open(hostname, opts)`
 
 This static method creates a client, opens the connection, and resolves once the server has acknowledged it. It's the only supported way to construct a client.
 
 The parameters are:
-- `host`: the hostname, without a scheme, such as `'localhost'`
-- `port`: the port number
-- `opts`: an optional `OpenOptions` object
+- `hostname`: the hostname, without a scheme or port, such as `'localhost'` or `'trivia.lan'`
+- `opts`: an optional `ClientOptions` object
 
 The `opts` object can contain these optional properties:
+- `port`: the port number. When omitted, the URL has no port segment and the browser/runtime uses the scheme default (80 for HTTP, 443 for HTTPS).
 - `queue`: how responses are handed back, one of `Queue.None`, `Queue.Fifo`, or `Queue.Lifo`. Defaults to `Queue.None`. An unrecognized value throws a `RangeError`.
 - `secure`: set to `true` to use `https` and `wss` instead of `http` and `ws`. Defaults to `false`.
 - `timeout`: how long to wait, in milliseconds, both for the initial connection and for each individual request. Defaults to `30_000`.
