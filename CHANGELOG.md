@@ -8,6 +8,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.24.0](https://www.npmjs.com/package/sleepy-serv/v/0.24.0) - 2026-09-15
+
 ### Changed
 
 - **`ws.query()` accepts an optional `SessionFilter`.** Pass `'active'`
