@@ -8,6 +8,19 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+
+- **`SleepySocketClient.open()` signature redesigned.** The `port`
+  parameter moved from a required positional argument to an optional
+  field in the options object (`ClientOptions.port`). When omitted, URLs
+  have no port segment and the browser/runtime uses the scheme default.
+  The `host` parameter was renamed to `hostname` for consistency with the
+  server-side `AppOptions.hostname` and the URL API.
+
+- **`OpenOptions` renamed to `ClientOptions`.** The type exported from
+  `sleepy-socket` that configures `SleepySocketClient.open()` is now
+  `ClientOptions`.
+
 ## [0.25.0](https://www.npmjs.com/package/sleepy-serv/v/0.25.0) - 2026-09-15
 
 ### Added
