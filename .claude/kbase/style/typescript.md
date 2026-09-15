@@ -203,42 +203,62 @@ decisions worth keeping were moved here.
 
 ## Typing decisions
 
-### The request hierarchy, and why `Middleware` is not generic
+### The request hierarchy and the connection-data generic
 
-- **Choice:** four types in `utils.ts`, the dependency root:
+- **Choice:** four types in `utils.ts`, the dependency root, all
+  carrying `<T = void>`:
 
   ```ts
-  BaseRequest      method, route, headers, params, query, json
-  EndpointRequest  BaseRequest & { raw, server }
-  WebSocketRequest BaseRequest & { id, clientId }
-  Request          EndpointRequest | WebSocketRequest
+  BaseRequest<T>      method, route, headers, params, query, json, ws: SocketCommands<T>
+  EndpointRequest<T>  BaseRequest<T> & { raw, server: Server<T> }
+  WebSocketRequest<T> BaseRequest<T> & { id, clientId }
+  Request<T>          EndpointRequest<T> | WebSocketRequest<T>
   ```
 
-  `Middleware` is `(req: Request, res, next: NextFn) => HandlerResult`,
-  `Handler` is `(req: Request, res) => HandlerResult`, with no type
-  parameter, and `executeMiddlewareChain` is concrete.
+  `Middleware<T>` is `(req: Request<T>, res, next: NextFn) => HandlerResult`,
+  `Handler<T>` is `(req: Request<T>, res) => HandlerResult`, and
+  `executeMiddlewareChain<T>` threads the parameter.
 - **Why they all live in `utils.ts`.** The import graph is a DAG rooted
   at `utils`, so `Request` has to be declared there or the modules that
   build the two variants would need type-only cycles. `EndpointRequest`
-  needs `BunRequest` and `Server<SocketData>`, which is why `SocketData`
+  needs `BunRequest` and `Server<SocketData<T>>`, which is why `SocketData`
   and the `Server` alias live in `utils` too.
-- **Why the generic went away rather than getting a constraint.** The
-  earlier `executeMiddlewareChain<TReq>` existed because `utils` only
-  forwards the request and never inspects it. That was honest while the
-  two envelopes were unnamed. Once both exist, the union says the same
-  thing with less machinery, and it says it in one place instead of at
-  every instantiation.
-- **What it cost, and why that was the point.** 105 type errors, 104 in
-  test fixtures. `utils.test.ts` had `REQ = { url: '/users' }`, a shape
-  neither envelope has ever produced. `middleware.test.ts` fixtures now
-  spread a `BASE_REQUEST` so each test states only the fields it
-  exercises.
+- **Why the generic came back.** The earlier non-generic `Request` union
+  replaced an `executeMiddlewareChain<TReq>` that existed only because
+  `utils` forwards the request without inspecting it. The union was
+  correct and simpler for that purpose. The new `<T>` serves a different
+  goal: constraining `session.data` in filter functions (`FilterFn<T>`,
+  `SessionEntry<T>`) so consumers can access `session.data.userId`
+  without casting. The parameter propagates from `createApp<T>()` through
+  `App<T>`, `SocketCommands<T>`, `BaseRequest<T>`, and into
+  `Middleware<T>` / `Handler<T>`. All types default to `void`, so omitting
+  the parameter gives the pre-generic behavior.
+- **Why `void`, not `unknown`.** With `strict: true`
+  (`strictFunctionTypes`), the default affects variance. `void` blocks
+  property access on `session.data` at compile time, signaling "no
+  connection data declared." `unknown` merely requires a cast, the same
+  as before the generic existed. The choice is that the default should
+  *prevent* use, not merely *obscure* the type.
+- **`strictFunctionTypes` forces utility middleware to carry `T`.** Under
+  strict variance, `Middleware<void>` is not assignable to
+  `Middleware<ConnectionData>` because `Request<void>` is not assignable
+  to `Request<ConnectionData>` (the `ws: SocketCommands<T>` member is
+  contravariant). So `parseJsonBody<T>()` and `validateSchemas<T>()` must
+  also be generic, even though they never access session data. The
+  parameter flows through structurally.
 - **Where a loose type is still correct.** `socket.test.ts` binds the
-  three handshake terminals through a local `LooseHandler`
-  (`(req: Record<string, unknown>, res: unknown) => Response`). Those
-  suites exist to prove the terminals reject malformed input, so the
+  three handshake terminals through a local `TestHandler`
+  (`(req: Record<string, unknown>, res: unknown) => AsyncHandlerResult`).
+  Those suites exist to prove the terminals reject malformed input, so the
   fixtures must be malformed. One cast for the file beats 67 at the call
   sites, and it names the intent.
+- **Test infrastructure adaptations.** `socket.test.ts` declares
+  `SocketMock` and `TestServer` with `SocketData<unknown>` (not `void`)
+  because unit tests exercise arbitrary data shapes (`{ role: 'player' }`,
+  `{ name: id }`, etc.). Tests that only need empty data use
+  `data: undefined` (assignable to `void`). Tests that set connection data
+  call `buildSocketState<unknown>()` so `SessionEntry.data` accepts any
+  value in assertions.
 
 ### `Middleware` and `Handler` are separate types
 

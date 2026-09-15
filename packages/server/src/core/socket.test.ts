@@ -63,7 +63,7 @@ type TicketBody = {
   over the first frame the handler sent.
  */
 
-type SocketMock = ServerWebSocket<SocketData> & {
+type SocketMock = ServerWebSocket<SocketData<unknown>> & {
   send: ReturnType<typeof mock>
   close: ReturnType<typeof mock>
   readonly welcome: Record<string, unknown>
@@ -78,7 +78,7 @@ type SocketMock = ServerWebSocket<SocketData> & {
 
 type TestServer = Required<
   Pick<
-    WebSocketHandler<SocketData>,
+    WebSocketHandler<SocketData<unknown>>,
     'open' | 'close' | 'message'
   >
 >
@@ -135,9 +135,9 @@ function welcomeToken (ws: SocketMock): string {
   return body.token
 }
 
-function buildTestServer (
-  routes: SocketRoute[],
-  state: SocketState,
+function buildTestServer<T = void> (
+  routes: SocketRoute<T>[],
+  state: SocketState<T>,
 ): TestServer {
   const ws = buildSocketCommands(state)
 
@@ -737,13 +737,13 @@ describe('buildTestServer()', () => {
       state.inactiveSessions.set('stale', {
         token: 'a',
         expiresAt: Date.now() - 1,
-        data: null,
+        data: undefined,
       })
 
       state.inactiveSessions.set('fresh', {
         token: 'b',
         expiresAt: Date.now() + 10_000,
-        data: null,
+        data: undefined,
       })
 
       server.open(ws)
@@ -1142,7 +1142,7 @@ describe('buildSocketHandlers()', () => {
   const REQ_RAW = {}
   const RES_HANDLER = { ok: true }
 
-  const state = buildSocketState()
+  const state = buildSocketState<unknown>()
   const handlers = buildSocketHandlers(state)
   const createSocket = handlers[0].handler as TestHandler
   const createTicket = handlers[1].handler as TestHandler
@@ -1640,13 +1640,13 @@ describe('buildSocketHandlers()', () => {
       state.tickets.set('a', {
         clientId: 'x',
         expiresAt: Date.now() + 10_000,
-        data: null,
+        data: undefined,
       })
 
       state.tickets.set('b', {
         clientId: 'y',
         expiresAt: Date.now() + 10_000,
-        data: null,
+        data: undefined,
       })
 
       const promise = createTicket(
@@ -1682,13 +1682,13 @@ describe('buildSocketHandlers()', () => {
       state.tickets.set('expired-a', {
         clientId: 'x',
         expiresAt: Date.now() - 100,
-        data: null,
+        data: undefined,
       })
 
       state.tickets.set('expired-b', {
         clientId: 'y',
         expiresAt: Date.now() - 100,
-        data: null,
+        data: undefined,
       })
 
       const res = await createTicket({ headers: new Headers() }, {})
@@ -2389,7 +2389,7 @@ describe('buildSocketCommands()', () => {
         '00000000-0000-0000-0000-000000000022',
       ]
 
-      const state = buildSocketState()
+      const state = buildSocketState<unknown>()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
 
@@ -2427,7 +2427,7 @@ describe('buildSocketCommands()', () => {
         '00000000-0000-0000-0000-000000000031',
       ]
 
-      const state = buildSocketState()
+      const state = buildSocketState<unknown>()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
 
@@ -2461,7 +2461,7 @@ describe('buildSocketCommands()', () => {
       const ACTIVE_ID = '00000000-0000-0000-0000-000000000070'
       const INACTIVE_ID = '00000000-0000-0000-0000-000000000071'
 
-      const state = buildSocketState()
+      const state = buildSocketState<unknown>()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
       const activeWs = buildSocket(ACTIVE_ID)
@@ -2494,7 +2494,7 @@ describe('buildSocketCommands()', () => {
       const ACTIVE_ID = '00000000-0000-0000-0000-000000000072'
       const INACTIVE_ID = '00000000-0000-0000-0000-000000000073'
 
-      const state = buildSocketState()
+      const state = buildSocketState<unknown>()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
       const activeWs = buildSocket(ACTIVE_ID)
@@ -2527,7 +2527,7 @@ describe('buildSocketCommands()', () => {
       const ACTIVE_ID = '00000000-0000-0000-0000-000000000074'
       const INACTIVE_ID = '00000000-0000-0000-0000-000000000075'
 
-      const state = buildSocketState()
+      const state = buildSocketState<unknown>()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
       const activeWs = buildSocket(ACTIVE_ID)
@@ -2560,7 +2560,7 @@ describe('buildSocketCommands()', () => {
       const ACTIVE_ID = '00000000-0000-0000-0000-000000000076'
       const INACTIVE_ID = '00000000-0000-0000-0000-000000000077'
 
-      const state = buildSocketState({ reclaimTtl: 100 })
+      const state = buildSocketState<unknown>({ reclaimTtl: 100 })
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
       const activeWs = buildSocket(ACTIVE_ID)
@@ -2592,7 +2592,7 @@ describe('buildSocketCommands()', () => {
       const ACTIVE_ID = '00000000-0000-0000-0000-000000000078'
       const INACTIVE_ID = '00000000-0000-0000-0000-000000000079'
 
-      const state = buildSocketState()
+      const state = buildSocketState<unknown>()
       const server = buildTestServer([], state)
       const commands = buildSocketCommands(state)
       const activeWs = buildSocket(ACTIVE_ID)

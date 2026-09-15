@@ -96,30 +96,30 @@ export type AsyncHandlerResult = Promise<Response>
 export type HandlerResult = Response | AsyncHandlerResult
 export type NextFn = (data?: unknown) => HandlerResult
 
-export type Middleware = (
-  req: Request,
+export type Middleware<T = void> = (
+  req: Request<T>,
   res: unknown,
   next: NextFn,
 ) => HandlerResult
 
-export type Handler = (
-  req: Request,
+export type Handler<T = void> = (
+  req: Request<T>,
   res: unknown,
 ) => HandlerResult
 
-export type MiddlewareChain = (Middleware | Handler)[]
+export type MiddlewareChain<T = void> = (Middleware<T> | Handler<T>)[]
 
 export type CloseSignal = {
   code: number
   reason: string
 }
 
-export type SocketData = {
+export type SocketData<T = void> = {
   clientId: string
   superseded: boolean
   reaped: boolean
   reaperHandle: TimeoutHandle | null
-  data: unknown
+  data: T
 }
 
 export const SessionType = {
@@ -137,47 +137,47 @@ export const SessionFilter = {
 
 export type SessionFilter = typeof SessionFilter[keyof typeof SessionFilter]
 
-export type SessionEntry = {
+export type SessionEntry<T = void> = {
   clientId: string
   type: SessionType
-  data: unknown
+  data: T
 }
 
-export type FilterFn = (
-  session: SessionEntry,
+export type FilterFn<T = void> = (
+  session: SessionEntry<T>,
   index: number,
 ) => boolean
 
-export type SocketCommands = {
+export type SocketCommands<T = void> = {
   broadcast: (event: string, body: unknown) => void
-  send: (event: string, body: unknown, fn: FilterFn) => void
-  drop: (signal: CloseSignal, fn: FilterFn) => void
-  query: (fn: FilterFn, filter?: SessionFilter) => SessionEntry[]
+  send: (event: string, body: unknown, fn: FilterFn<T>) => void
+  drop: (signal: CloseSignal, fn: FilterFn<T>) => void
+  query: (fn: FilterFn<T>, filter?: SessionFilter) => SessionEntry<T>[]
 }
 
-export type BaseRequest = {
+export type BaseRequest<T = void> = {
   method: HttpMethod
   route: string
   headers: Headers
   params: Record<string, string>
   query: Record<string, unknown>
   json: () => Promise<unknown>
-  ws: SocketCommands
+  ws: SocketCommands<T>
 }
 
-export type EndpointRequest = BaseRequest & {
+export type EndpointRequest<T = void> = BaseRequest<T> & {
   raw: BunRequest
-  server: Server
+  server: Server<T>
 }
 
-export type WebSocketRequest = BaseRequest & {
+export type WebSocketRequest<T = void> = BaseRequest<T> & {
   id: string
   clientId: string
 }
 
-export type Request = EndpointRequest | WebSocketRequest
+export type Request<T = void> = EndpointRequest<T> | WebSocketRequest<T>
 
-export type Server = BunServer<SocketData>
+export type Server<T = void> = BunServer<SocketData<T>>
 
 export function toSegments (pathString: string): string[] {
   const [pathname] = String(pathString).split('?')
@@ -207,9 +207,9 @@ export function formatError (
   }
 }
 
-export async function executeMiddlewareChain (
-  req: Request,
-  chain: MiddlewareChain,
+export async function executeMiddlewareChain<T = void> (
+  req: Request<T>,
+  chain: MiddlewareChain<T>,
 ): AsyncHandlerResult {
   if (!chain.length) {
     throw new RangeError('Middleware chain is empty')
@@ -224,8 +224,8 @@ export async function executeMiddlewareChain (
     const next = (data?: unknown) => executeMiddleware(index + 1, data)
 
     const result = isLast
-      ? await (fn as Handler)(req, res)
-      : await (fn as Middleware)(req, res, next)
+      ? await (fn as Handler<T>)(req, res)
+      : await (fn as Middleware<T>)(req, res, next)
 
     if (result instanceof Response) {
       return result

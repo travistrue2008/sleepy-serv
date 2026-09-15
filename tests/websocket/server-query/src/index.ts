@@ -8,7 +8,7 @@ type ConnectionData = {
   userId: string
 }
 
-const app = createApp(0, { ws: true })
+const app = createApp<ConnectionData>(0, { ws: true })
 
 const admin = Bun.serve({
   port: 0,
@@ -19,9 +19,7 @@ const admin = Bun.serve({
         const userId = url.searchParams.get('userId')
 
         const entries = app.ws.query((session) => {
-          const data = session.data as ConnectionData
-
-          return data.userId !== userId
+          return session.data.userId !== userId
         })
 
         return Response.json({ count: entries.length })

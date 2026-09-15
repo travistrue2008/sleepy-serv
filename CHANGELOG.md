@@ -8,6 +8,20 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Added
+
+- **Generic type parameter `<T>` on connection data types.**
+  `createApp<T>()`, `Request<T>`, `Middleware<T>`, `Handler<T>`,
+  `SocketCommands<T>`, `SessionEntry<T>`, `FilterFn<T>`, and all related
+  types now accept an optional type parameter that constrains
+  `session.data` in filter functions and query results. When provided,
+  `session.data` is typed as `T` with no cast required. When omitted, `T`
+  defaults to `void`, blocking property access to signal that no
+  connection data type was declared. The parameter propagates from
+  `createApp<T>()` through the full type chain. `parseJsonBody<T>()` and
+  `validateSchemas<T>()` also accept the parameter for compatibility with
+  typed middleware chains under `strictFunctionTypes`.
+
 ## [0.24.0](https://www.npmjs.com/package/sleepy-serv/v/0.24.0) - 2026-09-15
 
 ### Changed

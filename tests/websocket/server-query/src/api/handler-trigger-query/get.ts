@@ -8,13 +8,13 @@ type ConnectionData = {
   userId: string
 }
 
-export default async function handler (req: Request): AsyncHandlerResult {
+export default async function handler (
+  req: Request<ConnectionData>,
+): AsyncHandlerResult {
   const { userId } = req.query as Query
 
   const entries = req.ws.query((session) => {
-    const data = session.data as ConnectionData
-
-    return data.userId !== userId
+    return session.data.userId !== userId
   })
 
   return Response.json({
