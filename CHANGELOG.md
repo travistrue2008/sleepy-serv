@@ -8,6 +8,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changed
+
+- **`ws.query()` accepts an optional `SessionFilter`.** Pass `'active'`
+  (default), `'inactive'`, or `'all'` to control which sessions the
+  filter function runs against. Previously, `query()` only iterated
+  active sessions.
+
+- **`FilterFn` receives a `SessionEntry` object.** The callback
+  signature changed from `(clientId, data, index)` to `(session, index)`
+  where `session` is `{ clientId, type, data }`. The `type` field is the
+  new `SessionType` (`'active'` or `'inactive'`), and `data` (renamed
+  from `app`) holds the session's application state.
+
+- **`SessionEntry.app` renamed to `SessionEntry.data`.** Aligns with
+  the `data` naming used throughout the rest of the API.
+
 ## [0.23.0](https://www.npmjs.com/package/sleepy-serv/v/0.23.0) - 2026-09-14
 
 ### Changed
