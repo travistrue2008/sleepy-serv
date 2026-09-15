@@ -571,10 +571,10 @@ and the server does not accept WebSocket upgrades. Calling `app.ws` or
 
 The `app.ws` object exposes four methods for interacting with connected clients:
 
-- `query(fn)`: return a filtered list of active sessions. The filter function receives `(clientId, data, index)` and returns a boolean. Each entry in the returned array is a `SessionEntry` with `clientId` and `app` (the application context). To list all sessions: `app.ws.query(() => true)`.
-- `send(event, body, fn)`: push a notification to clients matching a filter. The filter function receives `(clientId, data, index)` and returns a boolean. To target one client: `app.ws.send('ping', body, id => id === targetId)`.
+- `query(fn, filter?)`: return a filtered list of sessions. The filter function receives `(session, index)` where `session` is a `SessionEntry` (`{ clientId, type, data }`), and returns a boolean. The optional `filter` parameter controls which sessions are iterated: `'active'` (default), `'inactive'`, or `'all'`. To list all active sessions: `app.ws.query(() => true)`. To include inactive sessions: `app.ws.query(() => true, 'all')`.
+- `send(event, body, fn)`: push a notification to clients matching a filter. The filter function receives `(session, index)` and returns a boolean. To target one client: `app.ws.send('ping', body, s => s.clientId === targetId)`.
 - `broadcast(event, body)`: push a notification to all connected clients.
-- `drop(signal, fn)`: close connections matching a filter. `signal` is a `CloseSignal` (`{ code, reason }`) with `code` validated in the range [4000-4099]. The filter function receives `(clientId, data, index)` and returns a boolean. To drop one client: `app.ws.drop({ code: 4000, reason: 'kicked' }, id => id === targetId)`.
+- `drop(signal, fn)`: close connections matching a filter. `signal` is a `CloseSignal` (`{ code, reason }`) with `code` validated in the range [4000-4099]. The filter function receives `(session, index)` and returns a boolean. To drop one client: `app.ws.drop({ code: 4000, reason: 'kicked' }, s => s.clientId === targetId)`.
 
 The same commands are available inside endpoint handlers via `req.ws`:
 
@@ -582,7 +582,7 @@ The same commands are available inside endpoint handlers via `req.ws`:
 export default function (req) {
   const targetId = req.query.targetId
 
-  req.ws.send('ping', { from: 'handler' }, id => id === targetId)
+  req.ws.send('ping', { from: 'handler' }, s => s.clientId === targetId)
 
   return Response.json({ ok: true })
 }
@@ -598,8 +598,10 @@ This works from both HTTP and WebSocket transports.
 - `CloseSignal`: the type for close signals: `{ code: number, reason: string }`
 - `StatusCode`: the full range of HTTP status codes (1xx through 5xx)
 - `HttpMethod`: HTTP verbs: `Head`, `Get`, `Post`, `Put`, `Patch`, `Delete`
-- `SessionEntry`: the shape returned by `query()`: `{ clientId: string, app: unknown }`
-- `FilterFn`: the filter callback type: `(clientId: string, data: unknown, index: number) => boolean`
+- `SessionType`: session state: `Active` (`'active'`), `Inactive` (`'inactive'`)
+- `SessionFilter`: session filter: `Active` (`'active'`), `Inactive` (`'inactive'`), `All` (`'all'`)
+- `SessionEntry`: the shape returned by `query()` and received by filter callbacks: `{ clientId: string, type: SessionType, data: unknown }`
+- `FilterFn`: the filter callback type: `(session: SessionEntry, index: number) => boolean`
 - `SocketCommands`: the type for `app.ws` and `req.ws`
 - Error classes for every 4xx and 5xx status (e.g. `NotFoundError`, `UnauthorizedError`, `InternalServerError`)
 - Middleware helpers: `parseJsonBody`, `validateSchemas`, `setValidationFormats`
