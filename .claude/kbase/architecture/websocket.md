@@ -64,7 +64,11 @@ When the server rejects a handshake with a non-ok HTTP response and a JSON body,
 
 ## Connection context (`ctx`)
 
-`ConnectOptions.ctx` lets the client attach arbitrary app data to the initial connection. It is sent as `{ data: ctx }` in the `POST /ws` body only. On reconnect, `PUT /ws/:clientId` sends no body -- the server is the source of truth. The server stores the middleware chain's `res` value (not the raw body) in `ws.data.data` via the ticket. Apps must provide middleware on `POST /ws` that parses the body and passes the extracted data through `next()` for it to reach the session. On close, the value is copied to the inactive session (`InactiveSession.data`). On reclaim, the PUT handler reads app data from the session (`'ws' in session ? session.ws.data.data : session.data`) rather than from the request body, preserving the original context through the full inactive/reclaim cycle.
+`ClientOptions.ctx` lets the client attach arbitrary app data to the initial connection. It is sent as `{ data: ctx }` in the `POST /ws` body only. On reconnect, `PUT /ws/:clientId` sends no body -- the server is the source of truth. The server stores the middleware chain's `res` value (not the raw body) in `ws.data.data` via the ticket. Apps must provide middleware on `POST /ws` that parses the body and passes the extracted data through `next()` for it to reach the session. On close, the value is copied to the inactive session (`InactiveSession.data`). On reclaim, the PUT handler reads app data from the session (`'ws' in session ? session.ws.data.data : session.data`) rather than from the request body, preserving the original context through the full inactive/reclaim cycle.
+
+## Client `open()` API
+
+`SleepySocketClient.open(hostname, opts?)` connects to a server. The first parameter is `hostname` (not `host`) for consistency with the server-side `AppOptions.hostname` and the URL API (`URL.hostname` = name without port). `opts` is a `ClientOptions` object (renamed from `OpenOptions`). `port` is an optional field in `ClientOptions`: when provided, URLs include `:port`; when omitted, the URL has no port segment and the browser/runtime uses the scheme default (80 for HTTP, 443 for HTTPS). This makes domain-based connections clean: `open('trivia.lan')` or `open('trivia.lan', { secure: true })`.
 
 ## Generic type parameter on connection data
 
