@@ -590,6 +590,51 @@ export default function (req) {
 
 This works from both HTTP and WebSocket transports.
 
+### Typed Connection Data
+
+All WebSocket types accept an optional generic parameter `<T>` that
+constrains `session.data` in filter functions and query results. When
+omitted, `session.data` is typed `void` (no access). When provided,
+`session.data` is typed as `T` with no cast required:
+
+```ts
+type ConnectionData = {
+  userId: string
+  role: 'player' | 'spectator'
+}
+
+const app = createApp<ConnectionData>(3000, { ws: true })
+
+// session.data is typed as ConnectionData
+app.ws.send('event', body, session => {
+  return session.data.userId !== excludedId
+})
+
+const players = app.ws.query(session => {
+  return session.data.role === 'player'
+})
+```
+
+The type parameter propagates through `Request<T>`, `Middleware<T>`, and
+`Handler<T>`, so typed handler and middleware functions also get typed
+session data through `req.ws`:
+
+```ts
+import type { Request, AsyncHandlerResult } from 'sleepy-serv'
+
+type ConnectionData = { userId: string }
+
+export default async function (
+  req: Request<ConnectionData>,
+): AsyncHandlerResult {
+  req.ws.send('joined', {}, session => {
+    return session.data.userId !== 'some-id'
+  })
+
+  return new Response('', { status: 204 })
+}
+```
+
 ## Exports
 
 `sleepy-serv` exports several runtime constants and types:
@@ -600,9 +645,9 @@ This works from both HTTP and WebSocket transports.
 - `HttpMethod`: HTTP verbs: `Head`, `Get`, `Post`, `Put`, `Patch`, `Delete`
 - `SessionType`: session state: `Active` (`'active'`), `Inactive` (`'inactive'`)
 - `SessionFilter`: session filter: `Active` (`'active'`), `Inactive` (`'inactive'`), `All` (`'all'`)
-- `SessionEntry`: the shape returned by `query()` and received by filter callbacks: `{ clientId: string, type: SessionType, data: unknown }`
-- `FilterFn`: the filter callback type: `(session: SessionEntry, index: number) => boolean`
-- `SocketCommands`: the type for `app.ws` and `req.ws`
+- `SessionEntry<T>`: the shape returned by `query()` and received by filter callbacks: `{ clientId: string, type: SessionType, data: T }`
+- `FilterFn<T>`: the filter callback type: `(session: SessionEntry<T>, index: number) => boolean`
+- `SocketCommands<T>`: the type for `app.ws` and `req.ws`
 - Error classes for every 4xx and 5xx status (e.g. `NotFoundError`, `UnauthorizedError`, `InternalServerError`)
 - Middleware helpers: `parseJsonBody`, `validateSchemas`, `setValidationFormats`
 
