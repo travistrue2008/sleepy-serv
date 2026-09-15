@@ -593,9 +593,7 @@ This works from both HTTP and WebSocket transports.
 ### Typed Connection Data
 
 All WebSocket types accept an optional generic parameter `<T>` that
-constrains `session.data` in filter functions and query results. When
-omitted, `session.data` is typed `void` (no access). When provided,
-`session.data` is typed as `T` with no cast required:
+constrains `session.data` in filter functions and query results:
 
 ```ts
 type ConnectionData = {
